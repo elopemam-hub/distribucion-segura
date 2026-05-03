@@ -131,7 +131,26 @@ async function verDetalle(id) {
     <div style="margin-bottom:14px">
       <div style="font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--amarillo);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px;display:flex;align-items:center;gap:8px"><i class="fas fa-users"></i> Tripulación y EPP</div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px">
-        ${d.tripulacion.map(t=>{const epps=Array.isArray(t.epp_detalle)?t.epp_detalle:[],todosEpp=['Casco','Chaleco reflectivo','Zapatos de seguridad','Lentes','Guantes'];return`<div style="background:var(--gris-700);border-radius:8px;padding:8px 10px;border-left:3px solid ${t.epp_completo?'var(--verde)':'var(--rojo)'}"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div><div style="font-size:10px;color:var(--gris-400);text-transform:uppercase;letter-spacing:1px">${t.rol}</div><div style="font-weight:700;color:var(--gris-100);font-size:15px;margin-top:1px">${t.nombre}</div></div><span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap;background:${t.epp_completo?'rgba(46,204,113,0.15)':'rgba(231,76,60,0.15)'};color:${t.epp_completo?'var(--verde)':'var(--rojo)'};border:1px solid ${t.epp_completo?'rgba(46,204,113,0.4)':'rgba(231,76,60,0.4)'}"><i class="fas fa-hard-hat"></i> ${t.epp_completo?'Completo':'Incompleto'}</span></div><div style="display:flex;flex-wrap:wrap;gap:5px">${todosEpp.map(e=>{const tiene=epps.includes(e);return`<span style="font-size:10px;padding:2px 8px;border-radius:12px;background:${tiene?'rgba(46,204,113,0.12)':'rgba(231,76,60,0.08)'};color:${tiene?'var(--verde)':'rgba(231,76,60,0.7)'};border:1px solid ${tiene?'rgba(46,204,113,0.3)':'rgba(231,76,60,0.2)'};font-weight:600">${tiene?'✔':'✖'} ${e}</span>`;}).join('')}</div></div>`;}).join('')}
+        ${d.tripulacion.map(t=>{
+          const epps=Array.isArray(t.epp_detalle)?t.epp_detalle:[],
+                todosEpp=['Casco','Chaleco reflectivo','Zapatos de seguridad','Lentes','Guantes'],
+                rolLabel={'conductor':'Conductor','reparto':'Reparto','auxiliar':'Auxiliar'}[t.rol]||(t.rol||'—'),
+                rolColor={'conductor':'var(--azul)','reparto':'var(--verde)','auxiliar':'var(--naranja)'}[t.rol]||'var(--gris-400)';
+          return`<div style="background:var(--gris-700);border-radius:8px;padding:8px 10px;border-left:3px solid ${t.epp_completo?'var(--verde)':'var(--rojo)'}">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <div>
+                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${rolColor}">${rolLabel}</div>
+                <div style="font-weight:700;color:var(--gris-100);font-size:15px;margin-top:1px">${t.nombre}</div>
+              </div>
+              <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap;background:${t.epp_completo?'rgba(46,204,113,0.15)':'rgba(231,76,60,0.15)'};color:${t.epp_completo?'var(--verde)':'var(--rojo)'};border:1px solid ${t.epp_completo?'rgba(46,204,113,0.4)':'rgba(231,76,60,0.4)'}">
+                <i class="fas fa-hard-hat"></i> ${t.epp_completo?'Completo':'Incompleto'}
+              </span>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px">
+              ${todosEpp.map(e=>{const tiene=epps.includes(e);return`<span style="font-size:10px;padding:2px 8px;border-radius:12px;background:${tiene?'rgba(46,204,113,0.12)':'rgba(231,76,60,0.08)'};color:${tiene?'var(--verde)':'rgba(231,76,60,0.7)'};border:1px solid ${tiene?'rgba(46,204,113,0.3)':'rgba(231,76,60,0.2)'};font-weight:600">${tiene?'✔':'✖'} ${e}</span>`;}).join('')}
+            </div>
+          </div>`;
+        }).join('')}
       </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.08)">

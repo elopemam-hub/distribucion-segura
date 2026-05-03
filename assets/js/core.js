@@ -147,6 +147,7 @@ function inicializarFormulario() {
 }
 
 function inicializarTripulacion() {
+  auxCount = 0; // reset al inicializar el formulario
   const c=document.getElementById('tripulacionContainer');
   c.innerHTML=`${renderMiembro('conductor','Conductor',true)}${renderMiembro('reparto','Reparto',false)}<div id="auxiliaresContainer"></div>`;
   setupAutocomplete('trip_conductor_nombre','conductor');
@@ -185,7 +186,7 @@ function agregarAuxiliar() {
   </div>
   <div class="trip-fields">
     <div class="trip-nombre-wrap">
-      <input type="text" class="form-control trip-input" id="trip_${rolKey}_nombre" placeholder="Buscar o ingresar nombre" autocomplete="off">
+      <input type="text" class="form-control trip-input" id="trip_${rolKey}_nombre" data-aux-input="${rolKey}" placeholder="Buscar o ingresar nombre" autocomplete="off">
       <div class="autocomplete-box" id="auto_trip_${rolKey}_nombre"></div>
     </div>
     <div class="trip-epp-wrap">
@@ -220,14 +221,26 @@ function setupAutocomplete(inputId, cargoFiltro) {
 }
 function seleccionarPersonal(inputId, nombre) { document.getElementById(inputId).value=nombre; document.getElementById('auto_'+inputId).style.display='none'; }
 function obtenerTripulacion() {
-  const result=[], roles=['conductor','reparto'];
-  document.querySelectorAll('[id^="trip_aux"]').forEach(input => { const m=input.id.match(/trip_(aux\d+)_nombre/); if(m) roles.push(m[1]); });
-  roles.forEach(rol => {
-    const nombreEl=document.getElementById(`trip_${rol}_nombre`);
-    if (!nombreEl||!nombreEl.value.trim()) return;
-    const epps=[]; document.querySelectorAll(`.epp-check[data-rol="${rol}"]:checked`).forEach(ch=>epps.push(ch.value));
-    result.push({ nombre:nombreEl.value.trim(), rol:rol.startsWith('aux')?'auxiliar':rol, epp_completo:epps.length===EPP_ITEMS.length?1:0, epp_detalle:epps });
+  const result = [];
+  const addMiembro = (inputId, rol, rolKey) => {
+    const el = document.getElementById(inputId);
+    if (!el || !el.value.trim()) return;
+    const epps = [...document.querySelectorAll(`.epp-check[data-rol="${rolKey}"]:checked`)].map(c => c.value);
+    result.push({ nombre: el.value.trim(), rol, epp_completo: epps.length === EPP_ITEMS.length ? 1 : 0, epp_detalle: epps });
+  };
+
+  // Miembros fijos
+  addMiembro('trip_conductor_nombre', 'conductor', 'conductor');
+  addMiembro('trip_reparto_nombre',   'reparto',   'reparto');
+
+  // Auxiliares — identificados por data-aux-input (explícito, sin ambigüedad)
+  document.querySelectorAll('[data-aux-input]').forEach(input => {
+    const rolKey = input.dataset.auxInput; // ej. 'aux1', 'aux2'
+    if (!input.value.trim()) return;
+    const epps = [...document.querySelectorAll(`.epp-check[data-rol="${rolKey}"]:checked`)].map(c => c.value);
+    result.push({ nombre: input.value.trim(), rol: 'auxiliar', epp_completo: epps.length === EPP_ITEMS.length ? 1 : 0, epp_detalle: epps });
   });
+
   return result;
 }
 
