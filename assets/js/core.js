@@ -154,18 +154,24 @@ function inicializarTripulacion() {
 }
 
 function renderMiembro(id, rol, requerido) {
-  return `<div style="margin-bottom:14px">
-    <div style="font-size:11px;font-weight:700;color:var(--gris-400);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">
-      <i class="fas fa-hard-hat" style="color:var(--amarillo)"></i> ${rol}</div>
-    <div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start">
-      <div style="position:relative">
-        <input type="text" class="form-control" id="trip_${id}_nombre" placeholder="Escribe para buscar o ingresa nombre libre" ${requerido?'required':''} autocomplete="off">
+  return `<div class="trip-miembro">
+    <div class="trip-rol-label">
+      <i class="fas fa-hard-hat" style="color:var(--amarillo)"></i> ${rol}
+    </div>
+    <div class="trip-fields">
+      <div class="trip-nombre-wrap">
+        <input type="text" class="form-control trip-input" id="trip_${id}_nombre"
+          placeholder="Buscar o ingresar nombre" ${requerido?'required':''} autocomplete="off">
         <div class="autocomplete-box" id="auto_trip_${id}_nombre"></div>
       </div>
-      <div><div style="font-size:11px;color:var(--gris-400);margin-bottom:6px">EPP</div>
-        <div style="display:flex;flex-wrap:wrap;gap:6px" id="epp_${id}">
-          ${EPP_ITEMS.map(e=>`<label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;white-space:nowrap"><input type="checkbox" class="epp-check" data-rol="${id}" value="${e}"> ${e}</label>`).join('')}
-        </div></div></div></div>`;
+      <div class="trip-epp-wrap">
+        <div class="trip-epp-title">EPP</div>
+        <div class="trip-epp-items" id="epp_${id}">
+          ${EPP_ITEMS.map(e=>`<label class="epp-label"><input type="checkbox" class="epp-check" data-rol="${id}" value="${e}"> ${e}</label>`).join('')}
+        </div>
+      </div>
+    </div>
+  </div>`;
 }
 
 let auxCount = 0;
@@ -174,15 +180,21 @@ function agregarAuxiliar() {
   const c=document.getElementById('auxiliaresContainer'), div=document.createElement('div'), rolKey=`aux${auxCount}`;
   div.id=`aux_${auxCount}`; div.style.marginBottom='14px';
   div.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-    <div style="font-size:11px;font-weight:700;color:var(--gris-400);text-transform:uppercase;letter-spacing:1px"><i class="fas fa-hard-hat" style="color:var(--amarillo)"></i> Auxiliar ${auxCount}</div>
-    <button type="button" class="btn btn-danger btn-sm" onclick="document.getElementById('aux_${auxCount}').remove()"><i class="fas fa-times"></i></button></div>
-  <div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start">
-    <div style="position:relative"><input type="text" class="form-control" id="trip_${rolKey}_nombre" placeholder="Escribe para buscar o ingresa nombre libre" autocomplete="off">
-      <div class="autocomplete-box" id="auto_trip_${rolKey}_nombre"></div></div>
-    <div><div style="font-size:11px;color:var(--gris-400);margin-bottom:6px">EPP</div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px" id="epp_${rolKey}">
-        ${EPP_ITEMS.map(e=>`<label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;white-space:nowrap"><input type="checkbox" class="epp-check" data-rol="${rolKey}" value="${e}"> ${e}</label>`).join('')}
-      </div></div></div>`;
+    <div class="trip-rol-label" style="margin:0"><i class="fas fa-hard-hat" style="color:var(--amarillo)"></i> Auxiliar ${auxCount}</div>
+    <button type="button" class="btn btn-danger btn-sm" onclick="document.getElementById('aux_${auxCount}').remove()"><i class="fas fa-times"></i></button>
+  </div>
+  <div class="trip-fields">
+    <div class="trip-nombre-wrap">
+      <input type="text" class="form-control trip-input" id="trip_${rolKey}_nombre" placeholder="Buscar o ingresar nombre" autocomplete="off">
+      <div class="autocomplete-box" id="auto_trip_${rolKey}_nombre"></div>
+    </div>
+    <div class="trip-epp-wrap">
+      <div class="trip-epp-title">EPP</div>
+      <div class="trip-epp-items" id="epp_${rolKey}">
+        ${EPP_ITEMS.map(e=>`<label class="epp-label"><input type="checkbox" class="epp-check" data-rol="${rolKey}" value="${e}"> ${e}</label>`).join('')}
+      </div>
+    </div>
+  </div>`;
   c.appendChild(div);
   setupAutocomplete(`trip_${rolKey}_nombre`,'auxiliar');
 }
