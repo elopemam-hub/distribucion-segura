@@ -1,0 +1,47 @@
+============================================================
+CREDENCIALES INICIALES - DISTRIBUCIÓN SEGURA
+============================================================
+
+⚠️  IMPORTANTE:
+- Guarda este archivo en un lugar seguro (NO lo subas al servidor)
+- Cambia estas contraseñas en cuanto entres por primera vez
+
+------------------------------------------------------------
+USUARIOS DE LA APLICACIÓN
+------------------------------------------------------------
+
+👤 ADMINISTRADOR
+   Usuario:    admin
+   Contraseña: c6088762374d
+   Rol:        Administrador (acceso total + módulo Usuarios)
+
+👤 SUPERVISOR
+   Usuario:    supervisor
+   Contraseña: 0e973bb756b5
+   Rol:        Supervisor (ve todo + gestiona Personal)
+
+👤 INSPECTOR
+   Usuario:    inspector
+   Contraseña: 35cf9937fb6c
+   Rol:        Inspector (solo ve sus propias inspecciones)
+
+------------------------------------------------------------
+CÓMO CAMBIAR UNA CONTRASEÑA (ahora es más fácil)
+------------------------------------------------------------
+
+Opción A - Desde la propia aplicación (recomendado):
+
+1. Entra como "admin"
+2. Menú lateral → Usuarios
+3. Clic en el icono de llave 🔑 junto al usuario
+4. Escribe la nueva contraseña
+
+Opción B - Desde phpMyAdmin (solo si olvidaste la del admin):
+
+1. Abre phpMyAdmin
+2. Selecciona la BD "distribucion_segura"
+3. Entra a la tabla "usuarios"
+4. Genera un hash bcrypt nuevo en https://bcrypt-generator.com/ (10 rounds)
+5. Pega el hash en el campo "password" del usuario admin
+
+============================================================
