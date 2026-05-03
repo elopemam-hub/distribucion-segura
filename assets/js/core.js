@@ -269,7 +269,7 @@ function addFile(file) {
 function removeFile(idx) { filesSeleccionados[idx]=null; const el=document.getElementById(`prev_${idx}`); if(el) el.remove(); actualizarContadorFotos(); }
 function actualizarContadorFotos() {
   const validos=filesSeleccionados.filter(Boolean).length, contador=document.getElementById('contadorFotos');
-  if (contador) { contador.textContent=`${validos} foto${validos!==1?'s':''} seleccionada${validos!==1?'s':''}`; contador.style.color=validos>=3?'var(--verde)':'var(--naranja)'; }
+  if (contador) { contador.textContent=`${validos} foto${validos!==1?'s':''} seleccionada${validos!==1?'s':''}`; contador.style.color=validos>=2?'var(--verde)':'var(--naranja)'; }
 }
 
 function agregarHallazgo() { hallazgosData.push({descripcion:'',criticidad:'media'}); renderHallazgos(); }

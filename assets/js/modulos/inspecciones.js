@@ -12,8 +12,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const btn=document.getElementById('btnGuardar');
     btn.disabled=true; btn.innerHTML='<div class="spinner"></div> Guardando...';
     const archivos=filesSeleccionados.filter(Boolean);
-    if (archivos.length<3) {
-      toast('Se requieren mínimo 3 imágenes de evidencia','error');
+    if (archivos.length<2) {
+      toast('Se requieren mínimo 2 imágenes de evidencia','error');
       btn.disabled=false; btn.innerHTML='<i class="fas fa-save"></i> Guardar Inspección'; return;
     }
     const fd=new FormData();
@@ -71,7 +71,7 @@ function renderTabla(rows) {
       <td class="muted" style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.distrito} · ${r.provincia}</td>
       <td><span class="badge ${bClass}">${pct}%</span></td>
       <td class="muted">${r.inspector_nombre||'—'}</td>
-      <td><span class="badge ${r.num_evidencias>=3?'badge-success':'badge-warning'}"><i class="fas fa-camera"></i> ${r.num_evidencias}</span></td>
+      <td><span class="badge ${r.num_evidencias>=2?'badge-success':'badge-warning'}"><i class="fas fa-camera"></i> ${r.num_evidencias}</span></td>
       <td><div style="display:flex;gap:6px">
         <button class="btn btn-outline btn-sm btn-icon" onclick="verDetalle(${r.id})" title="Ver detalle"><i class="fas fa-eye"></i></button>
         <button class="btn btn-secondary btn-sm btn-icon" onclick="generarPDF(${r.id})" title="PDF"><i class="fas fa-file-pdf"></i></button>
