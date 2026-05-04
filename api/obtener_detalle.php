@@ -8,6 +8,8 @@ require_once __DIR__ . '/../includes/auth.php';
 
 requireLogin();
 header('Content-Type: application/json; charset=utf-8');
+header('Cache-Control: no-store, no-cache, must-revalidate');
+header('Pragma: no-cache');
 
 $id = (int)($_GET['id'] ?? 0);
 if ($id <= 0) jsonResponse(false, 'ID inválido.', null, 400);
@@ -29,7 +31,7 @@ if ($user['rol'] === 'inspector' && $inspeccion['inspector_id'] != $user['id']) 
 }
 
 $tripulacion = db()->fetchAll(
-    "SELECT * FROM tripulacion WHERE inspeccion_id = ? ORDER BY FIELD(rol,'conductor','reparto','auxiliar')",
+    "SELECT * FROM tripulacion WHERE inspeccion_id = ? ORDER BY id ASC",
     [$id]
 );
 
@@ -54,6 +56,7 @@ foreach ($tripulacion as &$m) {
         $m['epp_detalle'] = json_decode($m['epp_detalle'], true);
     }
 }
+unset($m); // CRÍTICO: liberar la referencia para que los siguientes foreach no sobrescriban el último elemento
 
 // Calcular desglose de cumplimiento (recalculado en tiempo real)
 $totalCheck   = count($checklist);
@@ -63,10 +66,10 @@ $pctChecklist = $totalCheck > 0 ? round(($cumplenCheck / $totalCheck) * 100, 2) 
 $totalEppItems = 5;
 $sumaEppPct    = 0;
 $miembros      = 0;
-foreach ($tripulacion as $m) {
-    if (empty(trim($m['nombre'] ?? ''))) continue;
+foreach ($tripulacion as $miembro) {
+    if (empty(trim($miembro['nombre'] ?? ''))) continue;
     $miembros++;
-    $tiene = is_array($m['epp_detalle']) ? count($m['epp_detalle']) : 0;
+    $tiene = is_array($miembro['epp_detalle']) ? count($miembro['epp_detalle']) : 0;
     $sumaEppPct += ($tiene / $totalEppItems) * 100;
 }
 $pctEpp = $miembros > 0 ? round($sumaEppPct / $miembros, 2) : 100;

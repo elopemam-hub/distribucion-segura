@@ -186,7 +186,7 @@ function agregarAuxiliar() {
   </div>
   <div class="trip-fields">
     <div class="trip-nombre-wrap">
-      <input type="text" class="form-control trip-input" id="trip_${rolKey}_nombre" data-aux-input="${rolKey}" placeholder="Buscar o ingresar nombre" autocomplete="off">
+      <input type="text" class="form-control trip-input trip-aux-input" id="trip_${rolKey}_nombre" data-aux-input="${rolKey}" placeholder="Buscar o ingresar nombre" autocomplete="off">
       <div class="autocomplete-box" id="auto_trip_${rolKey}_nombre"></div>
     </div>
     <div class="trip-epp-wrap">
@@ -204,22 +204,43 @@ let autoTimer = null;
 function setupAutocomplete(inputId, cargoFiltro) {
   const input=document.getElementById(inputId), box=document.getElementById('auto_'+inputId);
   if (!input||!box) return;
+  // Timer por-input (no global) para evitar condiciones de carrera entre campos.
+  let localTimer = null;
+  // Token de petición para descartar respuestas obsoletas.
+  let reqToken = 0;
+
+  // Delegación: un solo listener en la caja en lugar de onclick inline en cada item.
+  // Así nunca se pierde el inputId correcto y no hay riesgo de inyección por nombres con caracteres especiales.
+  box.addEventListener('mousedown', (e) => {
+    const item = e.target.closest('.auto-item[data-nombre]');
+    if (!item) return;
+    e.preventDefault(); // evita que el blur del input dispare antes
+    seleccionarPersonal(inputId, item.dataset.nombre);
+  });
+
   input.addEventListener('input', () => {
-    const q=input.value.trim(); clearTimeout(autoTimer);
+    const q=input.value.trim(); clearTimeout(localTimer);
     if (q.length<2) { box.innerHTML=''; box.style.display='none'; return; }
-    autoTimer=setTimeout(async () => {
+    const myToken = ++reqToken;
+    localTimer=setTimeout(async () => {
       try {
         const r=await fetch(`api/personal.php?action=buscar&q=${encodeURIComponent(q)}&cargo=${encodeURIComponent(cargoFiltro)}`);
         const data=await r.json();
+        // Si llegó otra petición después, descartar este resultado.
+        if (myToken !== reqToken) return;
+        // Si el usuario borró el contenido mientras esperábamos, no mostrar nada.
+        if (input.value.trim().length < 2) { box.style.display='none'; return; }
         if (!data.success||!data.data.length) { box.innerHTML='<div class="auto-item auto-empty">Sin resultados · se guardará como texto libre</div>'; box.style.display='block'; return; }
-        box.innerHTML=data.data.map(p=>`<div class="auto-item" onclick="seleccionarPersonal('${inputId}','${p.nombre.replace(/'/g,"\\'")}')"><div style="font-weight:600">${p.nombre}</div><div style="font-size:11px;color:var(--gris-400)">DNI ${p.dni} · ${p.cargo}${p.telefono?' · '+p.telefono:''}</div></div>`).join('');
+        const escAttr = s => String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        const escTxt  = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        box.innerHTML=data.data.map(p=>`<div class="auto-item" data-nombre="${escAttr(p.nombre)}"><div style="font-weight:600">${escTxt(p.nombre)}</div><div style="font-size:11px;color:var(--gris-400)">DNI ${escTxt(p.dni)} · ${escTxt(p.cargo)}${p.telefono?' · '+escTxt(p.telefono):''}</div></div>`).join('');
         box.style.display='block';
       } catch { box.style.display='none'; }
     }, 250);
   });
   input.addEventListener('blur', () => setTimeout(() => { box.style.display='none'; }, 200));
 }
-function seleccionarPersonal(inputId, nombre) { document.getElementById(inputId).value=nombre; document.getElementById('auto_'+inputId).style.display='none'; }
+function seleccionarPersonal(inputId, nombre) { const el=document.getElementById(inputId); if(el){ el.value=nombre; el.dispatchEvent(new Event('change',{bubbles:true})); } const bx=document.getElementById('auto_'+inputId); if(bx) bx.style.display='none'; }
 function obtenerTripulacion() {
   const result = [];
   const addMiembro = (inputId, rol, rolKey) => {
@@ -233,13 +254,20 @@ function obtenerTripulacion() {
   addMiembro('trip_conductor_nombre', 'conductor', 'conductor');
   addMiembro('trip_reparto_nombre',   'reparto',   'reparto');
 
-  // Auxiliares — identificados por data-aux-input (explícito, sin ambigüedad)
-  document.querySelectorAll('[data-aux-input]').forEach(input => {
-    const rolKey = input.dataset.auxInput; // ej. 'aux1', 'aux2'
-    if (!input.value.trim()) return;
-    const epps = [...document.querySelectorAll(`.epp-check[data-rol="${rolKey}"]:checked`)].map(c => c.value);
-    result.push({ nombre: input.value.trim(), rol: 'auxiliar', epp_completo: epps.length === EPP_ITEMS.length ? 1 : 0, epp_detalle: epps });
-  });
+  // Auxiliares — recorridos dentro de #auxiliaresContainer en orden del DOM,
+  // así garantizamos que cada input se lee SOLO UNA VEZ y por su id propio.
+  const cont = document.getElementById('auxiliaresContainer');
+  if (cont) {
+    cont.querySelectorAll('input.trip-aux-input').forEach(input => {
+      const nombre = (input.value || '').trim();
+      if (!nombre) return;
+      // extraer rolKey del id (trip_aux1_nombre → aux1) o del data attribute
+      const rolKey = input.dataset.auxInput || (input.id.match(/trip_(aux\d+)_nombre/)?.[1] ?? '');
+      if (!rolKey) return;
+      const epps = [...document.querySelectorAll(`.epp-check[data-rol="${rolKey}"]:checked`)].map(c => c.value);
+      result.push({ nombre, rol: 'auxiliar', epp_completo: epps.length === EPP_ITEMS.length ? 1 : 0, epp_detalle: epps });
+    });
+  }
 
   return result;
 }

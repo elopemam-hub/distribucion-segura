@@ -52,6 +52,18 @@ $resultado = $totalItems > 0 ? round(($itemsCumplen / $totalItems) * 100, 2) : 0
 
 // --- Tripulación ---
 $tripulacion = json_decode($_POST['tripulacion'] ?? '[]', true);
+if (!is_array($tripulacion)) $tripulacion = [];
+
+// Validación: ningún miembro puede repetirse (mismo nombre)
+$nombresNorm = [];
+foreach ($tripulacion as $m) {
+    $n = mb_strtoupper(preg_replace('/\s+/u', ' ', trim($m['nombre'] ?? '')), 'UTF-8');
+    if ($n === '') continue;
+    if (in_array($n, $nombresNorm, true)) {
+        jsonResponse(false, "El miembro \"$n\" está repetido en la tripulación. Cada persona debe registrarse una sola vez.", null, 422);
+    }
+    $nombresNorm[] = $n;
+}
 
 // --- Hallazgos ---
 $hallazgos = json_decode($_POST['hallazgos'] ?? '[]', true);
@@ -70,17 +82,26 @@ try {
     $inspeccionId = db()->lastInsertId();
 
     // 2. Insertar tripulación
+    // Rol asignado por POSICIÓN (no por lo que envíe el cliente):
+    // Posición 1 → conductor, posición 2 → reparto, posición 3+ → auxiliar
+    $posicion = 0;
     foreach ($tripulacion as $miembro) {
         $nombre = trim($miembro['nombre'] ?? '');
-        $rol    = $miembro['rol'] ?? 'auxiliar';
-        $epp    = !empty($miembro['epp_completo']) ? 1 : 0;
+        if (empty($nombre)) continue;
+        $posicion++;
+
+        $rol = match(true) {
+            $posicion === 1 => 'conductor',
+            $posicion === 2 => 'reparto',
+            default         => 'auxiliar',
+        };
+
+        $epp         = !empty($miembro['epp_completo']) ? 1 : 0;
         $epp_detalle = json_encode($miembro['epp_detalle'] ?? []);
-        if (!empty($nombre)) {
-            db()->query(
-                "INSERT INTO tripulacion (inspeccion_id, nombre, rol, epp_completo, epp_detalle) VALUES (?, ?, ?, ?, ?)",
-                [$inspeccionId, $nombre, $rol, $epp, $epp_detalle]
-            );
-        }
+        db()->query(
+            "INSERT INTO tripulacion (inspeccion_id, nombre, rol, epp_completo, epp_detalle) VALUES (?, ?, ?, ?, ?)",
+            [$inspeccionId, $nombre, $rol, $epp, $epp_detalle]
+        );
     }
 
     // 3. Insertar checklist

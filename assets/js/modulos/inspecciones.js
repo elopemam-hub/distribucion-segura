@@ -16,6 +16,14 @@ document.addEventListener('DOMContentLoaded', () => {
       toast('Se requieren mínimo 2 imágenes de evidencia','error');
       btn.disabled=false; btn.innerHTML='<i class="fas fa-save"></i> Guardar Inspección'; return;
     }
+    // Validar duplicados de nombres en la tripulación
+    const tripData = obtenerTripulacion();
+    const nombresNorm = tripData.map(t => t.nombre.trim().toUpperCase().replace(/\s+/g,' '));
+    const duplicado = nombresNorm.find((n,i) => n && nombresNorm.indexOf(n) !== i);
+    if (duplicado) {
+      toast(`No se puede guardar: "${duplicado}" está repetido en la tripulación. Cada miembro debe ser una persona distinta.`,'error',6000);
+      btn.disabled=false; btn.innerHTML='<i class="fas fa-save"></i> Guardar Inspección'; return;
+    }
     const fd=new FormData();
     fd.append('csrf_token', CSRF_TOKEN);
     fd.append('unidad',       document.getElementById('f_unidad').value.toUpperCase());
@@ -29,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
     fd.append('observaciones',document.getElementById('f_observaciones').value);
     fd.append('latitud',      document.getElementById('f_latitud').value);
     fd.append('longitud',     document.getElementById('f_longitud').value);
-    fd.append('tripulacion',  JSON.stringify(obtenerTripulacion()));
+    fd.append('tripulacion',  JSON.stringify(tripData));
     fd.append('checklist',    JSON.stringify(obtenerChecklist()));
     fd.append('hallazgos',    JSON.stringify(hallazgosData.filter(h=>h.descripcion.trim())));
     if (firmaHasContent) fd.append('firma_digital', document.getElementById('firmaCanvas').toDataURL());
@@ -97,7 +105,7 @@ function limpiarFiltros() {
 async function verDetalle(id) {
   document.getElementById('modalDetalleBody').innerHTML='<div style="text-align:center;padding:48px"><div class="spinner"></div></div>';
   abrirModal('modalDetalle');
-  const resp=await fetch(`api/obtener_detalle.php?id=${id}`);
+  const resp=await fetch(`api/obtener_detalle.php?id=${id}&_t=${Date.now()}`);
   const data=await resp.json();
   if (!data.success) { document.getElementById('modalDetalleBody').innerHTML='<p>Error</p>'; return; }
   const d=data.data, i=d.inspeccion, pct=parseFloat(i.resultado)||0, colorPct=pct>=80?'var(--verde)':pct>=60?'var(--naranja)':'var(--rojo)';
@@ -112,17 +120,17 @@ async function verDetalle(id) {
           <span><i class="fas fa-map-marker-alt" style="color:var(--amarillo);margin-right:4px"></i>${i.distrito}, ${i.provincia}</span>
         </div>
         <div style="color:var(--gris-400);font-size:11px;margin-top:3px"><i class="fas fa-road" style="margin-right:4px;color:var(--amarillo)"></i>${i.direccion}</div>
-        <div style="margin-top:10px;background:rgba(0,0,0,0.3);border-radius:12px;padding:10px 14px;border:2px solid ${colorPct}30;display:flex;align-items:center;gap:14px">
+        <div style="margin-top:10px;background:#F5F7FA;border-radius:8px;padding:12px 16px;border:1px solid #E6E9ED;display:flex;align-items:center;gap:16px">
           <div style="text-align:center;flex-shrink:0">
-            <div style="font-family:var(--font-display);font-size:32px;font-weight:900;color:${colorPct};line-height:1">${pct}%</div>
-            <div style="font-size:9px;color:var(--gris-400);text-transform:uppercase;letter-spacing:1px;margin-top:1px">Cumplimiento</div>
-            <div style="margin-top:5px"><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:${pct>=80?'rgba(46,204,113,0.2)':pct>=60?'rgba(243,156,18,0.2)':'rgba(231,76,60,0.2)'};color:${colorPct};border:1px solid ${colorPct}50">${pct>=80?'✔ APROBADO':pct>=60?'⚠ EN OBSERVACIÓN':'✖ DESAPROBADO'}</span></div>
+            <div style="font-family:var(--font-display);font-size:36px;font-weight:900;color:${colorPct};line-height:1">${pct}%</div>
+            <div style="font-size:9px;color:#98A6AD;text-transform:uppercase;letter-spacing:1px;margin-top:2px">Cumplimiento</div>
+            <div style="margin-top:6px"><span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:${pct>=80?'rgba(26,187,156,0.12)':pct>=60?'rgba(243,156,18,0.12)':'rgba(231,76,60,0.12)'};color:${colorPct};border:1px solid ${colorPct}">${pct>=80?'✔ APROBADO':pct>=60?'⚠ EN OBSERVACIÓN':'✖ DESAPROBADO'}</span></div>
           </div>
           <div style="flex:1;min-width:0">${(()=>{
             const pctCh=Math.min(100,Math.round(parseFloat(i.pct_checklist)||0)), cCh=pctCh>=80?'var(--verde)':pctCh>=60?'var(--naranja)':'var(--rojo)';
             const pctEp=Math.min(100,Math.round(parseFloat(i.pct_epp)||0)), cEp=pctEp>=80?'var(--verde)':pctEp>=60?'var(--naranja)':'var(--rojo)';
-            return `<div style="margin-bottom:7px"><div style="display:flex;justify-content:space-between;margin-bottom:2px"><span style="font-size:10px;color:var(--gris-300)"><i class="fas fa-list-check" style="color:var(--amarillo);margin-right:3px"></i>Checklist <span style="color:var(--gris-500);font-size:9px">(70%)</span></span><span style="font-size:10px;font-weight:700;color:${cCh}">${pctCh}%</span></div><div style="height:4px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden"><div style="height:100%;width:${pctCh}%;background:${cCh};border-radius:3px"></div></div></div>
-            <div><div style="display:flex;justify-content:space-between;margin-bottom:2px"><span style="font-size:10px;color:var(--gris-300)"><i class="fas fa-hard-hat" style="color:var(--amarillo);margin-right:3px"></i>EPP <span style="color:var(--gris-500);font-size:9px">(30%)</span></span><span style="font-size:10px;font-weight:700;color:${cEp}">${pctEp}%</span></div><div style="height:4px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden"><div style="height:100%;width:${pctEp}%;background:${cEp};border-radius:3px"></div></div></div>`;
+            return `<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:11px;color:#73879C;font-weight:600"><i class="fas fa-list-check" style="color:var(--primary);margin-right:4px"></i>Checklist <span style="color:#98A6AD;font-size:10px">(70%)</span></span><span style="font-size:11px;font-weight:700;color:${cCh}">${pctCh}%</span></div><div style="height:6px;background:#E6E9ED;border-radius:3px;overflow:hidden"><div style="height:100%;width:${pctCh}%;background:${cCh};border-radius:3px;transition:width .5s"></div></div></div>
+            <div><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:11px;color:#73879C;font-weight:600"><i class="fas fa-hard-hat" style="color:var(--primary);margin-right:4px"></i>EPP <span style="color:#98A6AD;font-size:10px">(30%)</span></span><span style="font-size:11px;font-weight:700;color:${cEp}">${pctEp}%</span></div><div style="height:6px;background:#E6E9ED;border-radius:3px;overflow:hidden"><div style="height:100%;width:${pctEp}%;background:${cEp};border-radius:3px;transition:width .5s"></div></div></div>`;
           })()}</div>
         </div>
       </div>
@@ -131,11 +139,23 @@ async function verDetalle(id) {
     <div style="margin-bottom:14px">
       <div style="font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--amarillo);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px;display:flex;align-items:center;gap:8px"><i class="fas fa-users"></i> Tripulación y EPP</div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px">
-        ${d.tripulacion.map(t=>{
+        ${(()=>{
+          // Reasignar rol por POSICIÓN para mostrar siempre lo registrado correctamente,
+          // independientemente de cómo esté guardado el campo `rol` en la BD (datos legacy).
+          // Posición 1 → conductor, 2 → reparto, 3+ → auxiliar
+          let auxN=0;
+          return d.tripulacion.map((t,idx)=>{
+            const rolReal = idx===0?'conductor':idx===1?'reparto':'auxiliar';
+            if(rolReal==='auxiliar') auxN++;
+            const totalAux = d.tripulacion.length - 2;
+            return {...t, _rolReal:rolReal, _auxNum:auxN, _totalAux:totalAux};
+          });
+        })().map(t=>{
           const epps=Array.isArray(t.epp_detalle)?t.epp_detalle:[],
                 todosEpp=['Casco','Chaleco reflectivo','Zapatos de seguridad','Lentes','Guantes'],
-                rolLabel={'conductor':'Conductor','reparto':'Reparto','auxiliar':'Auxiliar'}[t.rol]||(t.rol||'—'),
-                rolColor={'conductor':'var(--azul)','reparto':'var(--verde)','auxiliar':'var(--naranja)'}[t.rol]||'var(--gris-400)';
+                rolLabelBase={'conductor':'Conductor','reparto':'Reparto','auxiliar':'Auxiliar'}[t._rolReal],
+                rolLabel=t._rolReal==='auxiliar'&&t._totalAux>1?`${rolLabelBase} ${t._auxNum}`:rolLabelBase,
+                rolColor={'conductor':'var(--azul)','reparto':'var(--verde)','auxiliar':'var(--naranja)'}[t._rolReal];
           return`<div style="background:var(--gris-700);border-radius:8px;padding:8px 10px;border-left:3px solid ${t.epp_completo?'var(--verde)':'var(--rojo)'}">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
               <div>

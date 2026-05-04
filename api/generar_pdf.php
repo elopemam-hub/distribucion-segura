@@ -8,7 +8,7 @@ if ($id <= 0) die('ID inválido');
 $inspeccion = db()->fetchOne("SELECT i.*, u.nombre as inspector_nombre FROM inspecciones i LEFT JOIN usuarios u ON u.id = i.inspector_id WHERE i.id = ?", [$id]);
 if (!$inspeccion) die('No encontrada');
 
-$tripulacion = db()->fetchAll("SELECT * FROM tripulacion WHERE inspeccion_id = ?", [$id]);
+$tripulacion = db()->fetchAll("SELECT * FROM tripulacion WHERE inspeccion_id = ? ORDER BY id ASC", [$id]);
 $checklist   = db()->fetchAll("SELECT * FROM checklist WHERE inspeccion_id = ?", [$id]);
 $evidencias  = db()->fetchAll("SELECT * FROM evidencias WHERE inspeccion_id = ?", [$id]);
 $hallazgos   = db()->fetchAll("SELECT * FROM hallazgos WHERE inspeccion_id = ?", [$id]);
@@ -16,6 +16,18 @@ $hallazgos   = db()->fetchAll("SELECT * FROM hallazgos WHERE inspeccion_id = ?",
 foreach ($tripulacion as &$t) {
     $t['epp_detalle'] = !empty($t['epp_detalle']) ? json_decode($t['epp_detalle'], true) : [];
 }
+unset($t);
+
+// Reasignar rol por POSICIÓN para visualización (corrige datos legacy con roles erróneos en BD).
+// Posición 1 → conductor, 2 → reparto, 3+ → auxiliar (numerado si hay varios).
+$_totalAux = max(0, count($tripulacion) - 2);
+$_auxN = 0;
+foreach ($tripulacion as $i => &$t) {
+    if ($i === 0)      { $t['rol_visual'] = 'Conductor'; }
+    elseif ($i === 1)  { $t['rol_visual'] = 'Reparto'; }
+    else               { $_auxN++; $t['rol_visual'] = $_totalAux > 1 ? "Auxiliar $_auxN" : 'Auxiliar'; }
+}
+unset($t);
 
 $totalCheck   = count($checklist);
 $cumplen      = array_sum(array_column($checklist, 'estado'));
@@ -237,7 +249,7 @@ html, body {
         ?>
           <td style="width:<?= round(100/count($tripulacion)) ?>%">
             <div class="trip-card <?= $cls ?>">
-              <div class="t-rol"><?= htmlspecialchars($t['rol']) ?></div>
+              <div class="t-rol"><?= htmlspecialchars($t['rol_visual']) ?></div>
               <div class="t-nom"><?= htmlspecialchars($t['nombre']) ?></div>
               <span class="t-epp <?= $cls ?>"><?= $cls==='ok'?'✔ EPP Completo':'✖ EPP Incompleto' ?></span>
               <div class="chips">
