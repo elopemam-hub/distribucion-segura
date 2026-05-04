@@ -639,6 +639,10 @@ ALTER TABLE `permisos`
 --
 ALTER TABLE `tripulacion`
   ADD CONSTRAINT `tripulacion_ibfk_1` FOREIGN KEY (`inspeccion_id`) REFERENCES `inspecciones` (`id`) ON DELETE CASCADE;
+-- Columna Fecha de Nacimiento en personal
+ALTER TABLE personal
+  ADD COLUMN IF NOT EXISTS fecha_nacimiento DATE NULL AFTER empresa;
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

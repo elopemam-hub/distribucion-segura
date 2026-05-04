@@ -636,6 +636,7 @@ $csrf = csrfToken();
               <tr>
                 <th>Foto</th>
                 <th>DNI</th>
+                <th>F. Nacimiento</th>
                 <th>Nombre</th>
                 <th>Cargo</th>
                 <th>Empresa</th>
@@ -652,7 +653,7 @@ $csrf = csrfToken();
               </tr>
             </thead>
             <tbody id="tablaPersonalBody">
-              <tr><td colspan="15" style="text-align:center;padding:32px;color:var(--gris-400)"><div class="spinner"></div> Cargando...</td></tr>
+              <tr><td colspan="16" style="text-align:center;padding:32px;color:var(--gris-400)"><div class="spinner"></div> Cargando...</td></tr>
             </tbody>
           </table>
         </div>
@@ -1314,6 +1315,10 @@ $csrf = csrfToken();
             <input type="text" class="form-control" id="personal_telefono" maxlength="20">
           </div>
           <div class="form-group">
+            <label class="form-label">Fecha de Nacimiento</label>
+            <input type="date" class="form-control" id="personal_fecha_nacimiento">
+          </div>
+          <div class="form-group">
             <label class="form-label">Fecha de ingreso</label>
             <input type="date" class="form-control" id="personal_fecha_ingreso">
           </div>
@@ -1697,9 +1702,9 @@ $csrf = csrfToken();
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <!-- JS separado por módulo -->
-<script src="assets/js/core.js?v=<?= filemtime(__DIR__.'/assets/js/core.js') ?>"></script>
-<script src="assets/js/modulos/dashboard.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/dashboard.js') ?>"></script>
-<script src="assets/js/modulos/inspecciones.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/inspecciones.js') ?>"></script>
+<script src="assets/js/core.js?v=<?= filemtime(__DIR__.'/assets/js/core.js') ?>&r=3"></script>
+<script src="assets/js/modulos/dashboard.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/dashboard.js') ?>&r=3"></script>
+<script src="assets/js/modulos/inspecciones.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/inspecciones.js') ?>&r=3"></script>
 <script src="assets/js/modulos/personal.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/personal.js') ?>"></script>
 <script src="assets/js/modulos/amonestaciones.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/amonestaciones.js') ?>"></script>
 <script src="assets/js/modulos/usuarios.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/usuarios.js') ?>"></script>

@@ -42,13 +42,15 @@ function badgeDias(dias) {
 
 function renderPersonalTabla() {
   const tb=document.getElementById('tablaPersonalBody');
-  if (!personalData.length) { tb.innerHTML='<tr><td colspan="15" style="text-align:center;padding:32px;color:var(--gris-400)">Sin resultados</td></tr>'; return; }
+  if (!personalData.length) { tb.innerHTML='<tr><td colspan="16" style="text-align:center;padding:32px;color:var(--gris-400)">Sin resultados</td></tr>'; return; }
   tb.innerHTML=personalData.map(p=>{
     const diasDni=p.dias_vencer_dni!==null?parseInt(p.dias_vencer_dni):null;
     const diasBrevete=p.dias_vencer_brevete!==null?parseInt(p.dias_vencer_brevete):null;
     return`<tr>
       <td>${p.foto?`<img src="uploads/${p.foto}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;cursor:pointer" onclick="verFotoLightbox('uploads/${p.foto}')">`:`<div style="width:40px;height:40px;border-radius:50%;background:var(--gris-700);display:flex;align-items:center;justify-content:center;color:var(--gris-400)"><i class="fas fa-user"></i></div>`}</td>
-      <td>${p.dni}</td><td><strong>${escapeHtml(p.nombre)}</strong></td>
+      <td>${p.dni}</td>
+      <td style="font-size:12px">${p.fecha_nacimiento||'—'}</td>
+      <td><strong>${escapeHtml(p.nombre)}</strong></td>
       <td><span class="badge">${p.cargo}</span></td>
       <td style="font-size:12px">${escapeHtml(p.empresa||'—')}</td>
       <td>${p.telefono||'—'}</td>
@@ -85,6 +87,7 @@ async function editarPersonal(id) {
   document.getElementById('personal_cargo').value=p.cargo;
   document.getElementById('personal_empresa').value=p.empresa||'';
   document.getElementById('personal_telefono').value=p.telefono||'';
+  document.getElementById('personal_fecha_nacimiento').value=p.fecha_nacimiento||'';
   document.getElementById('personal_fecha_ingreso').value=p.fecha_ingreso||'';
   document.getElementById('personal_dni_vencimiento').value=p.dni_vencimiento||'';
   document.getElementById('personal_num_licencia').value=p.num_licencia||'';
@@ -117,6 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
     fd.append('cargo',                document.getElementById('personal_cargo').value);
     fd.append('empresa',              document.getElementById('personal_empresa').value.trim());
     fd.append('telefono',             document.getElementById('personal_telefono').value.trim());
+    fd.append('fecha_nacimiento',     document.getElementById('personal_fecha_nacimiento').value);
     fd.append('fecha_ingreso',        document.getElementById('personal_fecha_ingreso').value);
     fd.append('dni_vencimiento',      document.getElementById('personal_dni_vencimiento').value);
     fd.append('num_licencia',         document.getElementById('personal_num_licencia').value.trim());

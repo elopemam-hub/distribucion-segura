@@ -121,6 +121,7 @@ function guardar() {
     $cargo          = $_POST['cargo'] ?? 'reparto';
     $empresa        = trim($_POST['empresa'] ?? '');
     $tel            = trim($_POST['telefono'] ?? '');
+    $fechaNac       = $_POST['fecha_nacimiento'] ?? null;
     $fechaIng       = $_POST['fecha_ingreso'] ?? null;
     $dniVenc        = $_POST['dni_vencimiento'] ?? null;
     $numLicencia    = trim($_POST['num_licencia'] ?? '');
@@ -149,15 +150,15 @@ function guardar() {
         // UPDATE
         $sql = "UPDATE personal SET
                     dni=?, nombre=?, cargo=?, empresa=?, telefono=?,
-                    fecha_ingreso=?, dni_vencimiento=?, num_licencia=?,
-                    categoria_licencia=?, vencimiento_brevete=?,
+                    fecha_nacimiento=?, fecha_ingreso=?, dni_vencimiento=?,
+                    num_licencia=?, categoria_licencia=?, vencimiento_brevete=?,
                     observaciones=?, activo=?"
              . ($fotoNombre ? ", foto=?" : "")
              . " WHERE id=?";
         $params = [
             $dni, $nombre, $cargo, $empresa ?: null, $tel ?: null,
-            $fechaIng ?: null, $dniVenc ?: null, $numLicencia ?: null,
-            $catLicencia ?: null, $vencBrevete ?: null,
+            $fechaNac ?: null, $fechaIng ?: null, $dniVenc ?: null,
+            $numLicencia ?: null, $catLicencia ?: null, $vencBrevete ?: null,
             $obs ?: null, $activo
         ];
         if ($fotoNombre) $params[] = $fotoNombre;
@@ -168,14 +169,14 @@ function guardar() {
         // INSERT
         db()->query(
             "INSERT INTO personal
-                (dni, nombre, cargo, empresa, telefono, fecha_ingreso,
-                 dni_vencimiento, num_licencia, categoria_licencia,
+                (dni, nombre, cargo, empresa, telefono, fecha_nacimiento,
+                 fecha_ingreso, dni_vencimiento, num_licencia, categoria_licencia,
                  vencimiento_brevete, foto, observaciones, activo)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 $dni, $nombre, $cargo, $empresa ?: null, $tel ?: null,
-                $fechaIng ?: null, $dniVenc ?: null, $numLicencia ?: null,
-                $catLicencia ?: null, $vencBrevete ?: null,
+                $fechaNac ?: null, $fechaIng ?: null, $dniVenc ?: null,
+                $numLicencia ?: null, $catLicencia ?: null, $vencBrevete ?: null,
                 $fotoNombre, $obs ?: null, $activo
             ]
         );
