@@ -842,6 +842,7 @@ $csrf = csrfToken();
               <th>Nombres y apellidos</th>
               <th>Tipo de sanción</th>
               <th>Reincidente</th>
+              <th>Estado</th>
               <th>Plan de acciones</th>
               <th>Fecha cierre</th>
               <th>Comentarios</th>
@@ -849,7 +850,7 @@ $csrf = csrfToken();
               <th>Acciones</th>
             </tr></thead>
             <tbody id="tbodyTelemetria">
-              <tr><td colspan="14" style="text-align:center;padding:32px;color:var(--gris-400)"><div class="spinner"></div></td></tr>
+              <tr><td colspan="15" style="text-align:center;padding:32px;color:var(--gris-400)"><div class="spinner"></div></td></tr>
             </tbody>
           </table>
         </div>
@@ -1208,10 +1209,11 @@ $csrf = csrfToken();
               <label class="form-label">Tipo de sanción (nivel)</label>
               <select class="form-control" id="amon_tipo_sancion_nivel">
                 <option value="">— Selecciona —</option>
-                <option>1era Vez; Amonestación escrita</option>
-                <option>2da Vez; Suspensión 2 días</option>
-                <option>3ra Vez; Suspensión 3 días</option>
-                <option>4ta Vez; Desvinculación</option>
+                <option>1ERA VEZ</option>
+                <option>2DA VEZ</option>
+                <option>3ERA VEZ</option>
+                <option>4TA VEZ</option>
+                <option>5TA VEZ</option>
               </select>
             </div>
             <div class="form-group" style="display:flex;align-items:center;gap:10px;padding-top:22px">

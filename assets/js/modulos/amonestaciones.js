@@ -88,6 +88,19 @@ function amonDocs(a) {
   return html||'<span style="color:var(--gris-400);font-size:11px">—</span>';
 }
 
+function nivelSancionBadge(nivel) {
+  if (!nivel) return '<span style="color:var(--gris-400)">—</span>';
+  const map = {
+    '1ERA VEZ': { bg:'#D1FAE5', color:'#065F46' },
+    '2DA VEZ':  { bg:'#DBEAFE', color:'#1E40AF' },
+    '3ERA VEZ': { bg:'#FEF3C7', color:'#92400E' },
+    '4TA VEZ':  { bg:'#FED7AA', color:'#9A3412' },
+    '5TA VEZ':  { bg:'#FECACA', color:'#991B1B' },
+  };
+  const cfg = map[nivel.toUpperCase()] || { bg:'#E2E8F0', color:'#475569' };
+  return `<span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;background:${cfg.bg};color:${cfg.color};white-space:nowrap">${escapeHtml(nivel)}</span>`;
+}
+
 function amonReglaBadge(regla) {
   if(!regla)return'<span style="color:var(--gris-400)">—</span>';
   const r=regla.toLowerCase(); let bg='#E2E8F0',color='#475569';
@@ -130,7 +143,7 @@ function renderTablaAmon(tipo) {
       <td><div style="display:flex;gap:4px"><button class="btn btn-outline btn-sm btn-icon" onclick="editarAmon(${a.id})" title="Editar"><i class="fas fa-edit"></i></button>${USER_ROL==='administrador'?`<button class="btn btn-danger btn-sm btn-icon" onclick="eliminarAmon(${a.id})" title="Eliminar"><i class="fas fa-trash"></i></button>`:''}</div></td>
     </tr>`).join(''):vacio;
   } else if (tipo==='telemetria') {
-    document.getElementById('tbodyTelemetria').innerHTML=filas.length?filas.map(a=>`<tr>
+    document.getElementById('tbodyTelemetria').innerHTML=filas.length?filas.map(a=>`<tr style="${a.reincidente==1?'background:rgba(220,38,38,0.04);border-left:3px solid #EF4444;':''}">
       <td style="color:var(--gris-400);font-size:12px;font-weight:600">#${a.id}</td>
       <td style="font-size:12px">${a.fecha}</td>
       <td><span class="badge" style="font-weight:800;background:var(--primary-light);color:var(--primary)">${escapeHtml(a.unidad||'—')}</span></td>
@@ -138,14 +151,15 @@ function renderTablaAmon(tipo) {
       <td>${a.imagen_evento?`<img src="uploads/${a.imagen_evento}" style="width:72px;height:48px;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid var(--gris-500)" onclick="verFotoLightbox('uploads/${a.imagen_evento}')">`:'<span style="color:var(--gris-400);font-size:11px">—</span>'}</td>
       <td>${a.tipo_sancion?`<span class="badge badge-info" style="font-size:11px">${escapeHtml(a.tipo_sancion)}</span>`:'—'}</td>
       <td><strong style="font-size:13px">${escapeHtml(a.personal_nombre)}</strong><br><span style="font-size:11px;color:var(--gris-400)">${escapeHtml(a.personal_cargo||'')}</span></td>
-      <td>${a.tipo_sancion_nivel?`<span class="badge badge-success" style="font-size:11px;white-space:nowrap">${escapeHtml(a.tipo_sancion_nivel)}</span>`:'—'}</td>
-      <td style="text-align:center">${a.reincidente==1?'<span class="badge badge-danger">SÍ</span>':'<span class="badge badge-success">NO</span>'}</td>
+      <td>${nivelSancionBadge(a.tipo_sancion_nivel)}</td>
+      <td style="text-align:center">${a.reincidente==1?'<span class="badge badge-danger" style="font-weight:700">&#9888; SÍ</span>':'<span class="badge badge-success">NO</span>'}</td>
+      <td>${AMON_ESTADO_BADGE[a.estado]||'<span style="color:var(--gris-400)">—</span>'}</td>
       <td style="font-size:11px;color:var(--gris-300);max-width:160px;line-height:1.6">${escapeHtml(a.plan_acciones||'—')}</td>
       <td style="font-size:12px">${a.fecha_cierre||'—'}</td>
       <td style="font-size:12px;color:var(--gris-300);max-width:130px">${escapeHtml(a.observaciones||'—')}</td>
       <td>${amonDocs(a)}</td>
       <td><div style="display:flex;gap:4px"><button class="btn btn-outline btn-sm btn-icon" onclick="editarAmon(${a.id})" title="Editar"><i class="fas fa-edit"></i></button>${USER_ROL==='administrador'?`<button class="btn btn-danger btn-sm btn-icon" onclick="eliminarAmon(${a.id})" title="Eliminar"><i class="fas fa-trash"></i></button>`:''}</div></td>
-    </tr>`).join(''):`<tr><td colspan="14" style="text-align:center;padding:32px;color:var(--gris-400)">Sin registros</td></tr>`;
+    </tr>`).join(''):`<tr><td colspan="15" style="text-align:center;padding:32px;color:var(--gris-400)">Sin registros</td></tr>`;
   }
 }
 
