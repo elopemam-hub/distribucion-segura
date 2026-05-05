@@ -845,10 +845,11 @@ $csrf = csrfToken();
               <th>Plan de acciones</th>
               <th>Fecha cierre</th>
               <th>Comentarios</th>
+              <th>Docs</th>
               <th>Acciones</th>
             </tr></thead>
             <tbody id="tbodyTelemetria">
-              <tr><td colspan="13" style="text-align:center;padding:32px;color:var(--gris-400)"><div class="spinner"></div></td></tr>
+              <tr><td colspan="14" style="text-align:center;padding:32px;color:var(--gris-400)"><div class="spinner"></div></td></tr>
             </tbody>
           </table>
         </div>

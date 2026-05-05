@@ -143,8 +143,9 @@ function renderTablaAmon(tipo) {
       <td style="font-size:11px;color:var(--gris-300);max-width:160px;line-height:1.6">${escapeHtml(a.plan_acciones||'—')}</td>
       <td style="font-size:12px">${a.fecha_cierre||'—'}</td>
       <td style="font-size:12px;color:var(--gris-300);max-width:130px">${escapeHtml(a.observaciones||'—')}</td>
+      <td>${amonDocs(a)}</td>
       <td><div style="display:flex;gap:4px"><button class="btn btn-outline btn-sm btn-icon" onclick="editarAmon(${a.id})" title="Editar"><i class="fas fa-edit"></i></button>${USER_ROL==='administrador'?`<button class="btn btn-danger btn-sm btn-icon" onclick="eliminarAmon(${a.id})" title="Eliminar"><i class="fas fa-trash"></i></button>`:''}</div></td>
-    </tr>`).join(''):`<tr><td colspan="13" style="text-align:center;padding:32px;color:var(--gris-400)">Sin registros</td></tr>`;
+    </tr>`).join(''):`<tr><td colspan="14" style="text-align:center;padding:32px;color:var(--gris-400)">Sin registros</td></tr>`;
   }
 }
 
