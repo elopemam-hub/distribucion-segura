@@ -802,11 +802,11 @@ $csrf = csrfToken();
           <table class="data-table">
             <thead><tr>
               <th>Fecha</th><th>DNI</th><th>Nombre y Apellidos</th>
-              <th>Cód. Cliente</th><th>Reincidente</th><th>Acciones (Plan)</th>
-              <th>Motivo</th><th>Importe</th><th>Estado</th><th>Fecha Cierre</th><th>Observaciones</th><th>Docs</th><th>Opciones</th>
+              <th>Nombre cliente</th><th>Cód. Cliente</th><th>Motivo</th><th>Importe</th>
+              <th>Reincidente</th><th>Plan de acciones</th><th>Estado</th><th>Fecha Cierre</th><th>Observaciones</th><th>Docs</th><th>Opciones</th>
             </tr></thead>
             <tbody id="tbodyBancarizacion">
-              <tr><td colspan="13" style="text-align:center;padding:32px;color:var(--gris-400)"><div class="spinner"></div></td></tr>
+              <tr><td colspan="14" style="text-align:center;padding:32px;color:var(--gris-400)"><div class="spinner"></div></td></tr>
             </tbody>
           </table>
         </div>
@@ -818,8 +818,8 @@ $csrf = csrfToken();
           <table class="data-table">
             <thead><tr>
               <th>Fecha</th><th>DNI</th><th>Nombre y Apellidos</th>
-              <th>Cliente N3</th><th>Cód. Cliente</th><th>Reincidente</th><th>Acciones (Plan)</th>
-              <th>Motivo</th><th>Estado</th><th>Fecha Cierre</th><th>Observaciones</th><th>Docs</th><th>Opciones</th>
+              <th>Cliente N3</th><th>Cód. Cliente</th><th>Motivo</th>
+              <th>Reincidente</th><th>Plan de acciones</th><th>Estado</th><th>Fecha Cierre</th><th>Observaciones</th><th>Docs</th><th>Opciones</th>
             </tr></thead>
             <tbody id="tbodyN3">
               <tr><td colspan="13" style="text-align:center;padding:32px;color:var(--gris-400)"><div class="spinner"></div></td></tr>
@@ -833,24 +833,14 @@ $csrf = csrfToken();
         <div class="table-wrap">
           <table class="data-table">
             <thead><tr>
-              <th>ID</th>
-              <th>Fecha</th>
-              <th>Placa</th>
-              <th>Regla</th>
-              <th>Evento alerta</th>
-              <th>Tipo sanción</th>
-              <th>Nombres y apellidos</th>
-              <th>Tipo de sanción</th>
-              <th>Reincidente</th>
-              <th>Estado</th>
-              <th>Plan de acciones</th>
-              <th>Fecha cierre</th>
-              <th>Comentarios</th>
-              <th>Docs</th>
-              <th>Acciones</th>
+              <th>Fecha</th><th>Placa</th><th>Nombres y apellidos</th>
+              <th>Regla</th><th>Tipo sanción</th><th>Nivel</th>
+              <th>Reincidente</th><th>Evento alerta</th><th>Estado</th>
+              <th>Plan de acciones</th><th>Fecha cierre</th><th>Comentarios</th>
+              <th>Docs</th><th>Acciones</th>
             </tr></thead>
             <tbody id="tbodyTelemetria">
-              <tr><td colspan="15" style="text-align:center;padding:32px;color:var(--gris-400)"><div class="spinner"></div></td></tr>
+              <tr><td colspan="14" style="text-align:center;padding:32px;color:var(--gris-400)"><div class="spinner"></div></td></tr>
             </tbody>
           </table>
         </div>
