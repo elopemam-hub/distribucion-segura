@@ -85,6 +85,13 @@ $csrf = csrfToken();
 }
 .geo-tab-btn.active i { color: #fff !important; }
 /* ── */
+.amon-pag-bar { display:flex;align-items:center;justify-content:space-between;padding:10px 4px 4px;flex-wrap:wrap;gap:8px; }
+.amon-pag-info { font-size:12px;color:var(--gris-400); }
+.amon-pag-btns { display:flex;gap:4px;flex-wrap:wrap; }
+.amon-pag-btns button { min-width:32px;height:32px;padding:0 8px;border-radius:4px;border:1px solid var(--gris-600);background:#fff;color:var(--gris-300);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;font-family:var(--font-body); }
+.amon-pag-btns button:hover { border-color:var(--primary);color:var(--primary); }
+.amon-pag-btns button.active { background:var(--primary);border-color:var(--primary);color:#fff; }
+.amon-pag-btns button:disabled { opacity:.4;cursor:not-allowed; }
 .geo-icon-btn { width:34px;height:34px;border-radius:50%;border:2px solid transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .15s;color:#fff; }
 .geo-icon-btn:hover { transform:scale(1.15); }
 .geo-icon-btn.selected { outline:3px solid currentColor; outline-offset:2px; }
@@ -810,6 +817,10 @@ $csrf = csrfToken();
             </tbody>
           </table>
         </div>
+        <div class="amon-pag-bar">
+          <span class="amon-pag-info" id="pagInfoBancarizacion"></span>
+          <div class="amon-pag-btns" id="pagBtnsBancarizacion"></div>
+        </div>
       </div>
 
       <!-- Tabla N3 -->
@@ -825,6 +836,10 @@ $csrf = csrfToken();
               <tr><td colspan="13" style="text-align:center;padding:32px;color:var(--gris-400)"><div class="spinner"></div></td></tr>
             </tbody>
           </table>
+        </div>
+        <div class="amon-pag-bar">
+          <span class="amon-pag-info" id="pagInfoN3"></span>
+          <div class="amon-pag-btns" id="pagBtnsN3"></div>
         </div>
       </div>
 
@@ -843,6 +858,10 @@ $csrf = csrfToken();
               <tr><td colspan="14" style="text-align:center;padding:32px;color:var(--gris-400)"><div class="spinner"></div></td></tr>
             </tbody>
           </table>
+        </div>
+        <div class="amon-pag-bar">
+          <span class="amon-pag-info" id="pagInfoTelemetria"></span>
+          <div class="amon-pag-btns" id="pagBtnsTelemetria"></div>
         </div>
       </div>
     </div>

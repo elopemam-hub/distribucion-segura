@@ -4,7 +4,9 @@
 // ============================================================
 
 let amonTabActivo = 'bancarizacion';
-let amonDatos = { bancarizacion:[], n3:[], telemetria:[] };
+let amonDatos   = { bancarizacion:[], n3:[], telemetria:[] };
+let amonPaginas = { bancarizacion:1,  n3:1,  telemetria:1  };
+const AMON_PAGE_SIZE = 8;
 
 async function cargarAmonestaciones() {
   await Promise.all([cargarStatsAmon(), cargarTabAmon('bancarizacion')]);
@@ -45,7 +47,7 @@ async function cargarTabAmon(tipo) {
   try {
     const r=await fetch('api/amonestaciones.php?'+params), d=await r.json();
     if (!d.success) { toast(d.message,'error'); return; }
-    amonDatos[tipo]=d.data.amonestaciones||[]; renderTablaAmon(tipo);
+    amonDatos[tipo]=d.data.amonestaciones||[]; amonPaginas[tipo]=1; renderTablaAmon(tipo);
   } catch { toast('Error al cargar amonestaciones','error'); }
 }
 
@@ -114,8 +116,53 @@ function amonReglaBadge(regla) {
   return`<span class="badge" style="background:${bg};color:${color};font-size:11px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(regla)}">${escapeHtml(label)}</span>`;
 }
 
+function irPaginaAmon(tipo, pag) {
+  const total = amonDatos[tipo]?.length || 0;
+  const maxPag = Math.max(1, Math.ceil(total / AMON_PAGE_SIZE));
+  amonPaginas[tipo] = Math.min(Math.max(1, pag), maxPag);
+  renderTablaAmon(tipo);
+}
+
+function renderPaginacionAmon(tipo, total) {
+  const pagActual = amonPaginas[tipo] || 1;
+  const totalPags = Math.max(1, Math.ceil(total / AMON_PAGE_SIZE));
+  const desde = (pagActual - 1) * AMON_PAGE_SIZE + 1;
+  const hasta  = Math.min(pagActual * AMON_PAGE_SIZE, total);
+
+  const sufijo = { bancarizacion:'Bancarizacion', n3:'N3', telemetria:'Telemetria' }[tipo];
+  const infoEl = document.getElementById('pagInfo'+sufijo);
+  const btnsEl = document.getElementById('pagBtns'+sufijo);
+  if (!infoEl || !btnsEl) return;
+
+  infoEl.textContent = total > 0 ? `Mostrando ${desde}–${hasta} de ${total}` : '';
+
+  // Rango de páginas a mostrar (máx 7 botones)
+  let pags = [];
+  if (totalPags <= 7) {
+    pags = Array.from({length: totalPags}, (_,i) => i+1);
+  } else {
+    pags = [1];
+    if (pagActual > 3) pags.push('…');
+    for (let p = Math.max(2, pagActual-1); p <= Math.min(totalPags-1, pagActual+1); p++) pags.push(p);
+    if (pagActual < totalPags - 2) pags.push('…');
+    pags.push(totalPags);
+  }
+
+  btnsEl.innerHTML =
+    `<button onclick="irPaginaAmon('${tipo}',${pagActual-1})" ${pagActual===1?'disabled':''}>&#8249;</button>` +
+    pags.map(p => p === '…'
+      ? `<button disabled style="border:none;background:none;cursor:default">…</button>`
+      : `<button class="${p===pagActual?'active':''}" onclick="irPaginaAmon('${tipo}',${p})">${p}</button>`
+    ).join('') +
+    `<button onclick="irPaginaAmon('${tipo}',${pagActual+1})" ${pagActual===totalPags?'disabled':''}>&#8250;</button>`;
+}
+
 function renderTablaAmon(tipo) {
-  const filas = amonDatos[tipo] || [];
+  const todasFilas = amonDatos[tipo] || [];
+  const total = todasFilas.length;
+  const pag   = amonPaginas[tipo] || 1;
+  const filas = todasFilas.slice((pag - 1) * AMON_PAGE_SIZE, pag * AMON_PAGE_SIZE);
+  renderPaginacionAmon(tipo, total);
   if (tipo==='bancarizacion') {
     // Orden: Fecha | DNI | Nombre y Apellidos | Nombre cliente | Cód.Cliente | Motivo | Importe | Reincidente | Plan | Estado | F.Cierre | Obs | Docs | Opciones
     document.getElementById('tbodyBancarizacion').innerHTML=filas.length?filas.map(a=>`<tr>
