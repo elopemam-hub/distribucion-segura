@@ -35,11 +35,11 @@ function actualizarSeccionModulos() {
   if(sec) sec.style.display=rol==='administrador'?'none':'block';
 }
 function setModulosChecked(modulos) {
-  ['inspecciones','personal','reportes','matriz','amonestaciones'].forEach(m=>{const el=document.getElementById('mod_'+m);if(el)el.checked=modulos.includes(m);});
+  ['inspecciones','personal','reportes','matriz','amonestaciones','geocercas'].forEach(m=>{const el=document.getElementById('mod_'+m);if(el)el.checked=modulos.includes(m);});
 }
 function getModulosSeleccionados() {
   const checked=['dashboard'];
-  ['inspecciones','personal','reportes','matriz','amonestaciones'].forEach(m=>{const el=document.getElementById('mod_'+m);if(el&&el.checked)checked.push(m);});
+  ['inspecciones','personal','reportes','matriz','amonestaciones','geocercas'].forEach(m=>{const el=document.getElementById('mod_'+m);if(el&&el.checked)checked.push(m);});
   return checked;
 }
 

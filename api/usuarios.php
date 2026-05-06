@@ -208,7 +208,7 @@ function permisosSave() {
     }
 
     // Validar módulos
-    $validos = ['dashboard', 'inspecciones', 'personal', 'reportes', 'matriz'];
+    $validos = ['dashboard', 'inspecciones', 'personal', 'reportes', 'matriz', 'amonestaciones', 'geocercas'];
     $modulosLimpios = array_filter(
         is_array($modulos) ? $modulos : [],
         fn($m) => in_array($m, $validos, true)
