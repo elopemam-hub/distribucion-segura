@@ -4,6 +4,8 @@
 // ============================================================
 
 let personalData = [];
+let personalPagina = 1;
+const PERSONAL_PAGE_SIZE = 10;
 
 function actualizarResumenPersonal(todos) {
   const activos=todos.filter(p=>p.activo==1);
@@ -27,6 +29,7 @@ async function cargarPersonal() {
     const data=await r.json();
     if (!data.success) { toast(data.message,'error'); return; }
     personalData=data.data.personal||[];
+    personalPagina=1;
     actualizarResumenPersonal(personalData);
     renderPersonalTabla();
   } catch { toast('Error al cargar personal','error'); }
@@ -40,10 +43,51 @@ function badgeDias(dias) {
   return`<span class="badge badge-success">${dias}d</span>`;
 }
 
+function irPaginaPersonal(pag) {
+  const maxPag = Math.max(1, Math.ceil(personalData.length / PERSONAL_PAGE_SIZE));
+  personalPagina = Math.min(Math.max(1, pag), maxPag);
+  renderPersonalTabla();
+}
+
+function renderPaginacionPersonal() {
+  const total    = personalData.length;
+  const pagAct   = personalPagina;
+  const totalPags= Math.max(1, Math.ceil(total / PERSONAL_PAGE_SIZE));
+  const desde    = (pagAct - 1) * PERSONAL_PAGE_SIZE + 1;
+  const hasta    = Math.min(pagAct * PERSONAL_PAGE_SIZE, total);
+
+  const infoEl = document.getElementById('pagInfoPersonal');
+  const btnsEl = document.getElementById('pagBtnsPersonal');
+  if (!infoEl || !btnsEl) return;
+
+  infoEl.textContent = total > 0 ? `Mostrando ${desde}–${hasta} de ${total}` : '';
+
+  let pags = [];
+  if (totalPags <= 7) {
+    pags = Array.from({length: totalPags}, (_,i) => i+1);
+  } else {
+    pags = [1];
+    if (pagAct > 3) pags.push('…');
+    for (let p = Math.max(2, pagAct-1); p <= Math.min(totalPags-1, pagAct+1); p++) pags.push(p);
+    if (pagAct < totalPags - 2) pags.push('…');
+    pags.push(totalPags);
+  }
+
+  btnsEl.innerHTML =
+    `<button onclick="irPaginaPersonal(${pagAct-1})" ${pagAct===1?'disabled':''}>&#8249;</button>` +
+    pags.map(p => p === '…'
+      ? `<button disabled style="border:none;background:none;cursor:default">…</button>`
+      : `<button class="${p===pagAct?'active':''}" onclick="irPaginaPersonal(${p})">${p}</button>`
+    ).join('') +
+    `<button onclick="irPaginaPersonal(${pagAct+1})" ${pagAct===totalPags?'disabled':''}>&#8250;</button>`;
+}
+
 function renderPersonalTabla() {
   const tb=document.getElementById('tablaPersonalBody');
-  if (!personalData.length) { tb.innerHTML='<tr><td colspan="16" style="text-align:center;padding:32px;color:var(--gris-400)">Sin resultados</td></tr>'; return; }
-  tb.innerHTML=personalData.map(p=>{
+  if (!personalData.length) { tb.innerHTML='<tr><td colspan="16" style="text-align:center;padding:32px;color:var(--gris-400)">Sin resultados</td></tr>'; renderPaginacionPersonal(); return; }
+  const filas = personalData.slice((personalPagina-1)*PERSONAL_PAGE_SIZE, personalPagina*PERSONAL_PAGE_SIZE);
+  renderPaginacionPersonal();
+  tb.innerHTML=filas.map(p=>{
     const diasDni=p.dias_vencer_dni!==null?parseInt(p.dias_vencer_dni):null;
     const diasBrevete=p.dias_vencer_brevete!==null?parseInt(p.dias_vencer_brevete):null;
     return`<tr>

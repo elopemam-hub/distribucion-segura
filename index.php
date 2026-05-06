@@ -664,6 +664,10 @@ $csrf = csrfToken();
             </tbody>
           </table>
         </div>
+        <div class="amon-pag-bar">
+          <span class="amon-pag-info" id="pagInfoPersonal"></span>
+          <div class="amon-pag-btns" id="pagBtnsPersonal"></div>
+        </div>
       </div>
     </div>
   </div>
