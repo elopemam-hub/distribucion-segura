@@ -107,30 +107,24 @@ function initGeoMap() {
     maxZoom: 19,
   }).addTo(geoMap);
 
-  // Control de compartir / exportar
-  const ShareControl = L.Control.extend({
-    options: { position: 'topright' },
-    onAdd() {
-      const wrap = L.DomUtil.create('div', 'leaflet-bar leaflet-control geo-share-control');
-      wrap.style.position = 'relative';
-      wrap.innerHTML = `
-        <a href="#" title="Compartir / Exportar mapa">
-          <i class="fas fa-share-nodes"></i>
-        </a>
-        <div class="geo-share-menu" style="display:none">
-          <button onclick="exportarMapaPNG()"><i class="fas fa-image"></i> Descargar imagen PNG</button>
-          <button onclick="exportarMapaJPG()"><i class="fas fa-file-image"></i> Descargar imagen JPG</button>
-          <button onclick="imprimirMapaGeo()"><i class="fas fa-print"></i> Imprimir mapa</button>
-        </div>`;
-      L.DomEvent.disableClickPropagation(wrap);
-      const btn  = wrap.querySelector('a');
-      const menu = wrap.querySelector('.geo-share-menu');
-      btn.addEventListener('click', e => { e.preventDefault(); menu.style.display = menu.style.display === 'none' ? '' : 'none'; });
-      document.addEventListener('click', () => { menu.style.display = 'none'; });
-      return wrap;
-    },
+  // Cerrar menú compartir al hacer clic fuera
+  document.addEventListener('click', e => {
+    const wrap = document.getElementById('geoShareWrap');
+    if (wrap && !wrap.contains(e.target)) cerrarGeoShareMenu();
   });
-  new ShareControl().addTo(geoMap);
+
+  // Restaurar vista desde URL compartida (?geo_tipo=...&lat=...&lng=...&zoom=...)
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.has('lat') && urlParams.has('lng')) {
+    const lat  = parseFloat(urlParams.get('lat'));
+    const lng  = parseFloat(urlParams.get('lng'));
+    const zoom = parseInt(urlParams.get('zoom')) || GEO_ZOOM;
+    if (!isNaN(lat) && !isNaN(lng)) geoMap.setView([lat, lng], zoom);
+  }
+  const tipoURL = urlParams.get('geo_tipo');
+  if (tipoURL && GEO_TIPOS[tipoURL]) {
+    geoTabActivo = tipoURL;
+  }
 
   aplicarEstiloTabs(geoTabActivo);
   cargarGeocercas();
@@ -730,88 +724,201 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-// ── Exportar / Compartir mapa ─────────────────────────────────────────────
-function _capturarMapa(formato) {
-  if (!window.html2canvas) { toast('Módulo de captura no disponible.', 'error'); return; }
-  const mapEl = document.getElementById('geoMainMap');
-  if (!mapEl) return;
-
-  const tipoLabel = { ruta_critica: 'Rutas Críticas', zona_n3: 'Zonas N3', zona_roja: 'Zonas Rojas' };
-  const nombreArchivo = `geocercas_${tipoLabel[geoTabActivo] || 'mapa'}_${new Date().toISOString().slice(0,10)}`;
-
-  toast('Generando imagen, espera un momento...');
-  html2canvas(mapEl, {
-    useCORS:    true,
-    allowTaint: true,
-    scale:      1.5,
-    logging:    false,
-    backgroundColor: '#f2efe9',
-  }).then(canvas => {
-    const link = document.createElement('a');
-    if (formato === 'jpg') {
-      link.download = nombreArchivo + '.jpg';
-      link.href = canvas.toDataURL('image/jpeg', 0.92);
-    } else {
-      link.download = nombreArchivo + '.png';
-      link.href = canvas.toDataURL('image/png');
-    }
-    link.click();
-    toast('Imagen descargada correctamente');
-  }).catch(() => toast('Error al capturar el mapa.', 'error'));
+// ── Menú compartir ────────────────────────────────────────────────────────
+function toggleGeoShareMenu() {
+  const menu = document.getElementById('geoShareMenu');
+  if (!menu) return;
+  menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+}
+function cerrarGeoShareMenu() {
+  const menu = document.getElementById('geoShareMenu');
+  if (menu) menu.style.display = 'none';
 }
 
-function exportarMapaPNG() { _capturarMapa('png'); }
-function exportarMapaJPG() { _capturarMapa('jpg'); }
-
-function imprimirMapaGeo() {
+// ── Exportar imagen PNG ────────────────────────────────────────────────────
+function exportarMapaPNG() {
   const mapEl = document.getElementById('geoMainMap');
   if (!mapEl) return;
 
-  // Crea un iframe oculto para imprimir solo el mapa
-  const iframe = document.createElement('iframe');
-  iframe.style.cssText = 'position:fixed;width:0;height:0;border:0;visibility:hidden';
-  document.body.appendChild(iframe);
+  const TIPO = { ruta_critica:'Rutas Críticas', zona_n3:'Zonas N3', zona_roja:'Zonas Rojas' };
+  const archivo = `geocercas_${TIPO[geoTabActivo]||'mapa'}_${new Date().toISOString().slice(0,10)}`;
 
-  const tipo = { ruta_critica: 'Rutas Críticas Carretera', zona_n3: 'Zonas N3', zona_roja: 'Zonas Rojas' };
+  // Forzar re-render del mapa antes de capturar
+  if (geoMap) geoMap.invalidateSize();
+
+  toast('Generando imagen PNG...');
+
+  // Esperar a que los tiles carguen
+  setTimeout(() => {
+    if (!window.html2canvas) { toast('Módulo de captura no disponible.', 'error'); return; }
+    html2canvas(mapEl, {
+      useCORS: true,
+      allowTaint: true,
+      scale: 2,
+      logging: false,
+      backgroundColor: '#e8e0d8',
+      imageTimeout: 20000,
+      onclone(doc) {
+        // Asegurar que el mapa clonad tenga dimensiones correctas
+        const clone = doc.getElementById('geoMainMap');
+        if (clone) { clone.style.width = mapEl.offsetWidth+'px'; clone.style.height = mapEl.offsetHeight+'px'; }
+      }
+    }).then(canvas => {
+      const a = document.createElement('a');
+      a.download = archivo + '.png';
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+      toast('Imagen PNG descargada');
+    }).catch(() => toast('No se pudo capturar el mapa. Usa "Imprimir" como alternativa.', 'error'));
+  }, 800);
+}
+
+// ── Imprimir mapa ─────────────────────────────────────────────────────────
+function imprimirMapaGeo() {
+  const TIPO  = { ruta_critica:'Rutas Críticas Carretera', zona_n3:'Zonas N3', zona_roja:'Zonas Rojas' };
   const fecha = new Date().toLocaleDateString('es-PE', { day:'2-digit', month:'long', year:'numeric' });
+  const total = Object.values(geoMapLayers).length;
 
-  const doc = iframe.contentDocument || iframe.contentWindow.document;
-  doc.open();
-  doc.write(`<!DOCTYPE html><html><head>
-    <title>Mapa Geocercas — ${tipo[geoTabActivo] || ''}</title>
+  const win = window.open('', '_blank', 'width=900,height=700');
+  win.document.write(`<!DOCTYPE html><html lang="es"><head>
+    <meta charset="UTF-8">
+    <title>Geocercas — ${TIPO[geoTabActivo]||''}</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <style>
-      * { margin:0; padding:0; box-sizing:border-box; }
-      body { font-family: Arial, sans-serif; }
-      .header { padding:12px 16px; border-bottom:2px solid #1ABB9C; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; }
-      .header h1 { font-size:16px; color:#2A3F54; }
-      .header p { font-size:11px; color:#73879C; }
-      .map-wrap { width:100%; }
-      .map-wrap img { width:100%; display:block; }
+      *{margin:0;padding:0;box-sizing:border-box}
+      body{font-family:Arial,sans-serif;background:#f5f5f5}
+      .cabecera{background:#2A3F54;color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center}
+      .cabecera h1{font-size:18px;font-weight:700}
+      .cabecera p{font-size:12px;opacity:.7}
+      .info{background:#fff;padding:10px 20px;border-bottom:1px solid #ddd;display:flex;gap:24px;font-size:12px;color:#555}
+      .info strong{color:#2A3F54}
+      #mapa{height:calc(100vh - 120px)}
+      @media print{.cabecera,.info{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
     </style>
   </head><body>
-    <div class="header">
-      <div>
-        <h1>Geocercas — ${tipo[geoTabActivo] || ''}</h1>
-        <p>Distribución Segura · SST Juliaca</p>
-      </div>
-      <p>${fecha}</p>
+    <div class="cabecera">
+      <div><h1>Geocercas — ${TIPO[geoTabActivo]||''}</h1><p>Distribución Segura · SST Juliaca</p></div>
+      <div style="text-align:right"><p>${fecha}</p><p>${total} geocerca${total!==1?'s':''} visible${total!==1?'s':''}</p></div>
     </div>
-    <div class="map-wrap" id="mapImg"></div>
+    <div class="info">
+      <span>Centro: <strong id="cLat"></strong></span>
+      <span>Zoom: <strong id="cZoom"></strong></span>
+      <span>Tipo: <strong>${TIPO[geoTabActivo]||''}</strong></span>
+    </div>
+    <div id="mapa"></div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+      const center = ${JSON.stringify(geoMap ? [geoMap.getCenter().lat, geoMap.getCenter().lng] : GEO_CENTER)};
+      const zoom   = ${geoMap ? geoMap.getZoom() : GEO_ZOOM};
+      document.getElementById('cLat').textContent  = center[0].toFixed(5) + ', ' + center[1].toFixed(5);
+      document.getElementById('cZoom').textContent = zoom;
+      const map = L.map('mapa').setView(center, zoom);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
+      const data = ${JSON.stringify(Object.values(geoMapLayers || {}).map ? [] : [])};
+      // Reproducir capas desde los datos cargados
+      const rows = ${JSON.stringify((geoData || []).map(r => ({ tipo:r.tipo, nombre:r.nombre, color:r.color, coordenadas:r.coordenadas, icono:r.icono||'fa-circle' })))};
+      rows.forEach(r => {
+        try {
+          const cfg = { ruta_critica:{geom:'polyline'}, zona_n3:{geom:'marker'}, zona_roja:{geom:'polygon'} }[r.tipo] || {};
+          const coords = JSON.parse(r.coordenadas);
+          const color = r.color || '#3498DB';
+          let layer;
+          if (cfg.geom === 'marker') {
+            layer = L.circleMarker(coords[0], { radius:9, color:'#fff', weight:2, fillColor:color, fillOpacity:0.9 });
+          } else if (cfg.geom === 'polyline') {
+            layer = L.polyline(coords, { color, weight:4 });
+          } else {
+            layer = L.polygon(coords, { color, fillColor:color, fillOpacity:0.18, weight:2 });
+          }
+          layer.bindPopup('<strong>' + r.nombre + '</strong>').addTo(map);
+        } catch(e){}
+      });
+      setTimeout(() => { map.invalidateSize(); window.print(); }, 1500);
+    <\/script>
   </body></html>`);
-  doc.close();
+  win.document.close();
+}
 
-  // Captura el mapa como imagen y la inserta en el iframe
-  if (window.html2canvas) {
-    html2canvas(mapEl, { useCORS:true, allowTaint:true, scale:1.5, logging:false, backgroundColor:'#f2efe9' })
-      .then(canvas => {
-        const img = doc.createElement('img');
-        img.src = canvas.toDataURL('image/png');
-        img.style.width = '100%';
-        doc.getElementById('mapImg').appendChild(img);
-        setTimeout(() => { iframe.contentWindow.print(); setTimeout(() => document.body.removeChild(iframe), 1000); }, 400);
-      })
-      .catch(() => { iframe.contentWindow.print(); });
+// ── Copiar enlace del mapa ────────────────────────────────────────────────
+function copiarEnlaceGeo() {
+  const center = geoMap ? geoMap.getCenter() : { lat: GEO_CENTER[0], lng: GEO_CENTER[1] };
+  const zoom   = geoMap ? geoMap.getZoom() : GEO_ZOOM;
+  const url = `${window.location.origin}${window.location.pathname}?geo_tipo=${geoTabActivo}&lat=${center.lat.toFixed(6)}&lng=${center.lng.toFixed(6)}&zoom=${zoom}`;
+
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(() => {
+      toast('Enlace copiado al portapapeles');
+      cerrarGeoShareMenu();
+    }).catch(() => _copiarFallback(url));
   } else {
-    iframe.contentWindow.print();
+    _copiarFallback(url);
   }
+}
+function _copiarFallback(texto) {
+  const ta = document.createElement('textarea');
+  ta.value = texto;
+  ta.style.cssText = 'position:fixed;opacity:0';
+  document.body.appendChild(ta);
+  ta.select();
+  document.execCommand('copy');
+  document.body.removeChild(ta);
+  toast('Enlace copiado al portapapeles');
+  cerrarGeoShareMenu();
+}
+
+// ── Compartir por WhatsApp ────────────────────────────────────────────────
+function compartirWhatsApp() {
+  const TIPO = { ruta_critica:'Rutas Críticas Carretera', zona_n3:'Zonas N3', zona_roja:'Zonas Rojas' };
+  const center = geoMap ? geoMap.getCenter() : { lat: GEO_CENTER[0], lng: GEO_CENTER[1] };
+  const zoom   = geoMap ? geoMap.getZoom() : GEO_ZOOM;
+  const enlace = `${window.location.origin}${window.location.pathname}?geo_tipo=${geoTabActivo}&lat=${center.lat.toFixed(6)}&lng=${center.lng.toFixed(6)}&zoom=${zoom}`;
+  const total  = Object.keys(geoMapLayers).length;
+  const texto  = `*Geocercas Distribución Segura — ${TIPO[geoTabActivo]||''}*\n${total} geocerca${total!==1?'s':''} | SST Juliaca\n${enlace}`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank');
+  cerrarGeoShareMenu();
+}
+
+// ── Exportar GeoJSON ──────────────────────────────────────────────────────
+function exportarGeoJSON() {
+  if (!geoData || !geoData.length) { toast('No hay geocercas para exportar.', 'warn'); return; }
+  const TIPO = { ruta_critica:'Rutas Críticas Carretera', zona_n3:'Zonas N3', zona_roja:'Zonas Rojas' };
+
+  const features = geoData.map(r => {
+    try {
+      const coords  = JSON.parse(r.coordenadas);
+      const cfg     = GEO_TIPOS[r.tipo] || {};
+      let geometry;
+      if (cfg.geom === 'marker') {
+        geometry = { type:'Point', coordinates:[coords[0][1], coords[0][0]] };
+      } else if (cfg.geom === 'polyline') {
+        geometry = { type:'LineString', coordinates: coords.map(p => [p[1], p[0]]) };
+      } else {
+        const ring = [...coords.map(p => [p[1], p[0]])];
+        if (ring[0][0] !== ring[ring.length-1][0] || ring[0][1] !== ring[ring.length-1][1]) ring.push(ring[0]);
+        geometry = { type:'Polygon', coordinates:[ring] };
+      }
+      return {
+        type: 'Feature',
+        geometry,
+        properties: {
+          id: r.id, nombre: r.nombre, tipo: r.tipo, tipo_label: TIPO[r.tipo]||r.tipo,
+          color: r.color, activo: r.activo==1,
+          codigo: r.codigo||null, direccion_cliente: r.direccion_cliente||null,
+          supervisor: r.supervisor||null, clientes_n3: r.clientes_n3||null,
+          descripcion: r.descripcion||null,
+        }
+      };
+    } catch { return null; }
+  }).filter(Boolean);
+
+  const geojson = { type:'FeatureCollection', features,
+    metadata: { generado: new Date().toISOString(), tipo: geoTabActivo, total: features.length, sistema:'Distribución Segura SST Juliaca' }
+  };
+
+  const blob = new Blob([JSON.stringify(geojson, null, 2)], { type:'application/geo+json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `geocercas_${geoTabActivo}_${new Date().toISOString().slice(0,10)}.geojson`;
+  a.click();
+  toast(`GeoJSON exportado (${features.length} features)`);
 }

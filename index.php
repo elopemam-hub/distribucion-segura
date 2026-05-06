@@ -95,12 +95,9 @@ $csrf = csrfToken();
 .geo-icon-btn { width:34px;height:34px;border-radius:50%;border:2px solid transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .15s;color:#fff; }
 .geo-icon-btn:hover { transform:scale(1.15); }
 .geo-icon-btn.selected { outline:3px solid currentColor; outline-offset:2px; }
-.geo-share-control a { width:30px;height:30px;display:flex!important;align-items:center;justify-content:center;font-size:15px;color:#555!important;text-decoration:none!important; }
-.geo-share-control a:hover { background:#f4f4f4; }
-.geo-share-menu { position:absolute;right:0;top:32px;background:#fff;border:1px solid #ccc;border-radius:4px;box-shadow:0 3px 10px rgba(0,0,0,.15);min-width:170px;z-index:1000;overflow:hidden; }
-.geo-share-menu button { display:flex;align-items:center;gap:8px;width:100%;padding:9px 14px;background:none;border:none;cursor:pointer;font-size:13px;color:#2A3F54;font-family:'Barlow',sans-serif;transition:background .15s; }
-.geo-share-menu button:hover { background:#F5F7FA; }
-.geo-share-menu button i { width:14px;color:var(--primary); }
+.geo-share-opt { display:flex;align-items:center;gap:10px;width:100%;padding:9px 14px;background:none;border:none;cursor:pointer;font-size:13px;color:#2A3F54;font-family:'Barlow',sans-serif;transition:background .15s;text-align:left; }
+.geo-share-opt:hover { background:#F5F7FA; }
+.geo-share-opt i { width:16px;font-size:13px;color:var(--primary);flex-shrink:0; }
 @media print { body > *:not(#printMapWrap) { display:none!important; } #printMapWrap { display:block!important; } }
 </style>
 </head>
@@ -124,47 +121,61 @@ $csrf = csrfToken();
   </div>
 
   <nav class="sidebar-nav">
-    <div class="nav-section-title">Principal</div>
+
+
+    <div class="nav-section-title">Inicio</div>
     <a class="nav-item active" data-page="dashboard" onclick="showPage('dashboard')">
       <i class="fas fa-gauge-high"></i> Dashboard
     </a>
+
+
+    <?php if (tieneAccesoModulo('inspecciones') || tieneAccesoModulo('personal') || tieneAccesoModulo('geocercas')): ?>
+    <div class="nav-section-title" style="margin-top:12px">Operaciones</div>
+    <?php endif; ?>
     <?php if (tieneAccesoModulo('inspecciones')): ?>
     <a class="nav-item" data-page="inspecciones" onclick="showPage('inspecciones')">
-      <i class="fas fa-clipboard-list"></i> Inspecciones
+      <i class="fas fa-clipboard-check"></i> Inspecciones
     </a>
     <?php endif; ?>
     <?php if (tieneAccesoModulo('personal')): ?>
     <a class="nav-item" data-page="personal" onclick="showPage('personal')">
-      <i class="fas fa-id-card"></i> Personal
-    </a>
-    <?php endif; ?>
-    <?php if (tieneAccesoModulo('amonestaciones')): ?>
-    <a class="nav-item" data-page="amonestaciones" onclick="showPage('amonestaciones')">
-      <i class="fas fa-file-signature"></i> Amonestaciones
-    </a>
-    <?php endif; ?>
-
-    <div class="nav-section-title" style="margin-top:12px">Reportes</div>
-    <?php if (tieneAccesoModulo('reportes')): ?>
-    <a class="nav-item" data-page="reportes" onclick="showPage('reportes')">
-      <i class="fas fa-chart-bar"></i> Reportes
-    </a>
-    <?php endif; ?>
-    <?php if (tieneAccesoModulo('matriz')): ?>
-    <a class="nav-item" data-page="matriz" onclick="showPage('matriz')">
-      <i class="fas fa-bolt"></i> Matriz Consecuencias
+      <i class="fas fa-users-gear"></i> Personal
     </a>
     <?php endif; ?>
     <?php if (tieneAccesoModulo('geocercas')): ?>
     <a class="nav-item" data-page="geocercas" onclick="showPage('geocercas');setTimeout(initGeoMap,80)">
-      <i class="fas fa-draw-polygon"></i> Geocercas
+      <i class="fas fa-map-location-dot"></i> Geocercas
     </a>
     <?php endif; ?>
 
+
+    <?php if (tieneAccesoModulo('amonestaciones') || tieneAccesoModulo('matriz')): ?>
+    <div class="nav-section-title" style="margin-top:12px">Seguridad</div>
+    <?php endif; ?>
+    <?php if (tieneAccesoModulo('amonestaciones')): ?>
+    <a class="nav-item" data-page="amonestaciones" onclick="showPage('amonestaciones')">
+      <i class="fas fa-triangle-exclamation"></i> Matriz Amonestaciones
+    </a>
+    <?php endif; ?>
+    <?php if (tieneAccesoModulo('matriz')): ?>
+    <a class="nav-item" data-page="matriz" onclick="showPage('matriz')">
+      <i class="fas fa-scale-balanced"></i> Matriz Consecuencias
+    </a>
+    <?php endif; ?>
+
+
+    <?php if (tieneAccesoModulo('reportes')): ?>
+    <div class="nav-section-title" style="margin-top:12px">Análisis</div>
+    <a class="nav-item" data-page="reportes" onclick="showPage('reportes')">
+      <i class="fas fa-chart-column"></i> Reportes
+    </a>
+    <?php endif; ?>
+
+
     <?php if ($user['rol'] === 'administrador'): ?>
-    <div class="nav-section-title" style="margin-top:12px">Admin</div>
+    <div class="nav-section-title" style="margin-top:12px">Administración</div>
     <a class="nav-item" data-page="usuarios" onclick="showPage('usuarios')">
-      <i class="fas fa-users"></i> Usuarios
+      <i class="fas fa-user-shield"></i> Usuarios
     </a>
     <?php endif; ?>
   </nav>
@@ -910,11 +921,29 @@ $csrf = csrfToken();
         </h2>
         <p style="font-size:12px;color:var(--gris-400);margin:3px 0 0">Rutas críticas, zonas N3 y zonas rojas</p>
       </div>
-      <?php if (in_array($user['rol'], ['administrador','supervisor'])): ?>
-      <button class="btn btn-primary" onclick="abrirModalGeo()">
-        <i class="fas fa-plus"></i> Nueva Geocerca
-      </button>
-      <?php endif; ?>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <!-- Botón compartir/exportar -->
+        <div style="position:relative" id="geoShareWrap">
+          <button class="btn btn-outline" onclick="toggleGeoShareMenu()" id="btnGeoShare">
+            <i class="fas fa-share-nodes"></i> Compartir
+          </button>
+          <div id="geoShareMenu" style="display:none;position:absolute;right:0;top:calc(100% + 6px);background:#fff;border:1px solid #E6E9ED;border-radius:6px;box-shadow:0 6px 24px rgba(0,0,0,.12);min-width:210px;z-index:9999;overflow:hidden">
+            <div style="padding:8px 12px;font-size:10px;font-weight:700;color:#98A6AD;text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid #E6E9ED">Exportar mapa</div>
+            <button class="geo-share-opt" onclick="exportarMapaPNG();cerrarGeoShareMenu()"><i class="fas fa-image"></i> Descargar imagen PNG</button>
+            <button class="geo-share-opt" onclick="imprimirMapaGeo();cerrarGeoShareMenu()"><i class="fas fa-print"></i> Imprimir mapa</button>
+            <div style="padding:8px 12px;font-size:10px;font-weight:700;color:#98A6AD;text-transform:uppercase;letter-spacing:.08em;border-top:1px solid #E6E9ED;border-bottom:1px solid #E6E9ED">Compartir enlace</div>
+            <button class="geo-share-opt" onclick="copiarEnlaceGeo()"><i class="fas fa-link"></i> Copiar enlace del mapa</button>
+            <button class="geo-share-opt" onclick="compartirWhatsApp()"><i class="fab fa-whatsapp" style="color:#25D366"></i> Compartir por WhatsApp</button>
+            <div style="padding:8px 12px;font-size:10px;font-weight:700;color:#98A6AD;text-transform:uppercase;letter-spacing:.08em;border-top:1px solid #E6E9ED;border-bottom:1px solid #E6E9ED">Exportar datos</div>
+            <button class="geo-share-opt" onclick="exportarGeoJSON();cerrarGeoShareMenu()"><i class="fas fa-code"></i> Exportar GeoJSON</button>
+          </div>
+        </div>
+        <?php if (in_array($user['rol'], ['administrador','supervisor'])): ?>
+        <button class="btn btn-primary" onclick="abrirModalGeo()">
+          <i class="fas fa-plus"></i> Nueva Geocerca
+        </button>
+        <?php endif; ?>
+      </div>
     </div>
 
     <!-- KPI cards -->
