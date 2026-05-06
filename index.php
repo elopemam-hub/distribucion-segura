@@ -14,8 +14,8 @@ $csrf = csrfToken();
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Dist. Segura">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="assets/img/logo-camion.png">
+<link rel="manifest" href="/distribucion-segura/manifest.json">
+<link rel="apple-touch-icon" href="/distribucion-segura/assets/img/logo-camion.png">
 <meta name="csrf-token" content="<?= htmlspecialchars($csrf, ENT_QUOTES) ?>">
 <meta name="user-rol" content="<?= htmlspecialchars($user['rol'], ENT_QUOTES) ?>">
 <meta name="user-nombre" content="<?= htmlspecialchars($user['nombre'], ENT_QUOTES) ?>">
@@ -1763,5 +1763,11 @@ $csrf = csrfToken();
 <?php if (tieneAccesoModulo('matriz')): ?>
 <script type="text/babel" src="assets/js/modulos/matriz.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/matriz.js') ?>"></script>
 <?php endif; ?>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/distribucion-segura/sw.js', { scope: '/distribucion-segura/' })
+      .catch(() => {});
+  }
+</script>
 </body>
 </html>
