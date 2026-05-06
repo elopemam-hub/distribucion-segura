@@ -2,21 +2,21 @@
   "name": "Distribución Segura",
   "short_name": "Dist. Segura",
   "description": "Sistema de Gestión SST — Juliaca",
-  "start_url": "./index.php",
-  "scope": "./",
+  "start_url": "/distribucion-segura/login.php",
+  "scope": "/distribucion-segura/",
   "display": "standalone",
   "orientation": "portrait-primary",
   "background_color": "#2A3F54",
   "theme_color": "#1ABB9C",
   "icons": [
     {
-      "src": "assets/img/logo-camion.png",
+      "src": "/distribucion-segura/assets/img/logo-camion.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "assets/img/logo-camion.png",
+      "src": "/distribucion-segura/assets/img/logo-camion.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
