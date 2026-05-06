@@ -115,7 +115,7 @@ function amonReglaBadge(regla) {
 }
 
 function renderTablaAmon(tipo) {
-  const filas=amonDatos[tipo]||[], vacio=`<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--gris-400)">Sin registros</td></tr>`;
+  const filas=amonDatos[tipo]||[], vacio=`<tr><td colspan="13" style="text-align:center;padding:32px;color:var(--gris-400)">Sin registros</td></tr>`;
   if (tipo==='bancarizacion') {
     document.getElementById('tbodyBancarizacion').innerHTML=filas.length?filas.map(a=>`<tr>
       <td style="font-size:12px">${a.fecha}</td>
@@ -126,6 +126,9 @@ function renderTablaAmon(tipo) {
       <td style="min-width:170px">${planAccionesBadges(a.plan_acciones)}</td>
       <td>${motivoCodBadge(a.motivo_codigo)}</td>
       <td style="font-weight:700;color:var(--gris-100)">${a.monto?'S/'+parseFloat(a.monto).toLocaleString('es-PE',{minimumFractionDigits:2}):'—'}</td>
+      <td>${AMON_ESTADO_BADGE[a.estado]||'<span style="color:var(--gris-400)">—</span>'}</td>
+      <td style="font-size:12px">${a.fecha_cierre||'—'}</td>
+      <td style="font-size:12px;color:var(--gris-300);max-width:130px">${escapeHtml(a.observaciones||'—')}</td>
       <td>${amonDocs(a)}</td>
       <td><div style="display:flex;gap:4px"><button class="btn btn-outline btn-sm btn-icon" onclick="editarAmon(${a.id})" title="Editar"><i class="fas fa-edit"></i></button>${USER_ROL==='administrador'?`<button class="btn btn-danger btn-sm btn-icon" onclick="eliminarAmon(${a.id})" title="Eliminar"><i class="fas fa-trash"></i></button>`:''}</div></td>
     </tr>`).join(''):vacio;
@@ -139,6 +142,9 @@ function renderTablaAmon(tipo) {
       <td style="text-align:center">${a.reincidente==1?'<span class="badge badge-danger">SÍ</span>':'<span class="badge badge-success">NO</span>'}</td>
       <td style="min-width:170px">${planAccionesBadges(a.plan_acciones)}</td>
       <td>${motivoCodBadge(a.motivo_codigo)}</td>
+      <td>${AMON_ESTADO_BADGE[a.estado]||'<span style="color:var(--gris-400)">—</span>'}</td>
+      <td style="font-size:12px">${a.fecha_cierre||'—'}</td>
+      <td style="font-size:12px;color:var(--gris-300);max-width:130px">${escapeHtml(a.observaciones||'—')}</td>
       <td>${amonDocs(a)}</td>
       <td><div style="display:flex;gap:4px"><button class="btn btn-outline btn-sm btn-icon" onclick="editarAmon(${a.id})" title="Editar"><i class="fas fa-edit"></i></button>${USER_ROL==='administrador'?`<button class="btn btn-danger btn-sm btn-icon" onclick="eliminarAmon(${a.id})" title="Eliminar"><i class="fas fa-trash"></i></button>`:''}</div></td>
     </tr>`).join(''):vacio;
@@ -198,6 +204,7 @@ async function editarAmon(id) {
     document.getElementById('amon_monto').value=a.monto||'';
     document.getElementById('amon_nro_operacion').value=a.nro_operacion||'';
     document.getElementById('amon_motivo_codigo_banc').value=a.motivo_codigo||'';
+    document.getElementById('amon_cliente_banc').value=a.cliente||'';
     document.getElementById('amon_codigo_cliente_banc').value=a.codigo_cliente||'';
     document.getElementById('amon_reincidente_banc').checked=a.reincidente==1;
     document.getElementById('amon_fecha_cierre_banc').value=a.fecha_cierre||'';
@@ -272,6 +279,7 @@ document.addEventListener('DOMContentLoaded', () => {
       fd.append('monto',document.getElementById('amon_monto').value);
       fd.append('nro_operacion',document.getElementById('amon_nro_operacion').value.trim());
       fd.append('motivo_codigo',document.getElementById('amon_motivo_codigo_banc').value);
+      fd.append('cliente',document.getElementById('amon_cliente_banc').value.trim());
       fd.append('codigo_cliente',document.getElementById('amon_codigo_cliente_banc').value.trim());
       fd.append('fecha_cierre',document.getElementById('amon_fecha_cierre_banc').value);
       if(document.getElementById('amon_reincidente_banc').checked)fd.append('reincidente','1');

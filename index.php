@@ -803,10 +803,10 @@ $csrf = csrfToken();
             <thead><tr>
               <th>Fecha</th><th>DNI</th><th>Nombre y Apellidos</th>
               <th>Cód. Cliente</th><th>Reincidente</th><th>Acciones (Plan)</th>
-              <th>Motivo</th><th>Importe</th><th>Docs</th><th>Opciones</th>
+              <th>Motivo</th><th>Importe</th><th>Estado</th><th>Fecha Cierre</th><th>Observaciones</th><th>Docs</th><th>Opciones</th>
             </tr></thead>
             <tbody id="tbodyBancarizacion">
-              <tr><td colspan="9" style="text-align:center;padding:32px;color:var(--gris-400)"><div class="spinner"></div></td></tr>
+              <tr><td colspan="13" style="text-align:center;padding:32px;color:var(--gris-400)"><div class="spinner"></div></td></tr>
             </tbody>
           </table>
         </div>
@@ -819,10 +819,10 @@ $csrf = csrfToken();
             <thead><tr>
               <th>Fecha</th><th>DNI</th><th>Nombre y Apellidos</th>
               <th>Cliente N3</th><th>Cód. Cliente</th><th>Reincidente</th><th>Acciones (Plan)</th>
-              <th>Motivo</th><th>Docs</th><th>Opciones</th>
+              <th>Motivo</th><th>Estado</th><th>Fecha Cierre</th><th>Observaciones</th><th>Docs</th><th>Opciones</th>
             </tr></thead>
             <tbody id="tbodyN3">
-              <tr><td colspan="9" style="text-align:center;padding:32px;color:var(--gris-400)"><div class="spinner"></div></td></tr>
+              <tr><td colspan="13" style="text-align:center;padding:32px;color:var(--gris-400)"><div class="spinner"></div></td></tr>
             </tbody>
           </table>
         </div>
@@ -1046,6 +1046,10 @@ $csrf = csrfToken();
                 <option value="Protocolo">Incumplimiento protocolo 360°</option>
                 <option value="Otro">Otro</option>
               </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Nombre cliente</label>
+              <input type="text" class="form-control" id="amon_cliente_banc" maxlength="150" placeholder="Nombre del cliente">
             </div>
             <div class="form-group">
               <label class="form-label">Código cliente</label>
