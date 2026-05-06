@@ -715,7 +715,7 @@ $csrf = csrfToken();
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px">
       <div>
         <h2 style="font-family:var(--font-display);font-size:24px;font-weight:800;color:var(--gris-100)">
-          <i class="fas fa-file-signature" style="color:var(--primary)"></i> Amonestaciones
+          <i class="fas fa-file-signature" style="color:var(--primary)"></i> Matriz de Amonestaciones
         </h2>
         <p style="color:var(--gris-400);font-size:13px;margin-top:2px">Registro de amonestaciones por tipo de infracción</p>
       </div>
