@@ -156,9 +156,6 @@ $csrf = csrfToken();
     <a class="nav-item" data-page="amonestaciones" onclick="showPage('amonestaciones')">
       <i class="fas fa-triangle-exclamation"></i> Matriz Amonestaciones
     </a>
-    <a class="nav-item" data-page="kpi-amonestaciones" onclick="showPage('kpi-amonestaciones')" style="padding-left:34px;font-size:12px;opacity:.9">
-      <i class="fas fa-chart-pie"></i> KPI Amonestaciones
-    </a>
     <?php endif; ?>
     <?php if (tieneAccesoModulo('matriz')): ?>
     <a class="nav-item" data-page="matriz" onclick="showPage('matriz')">
