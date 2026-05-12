@@ -310,6 +310,220 @@ async function buscarPersonalAmon(q) {
 function seleccionarPersonalAmon(id,nombre){document.getElementById('amon_personal_id').value=id;document.getElementById('amon_personal_nombre').value=nombre;cerrarAmonAC();}
 function cerrarAmonAC(){const ac=document.getElementById('amonPersonalAC');if(ac){ac.innerHTML='';ac.style.display='none';}}
 
+// ============================================================
+// KPI AMONESTACIONES — Sub-módulo de indicadores
+// ============================================================
+
+let kpiAmonTabActivo = 'bancarizacion';
+let kpiAmonDatos     = null;
+
+function switchKpiTab(tipo) {
+  kpiAmonTabActivo = tipo;
+  document.querySelectorAll('.kpi-amon-panel').forEach(p => p.style.display = 'none');
+  document.querySelectorAll('[id^="kpi-btn-"]').forEach(b => b.classList.remove('active'));
+  const panel = document.getElementById('kpi-panel-' + tipo);
+  const btn   = document.getElementById('kpi-btn-' + tipo);
+  if (panel) panel.style.display = 'block';
+  if (btn)   btn.classList.add('active');
+}
+
+function limpiarFiltrosKpiAmon() {
+  const d = document.getElementById('kpiAmonDesde');
+  const h = document.getElementById('kpiAmonHasta');
+  if (d) d.value = '';
+  if (h) h.value = new Date().toISOString().slice(0, 10);
+  cargarKpiAmon();
+}
+
+async function cargarKpiAmon() {
+  const desde = document.getElementById('kpiAmonDesde')?.value || '';
+  const hasta  = document.getElementById('kpiAmonHasta')?.value  || '';
+  ['Bancarizacion', 'N3', 'Telemetria'].forEach(s => {
+    const el = document.getElementById('kpiContent' + s);
+    if (el) el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gris-400)"><div class="spinner"></div></div>';
+  });
+  try {
+    const params = new URLSearchParams({ action: 'kpi', desde, hasta });
+    const r = await fetch('api/amonestaciones.php?' + params);
+    const d = await r.json();
+    if (!d.success) { toast(d.message, 'error'); return; }
+    kpiAmonDatos = d.data;
+    renderKpiPanel('bancarizacion', d.data.bancarizacion);
+    renderKpiPanel('n3',            d.data.n3);
+    renderKpiPanel('telemetria',    d.data.telemetria);
+  } catch { toast('Error al cargar KPIs', 'error'); }
+}
+
+function _kpiBar(val, max, color) {
+  const pct = max > 0 ? Math.round(val / max * 100) : 0;
+  return `<div style="flex:1;background:var(--gris-600);border-radius:4px;height:7px;overflow:hidden">
+    <div style="width:${pct}%;background:${color};height:100%;border-radius:4px;transition:width .4s"></div>
+  </div>`;
+}
+
+function renderKpiPanel(tipo, data) {
+  const IDS = { bancarizacion:'kpiContentBancarizacion', n3:'kpiContentN3', telemetria:'kpiContentTelemetria' };
+  const cont = document.getElementById(IDS[tipo]);
+  if (!cont || !data) return;
+
+  const r     = data.resumen || {};
+  const total = parseInt(r.total) || 0;
+
+  // ── Tarjetas resumen ──────────────────────────────────────
+  const mkCard = (icon, label, val, color, sub) =>
+    `<div style="flex:1;min-width:120px;border-top:4px solid ${color};background:var(--gris-800);border-radius:8px;padding:14px 16px;box-shadow:0 1px 4px rgba(0,0,0,.07)">
+      <i class="${icon}" style="font-size:17px;color:${color};margin-bottom:4px;display:block"></i>
+      <div style="font-size:22px;font-weight:800;color:${color};font-family:var(--font-display);line-height:1.1">${val}</div>
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--gris-400);margin-top:3px">${label}</div>
+      ${sub ? `<div style="font-size:10px;color:var(--gris-400);margin-top:1px">${sub}</div>` : ''}
+    </div>`;
+
+  const cerPct  = total > 0 ? Math.round((r.cerrados    || 0) / total * 100) : 0;
+  const reinPct = total > 0 ? Math.round((r.reincidentes|| 0) / total * 100) : 0;
+
+  let cards = '';
+  cards += mkCard('fas fa-list-ol',              'Total',        total,               '#3498DB');
+  cards += mkCard('fas fa-clock',                'Pendientes',   r.pendientes || 0,   '#F39C12');
+  cards += mkCard('fas fa-bell',                 'Notificados',  r.notificados|| 0,   '#5EA8E6');
+  cards += mkCard('fas fa-check-circle',         'Cerrados',     r.cerrados   || 0,   '#26B99A', `${cerPct}% del total`);
+  cards += mkCard('fas fa-exclamation-triangle', 'Reincidentes', r.reincidentes|| 0,  '#E74C3C', `${reinPct}% del total`);
+  if (tipo === 'bancarizacion') {
+    const monto = parseFloat(r.monto_total || 0);
+    cards += mkCard('fas fa-coins', 'Monto total', 'S/ ' + monto.toLocaleString('es-PE', { minimumFractionDigits: 2 }), '#7B52A0');
+  }
+
+  // ── Columna distribución ──────────────────────────────────
+  const COL = ['#3498DB','#26B99A','#E74C3C','#F39C12','#7B52A0','#5EA8E6','#E67E22','#27AE60'];
+  let distHtml = '';
+
+  if (tipo === 'bancarizacion' || tipo === 'n3') {
+    const motivos = data.por_motivo || [];
+    const maxMot  = motivos.reduce((m, x) => Math.max(m, parseInt(x.total)), 0);
+    distHtml = `
+      <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--gris-400);margin-bottom:14px">
+        <i class="fas fa-tags" style="color:var(--primary)"></i> Distribución por motivo
+      </p>
+      ${motivos.length
+        ? motivos.map((m, i) => `
+            <div style="margin-bottom:12px">
+              <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+                <span style="color:var(--gris-100);font-weight:600;flex:1;margin-right:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(m.motivo)}">${escapeHtml(m.motivo || '—')}</span>
+                <span style="color:var(--gris-400);font-weight:700;white-space:nowrap">${m.total}</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                ${_kpiBar(parseInt(m.total), maxMot, COL[i % COL.length])}
+              </div>
+            </div>`).join('')
+        : '<p style="color:var(--gris-400);font-size:13px;text-align:center;padding:20px 0">Sin datos de motivos</p>'
+      }`;
+
+  } else {
+    const reglas    = data.por_regla    || [];
+    const sanciones = data.por_sancion  || [];
+    const niveles   = data.por_nivel    || [];
+    const maxReg    = reglas.reduce((m, x) => Math.max(m, parseInt(x.total)), 0);
+    const maxSan    = sanciones.reduce((m, x) => Math.max(m, parseInt(x.total)), 0);
+    const NIVEL_BG  = { '1ERA VEZ':'rgba(38,185,154,.12)', '2DA VEZ':'rgba(52,152,219,.12)', '3ERA VEZ':'rgba(243,156,18,.12)', '4TA VEZ':'rgba(230,126,34,.15)', '5TA VEZ':'rgba(231,76,60,.12)' };
+    const NIVEL_CLR = { '1ERA VEZ':'#26B99A', '2DA VEZ':'#3498DB', '3ERA VEZ':'#F39C12', '4TA VEZ':'#E67E22', '5TA VEZ':'#E74C3C' };
+
+    distHtml = `
+      <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--gris-400);margin-bottom:12px">
+        <i class="fas fa-route" style="color:var(--primary)"></i> Top reglas / eventos
+      </p>
+      ${reglas.length
+        ? reglas.map(reg => `
+            <div style="margin-bottom:11px">
+              <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+                <span style="color:var(--gris-100);font-weight:600;flex:1;margin-right:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(reg.regla)}">${escapeHtml(reg.regla || '—')}</span>
+                <span style="color:var(--gris-400);font-weight:700">${reg.total}</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">${_kpiBar(parseInt(reg.total), maxReg, '#5EA8E6')}</div>
+            </div>`).join('')
+        : '<p style="color:var(--gris-400);font-size:13px;text-align:center;padding:12px 0">Sin datos</p>'
+      }
+      ${sanciones.length ? `
+        <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--gris-400);margin:18px 0 12px">
+          <i class="fas fa-gavel" style="color:#E74C3C"></i> Por tipo de sanción
+        </p>
+        ${sanciones.map(s => `
+          <div style="margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+              <span style="color:var(--gris-100);font-weight:600">${escapeHtml(s.sancion || '—')}</span>
+              <span style="color:var(--gris-400);font-weight:700">${s.total}</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">${_kpiBar(parseInt(s.total), maxSan, '#E74C3C')}</div>
+          </div>`).join('')}` : ''}
+      ${niveles.length ? `
+        <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--gris-400);margin:18px 0 10px">
+          <i class="fas fa-layer-group" style="color:#7B52A0"></i> Por nivel de reincidencia
+        </p>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          ${niveles.map(n => {
+            const k  = (n.nivel || '').toUpperCase();
+            const bg = NIVEL_BG[k]  || 'rgba(0,0,0,.05)';
+            const tc = NIVEL_CLR[k] || 'var(--gris-300)';
+            return `<div style="padding:5px 14px;border-radius:20px;background:${bg};display:inline-flex;align-items:center;gap:8px">
+              <span style="font-weight:800;font-size:12px;color:${tc}">${escapeHtml(n.nivel)}</span>
+              <span style="font-size:12px;color:${tc};font-weight:600;opacity:.8">${n.total}</span>
+            </div>`;
+          }).join('')}
+        </div>` : ''}`;
+  }
+
+  // ── Top infractores ───────────────────────────────────────
+  const top = data.top_personal || [];
+  const RANK_CLR = ['#F39C12', '#98A6AD', '#CD7F32', 'var(--gris-400)', 'var(--gris-400)'];
+  const topHtml = top.length
+    ? `<table style="width:100%;border-collapse:collapse">
+        <thead>
+          <tr>
+            <th style="text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--gris-400);padding:6px 8px;border-bottom:2px solid var(--gris-600)">#</th>
+            <th style="text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--gris-400);padding:6px 8px;border-bottom:2px solid var(--gris-600)">Nombre</th>
+            <th style="text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--gris-400);padding:6px 8px;border-bottom:2px solid var(--gris-600)">Total</th>
+            <th style="text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--gris-400);padding:6px 8px;border-bottom:2px solid var(--gris-600)">Reinc.</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${top.map((p, i) => `
+            <tr style="border-bottom:1px solid var(--gris-600)${i === 0 ? ';background:rgba(243,156,18,.04)' : ''}">
+              <td style="padding:9px 8px;font-size:14px;font-weight:800;color:${RANK_CLR[i] || 'var(--gris-400)'}">${i + 1}</td>
+              <td style="padding:9px 8px">
+                <div style="font-weight:600;font-size:13px;color:var(--gris-100)">${escapeHtml(p.nombre || '—')}</div>
+                <div style="font-size:11px;color:var(--gris-400)">${escapeHtml(p.cargo || '')}${p.dni ? ' · ' + p.dni : ''}</div>
+              </td>
+              <td style="padding:9px 8px;text-align:center">
+                <span style="font-size:16px;font-weight:800;color:#3498DB;font-family:var(--font-display)">${p.total}</span>
+              </td>
+              <td style="padding:9px 8px;text-align:center">
+                ${parseInt(p.reincidencias) > 0
+                  ? `<span class="badge badge-danger" style="font-weight:700">${p.reincidencias}</span>`
+                  : `<span class="badge badge-success">—</span>`}
+              </td>
+            </tr>`).join('')}
+        </tbody>
+      </table>`
+    : `<div style="text-align:center;padding:30px 0;color:var(--gris-400)">
+        <i class="fas fa-user-check" style="font-size:28px;margin-bottom:8px;display:block;opacity:.35"></i>
+        <p style="font-size:13px">Sin infracciones registradas</p>
+      </div>`;
+
+  // ── Render final ──────────────────────────────────────────
+  cont.innerHTML = `
+    <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:20px">${cards}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div style="border:1px solid var(--gris-600);border-radius:10px;padding:18px;background:var(--gris-800)">
+        ${distHtml || '<p style="color:var(--gris-400);font-size:13px">Sin distribución disponible</p>'}
+      </div>
+      <div style="border:1px solid var(--gris-600);border-radius:10px;padding:18px;background:var(--gris-800)">
+        <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--gris-400);margin-bottom:14px">
+          <i class="fas fa-user-xmark" style="color:#E74C3C"></i> Top infractores
+        </p>
+        ${topHtml}
+      </div>
+    </div>`;
+}
+
+// ============================================================
 document.addEventListener('DOMContentLoaded', () => {
   const fAmon=document.getElementById('formAmon');
   if (fAmon) fAmon.addEventListener('submit', async e => {

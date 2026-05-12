@@ -52,8 +52,9 @@ function showPage(page) {
   if (page === 'dashboard')      cargarDashboard();
   if (page === 'inspecciones')   switchInspeccionTab('listado');
   if (page === 'personal')       cargarPersonal();
-  if (page === 'amonestaciones') cargarAmonestaciones();
-  if (page === 'usuarios')       cargarUsuarios();
+  if (page === 'amonestaciones')     cargarAmonestaciones();
+  if (page === 'kpi-amonestaciones') cargarKpiAmon();
+  if (page === 'usuarios')           cargarUsuarios();
 }
 
 function switchInspeccionTab(tab) {

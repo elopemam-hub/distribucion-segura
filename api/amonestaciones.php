@@ -36,6 +36,7 @@ try {
         case 'save':   guardar(); break;
         case 'delete': eliminar(); break;
         case 'stats':  stats();   break;
+        case 'kpi':    kpi();     break;
         default: jsonResponse(false, 'Acción no válida.', null, 400);
     }
 } catch (Exception $e) {
@@ -262,6 +263,100 @@ function eliminar() {
     $aff = db()->query("DELETE FROM amonestaciones WHERE id = ?", [$id])->rowCount();
     if ($aff === 0) jsonResponse(false, 'No encontrado.', null, 404);
     jsonResponse(true, 'Amonestación eliminada.');
+}
+
+// ------------------------------------------------------------
+function kpi() {
+    $desde = trim($_GET['desde'] ?? '');
+    $hasta = trim($_GET['hasta'] ?? '');
+
+    $fechaWhere  = '';
+    $fechaParams = [];
+    if ($desde !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $desde)) {
+        $fechaWhere  .= ' AND a.fecha >= ?';
+        $fechaParams[] = $desde;
+    }
+    if ($hasta !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $hasta)) {
+        $fechaWhere  .= ' AND a.fecha <= ?';
+        $fechaParams[] = $hasta;
+    }
+
+    $tipos     = ['bancarizacion', 'n3', 'telemetria'];
+    $resultado = [];
+
+    foreach ($tipos as $tipo) {
+        $params = array_merge([$tipo], $fechaParams);
+        $where  = "a.tipo = ?" . $fechaWhere;
+
+        $montoCol = $tipo === 'bancarizacion' ? ", SUM(COALESCE(monto,0)) AS monto_total" : '';
+        $resumen  = db()->fetchOne(
+            "SELECT
+                COUNT(*)                    AS total,
+                SUM(estado='pendiente')     AS pendientes,
+                SUM(estado='notificado')    AS notificados,
+                SUM(estado='cerrado')       AS cerrados,
+                SUM(reincidente=1)          AS reincidentes,
+                SUM(reincidente=0)          AS primera_vez
+                $montoCol
+             FROM amonestaciones a WHERE $where",
+            $params
+        );
+
+        $por_motivo = [];
+        if (in_array($tipo, ['bancarizacion', 'n3'])) {
+            $por_motivo = db()->fetchAll(
+                "SELECT motivo_codigo AS motivo, COUNT(*) AS total
+                 FROM amonestaciones a
+                 WHERE $where AND motivo_codigo IS NOT NULL
+                 GROUP BY motivo_codigo ORDER BY total DESC",
+                $params
+            );
+        }
+
+        $extra = [];
+        if ($tipo === 'telemetria') {
+            $extra['por_regla'] = db()->fetchAll(
+                "SELECT evento_tele AS regla, COUNT(*) AS total
+                 FROM amonestaciones a
+                 WHERE $where AND evento_tele IS NOT NULL
+                 GROUP BY evento_tele ORDER BY total DESC LIMIT 10",
+                $params
+            );
+            $extra['por_sancion'] = db()->fetchAll(
+                "SELECT tipo_sancion AS sancion, COUNT(*) AS total
+                 FROM amonestaciones a
+                 WHERE $where AND tipo_sancion IS NOT NULL
+                 GROUP BY tipo_sancion ORDER BY total DESC",
+                $params
+            );
+            $extra['por_nivel'] = db()->fetchAll(
+                "SELECT tipo_sancion_nivel AS nivel, COUNT(*) AS total
+                 FROM amonestaciones a
+                 WHERE $where AND tipo_sancion_nivel IS NOT NULL
+                 GROUP BY tipo_sancion_nivel
+                 ORDER BY FIELD(tipo_sancion_nivel,'1ERA VEZ','2DA VEZ','3ERA VEZ','4TA VEZ','5TA VEZ')",
+                $params
+            );
+        }
+
+        $top_personal = db()->fetchAll(
+            "SELECT p.nombre, p.cargo, p.dni, COUNT(*) AS total, SUM(a.reincidente) AS reincidencias
+             FROM amonestaciones a
+             LEFT JOIN personal p ON p.id = a.personal_id
+             WHERE $where
+             GROUP BY a.personal_id, p.nombre, p.cargo, p.dni
+             ORDER BY total DESC LIMIT 5",
+            $params
+        );
+
+        $resultado[$tipo] = array_merge([
+            'resumen'      => $resumen,
+            'por_motivo'   => $por_motivo,
+            'top_personal' => $top_personal,
+        ], $extra);
+    }
+
+    jsonResponse(true, '', $resultado);
 }
 
 // ------------------------------------------------------------
