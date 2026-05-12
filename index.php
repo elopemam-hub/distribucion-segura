@@ -737,6 +737,9 @@ $csrf = csrfToken();
         </h2>
         <p style="color:var(--gris-400);font-size:13px;margin-top:2px">Registro de amonestaciones por tipo de infracción</p>
       </div>
+      <button class="btn btn-primary" onclick="showPage('kpi-amonestaciones')">
+        <i class="fas fa-chart-pie"></i> KPI
+      </button>
     </div>
 
     <!-- KPI cards -->
