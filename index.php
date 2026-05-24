@@ -813,6 +813,7 @@ $csrf = csrfToken();
           </div>
           <button class="btn btn-primary" onclick="cargarAmonestaciones()"><i class="fas fa-search"></i> Buscar</button>
           <button class="btn btn-secondary" onclick="limpiarFiltrosAmon()" title="Limpiar filtros"><i class="fas fa-times"></i></button>
+          <button class="btn btn-outline" onclick="exportarExcelAmon()" title="Exportar pestaña actual a Excel" style="border-color:#27AE60;color:#27AE60"><i class="fas fa-file-excel"></i> Excel</button>
           <?php if (in_array($user['rol'], ['administrador','supervisor'])): ?>
           <button class="btn btn-outline" onclick="abrirModalAmon()" style="margin-left:auto">
             <i class="fas fa-plus"></i> Nueva

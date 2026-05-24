@@ -30,9 +30,8 @@
             <select class="form-control" id="filtroAmonEstado"><option value="">Todos</option><option value="pendiente">Pendiente</option><option value="notificado">Notificado</option><option value="cerrado">Cerrado</option></select>
           </div>
           <button class="btn btn-primary" onclick="cargarAmonestaciones()"><i class="fas fa-search"></i> Buscar</button>
-          <button class="btn btn-outline" onclick="exportarExcelAmon()" title="Exportar pestaña actual a Excel" style="margin-left:auto;border-color:#27AE60;color:#27AE60"><i class="fas fa-file-excel"></i> Excel</button>
           <?php if (in_array($user['rol'], ['administrador','supervisor'])): ?>
-          <button class="btn btn-outline" onclick="abrirModalAmon()"><i class="fas fa-plus"></i> Nueva</button>
+          <button class="btn btn-outline" onclick="abrirModalAmon()" style="margin-left:auto"><i class="fas fa-plus"></i> Nueva</button>
           <?php endif; ?>
         </div>
       </div>
