@@ -524,6 +524,86 @@ function renderKpiPanel(tipo, data) {
 }
 
 // ============================================================
+// EXPORTAR EXCEL
+// ============================================================
+
+function exportarExcelAmon(tipo) {
+  tipo = tipo || amonTabActivo;
+  const filas = amonDatos[tipo] || [];
+  if (!filas.length) { toast('No hay datos para exportar', 'error'); return; }
+
+  let cabeceras, datos;
+
+  if (tipo === 'bancarizacion') {
+    cabeceras = ['Fecha','DNI','Nombre y Apellidos','Cargo','Cliente','Cód. Cliente','Motivo','Importe (S/)','Reincidente','Plan de Acciones','Estado','Fecha Cierre','Observaciones'];
+    datos = filas.map(a => [
+      a.fecha || '',
+      a.personal_dni || '',
+      a.personal_nombre || '',
+      a.personal_cargo || '',
+      a.cliente || '',
+      a.codigo_cliente || '',
+      a.motivo_codigo || '',
+      a.monto ? parseFloat(a.monto) : '',
+      a.reincidente == 1 ? 'SÍ' : 'NO',
+      a.plan_acciones || '',
+      a.estado || '',
+      a.fecha_cierre || '',
+      a.observaciones || '',
+    ]);
+  } else if (tipo === 'n3') {
+    cabeceras = ['Fecha','DNI','Nombre y Apellidos','Cargo','Cliente N3','Cód. Cliente','Motivo','Reincidente','Plan de Acciones','Estado','Fecha Cierre','Observaciones'];
+    datos = filas.map(a => [
+      a.fecha || '',
+      a.personal_dni || '',
+      a.personal_nombre || '',
+      a.personal_cargo || '',
+      a.cliente || '',
+      a.codigo_cliente || '',
+      a.motivo_codigo || '',
+      a.reincidente == 1 ? 'SÍ' : 'NO',
+      a.plan_acciones || '',
+      a.estado || '',
+      a.fecha_cierre || '',
+      a.observaciones || '',
+    ]);
+  } else {
+    cabeceras = ['Fecha','Placa','Nombre y Apellidos','Cargo','Regla / Evento','Tipo Sanción','Nivel','Reincidente','Estado','Plan de Acciones','Fecha Cierre','Observaciones'];
+    datos = filas.map(a => [
+      a.fecha || '',
+      a.unidad || '',
+      a.personal_nombre || '',
+      a.personal_cargo || '',
+      a.evento_tele || '',
+      a.tipo_sancion || '',
+      a.tipo_sancion_nivel || '',
+      a.reincidente == 1 ? 'SÍ' : 'NO',
+      a.estado || '',
+      a.plan_acciones || '',
+      a.fecha_cierre || '',
+      a.observaciones || '',
+    ]);
+  }
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet([cabeceras, ...datos]);
+
+  // Ancho automático de columnas
+  const colWidths = cabeceras.map((h, i) => {
+    const maxLen = Math.max(h.length, ...datos.map(r => String(r[i] ?? '').length));
+    return { wch: Math.min(maxLen + 2, 40) };
+  });
+  ws['!cols'] = colWidths;
+
+  const nombreTab = { bancarizacion:'Bancarizacion', n3:'N3', telemetria:'Telemetria' }[tipo];
+  XLSX.utils.book_append_sheet(wb, ws, nombreTab);
+
+  const fecha = new Date().toISOString().slice(0, 10);
+  XLSX.writeFile(wb, `Amonestaciones_${nombreTab}_${fecha}.xlsx`);
+  toast('Archivo Excel generado', 'success');
+}
+
+// ============================================================
 document.addEventListener('DOMContentLoaded', () => {
   const fAmon=document.getElementById('formAmon');
   if (fAmon) fAmon.addEventListener('submit', async e => {
