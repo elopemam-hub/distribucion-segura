@@ -1823,7 +1823,7 @@ $csrf = csrfToken();
 <script src="assets/js/modulos/geocercas.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/geocercas.js') ?>"></script>
 <?php endif; ?>
 <?php if (tieneAccesoModulo('matriz')): ?>
-<script type="text/babel" src="assets/js/modulos/matriz.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/matriz.js') ?>"></script>
+<script type="text/babel" data-presets="react" src="assets/js/modulos/matriz.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/matriz.js') ?>"></script>
 <?php endif; ?>
 <script>
   if ('serviceWorker' in navigator) {
