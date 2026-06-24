@@ -24,7 +24,7 @@ function isLoggedIn(): bool {
 
 function requireLogin(): void {
     if (!isLoggedIn()) {
-        header('Location: ../login.php');
+        header('Location: ' . BASE_URL . '/login.php');
         exit;
     }
 }
@@ -71,7 +71,7 @@ function logout(): void {
             $p['path'], $p['domain'], $p['secure'], $p['httponly']);
     }
     session_destroy();
-    header('Location: ../login.php');
+    header('Location: ' . BASE_URL . '/login.php');
     exit;
 }
 

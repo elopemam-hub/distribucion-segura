@@ -16,6 +16,7 @@ define('DB_NAME', 'u123456789_distribucion');// Nombre de la BD en Hostinger
 // ============================================================
 
 define('DB_CHARSET', 'utf8mb4');
+define('BASE_URL', '/distribucion-segura'); // Cambiar a '' si está en la raíz del dominio
 
 define('APP_NAME', 'Distribución Segura');
 define('APP_VERSION', '1.1.0');
