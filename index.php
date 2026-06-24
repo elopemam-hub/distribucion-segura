@@ -1804,14 +1804,16 @@ $csrf = csrfToken();
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <!-- Leaflet (para módulo Geocercas) -->
 <?php if (tieneAccesoModulo('geocercas')): ?>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <?php endif; ?>
 <!-- React + Babel (para módulo Matriz) -->
-<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<?php if (tieneAccesoModulo('matriz')): ?>
+<script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"></script>
+<?php endif; ?>
 <!-- JS separado por módulo -->
 <script src="assets/js/core.js?v=<?= filemtime(__DIR__.'/assets/js/core.js') ?>&r=3"></script>
 <script src="assets/js/modulos/dashboard.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/dashboard.js') ?>&r=3"></script>
