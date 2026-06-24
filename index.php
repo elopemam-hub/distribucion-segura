@@ -1825,7 +1825,21 @@ $csrf = csrfToken();
 <script src="assets/js/modulos/geocercas.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/geocercas.js') ?>"></script>
 <?php endif; ?>
 <?php if (tieneAccesoModulo('matriz')): ?>
-<script type="text/babel" data-presets="react" src="assets/js/modulos/matriz.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/matriz.js') ?>"></script>
+<script>
+(function() {
+  var s = document.createElement('script');
+  s.src = 'assets/js/modulos/matriz.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/matriz.js') ?>';
+  fetch(s.src)
+    .then(function(r){ return r.text(); })
+    .then(function(jsx){
+      var compiled = Babel.transform(jsx, { presets: ['react'] }).code;
+      var el = document.createElement('script');
+      el.textContent = compiled;
+      document.head.appendChild(el);
+    })
+    .catch(function(e){ console.error('Matriz: error al cargar', e); });
+})();
+</script>
 <?php endif; ?>
 <script>
   if ('serviceWorker' in navigator) {
