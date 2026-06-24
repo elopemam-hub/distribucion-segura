@@ -1808,11 +1808,10 @@ $csrf = csrfToken();
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <?php endif; ?>
-<!-- React + Babel (para módulo Matriz) -->
+<!-- React (para módulo Matriz) — JSX pre-compilado, sin Babel en el navegador -->
 <?php if (tieneAccesoModulo('matriz')): ?>
 <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"></script>
 <?php endif; ?>
 <!-- JS separado por módulo -->
 <script src="assets/js/core.js?v=<?= filemtime(__DIR__.'/assets/js/core.js') ?>&r=3"></script>
@@ -1825,21 +1824,7 @@ $csrf = csrfToken();
 <script src="assets/js/modulos/geocercas.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/geocercas.js') ?>"></script>
 <?php endif; ?>
 <?php if (tieneAccesoModulo('matriz')): ?>
-<script>
-(function() {
-  var s = document.createElement('script');
-  s.src = 'assets/js/modulos/matriz.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/matriz.js') ?>';
-  fetch(s.src)
-    .then(function(r){ return r.text(); })
-    .then(function(jsx){
-      var compiled = Babel.transform(jsx, { presets: ['react'] }).code;
-      var el = document.createElement('script');
-      el.textContent = compiled;
-      document.head.appendChild(el);
-    })
-    .catch(function(e){ console.error('Matriz: error al cargar', e); });
-})();
-</script>
+<script src="assets/js/modulos/matriz.compiled.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/matriz.compiled.js') ?>"></script>
 <?php endif; ?>
 <script>
   if ('serviceWorker' in navigator) {

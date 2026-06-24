@@ -22,3 +22,8 @@ Thumbs.db
 # IDEs
 .vscode/
 .idea/
+
+# Node
+node_modules/
+package-lock.json
+babel.config.json
