@@ -1,3 +1,24 @@
 includes/config.php
 database.sql
 CREDENCIALES.txt
+
+# Archivos subidos por usuarios - ignorar todo excepto la estructura de carpetas
+uploads/*
+!uploads/.gitkeep
+!uploads/amonestaciones/
+uploads/amonestaciones/*
+!uploads/amonestaciones/.gitkeep
+!uploads/personal/
+uploads/personal/*
+!uploads/personal/.gitkeep
+!uploads/telemetria/
+uploads/telemetria/*
+!uploads/telemetria/.gitkeep
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
