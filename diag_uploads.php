@@ -1,7 +1,6 @@
 <?php
 require_once __DIR__ . '/includes/auth.php';
 requireLogin();
-if (getCurrentUser()['rol'] !== 'admin') { http_response_code(403); exit('No autorizado'); }
 
 header('Content-Type: application/json; charset=utf-8');
 
