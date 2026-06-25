@@ -388,5 +388,16 @@ function onLightboxKey(e) {
   if(e.key==='Escape')     cerrarModal('modalFoto');
 }
 
+// ============ IMAGEN ERROR HANDLER ============
+function onEvidenciaError(img) {
+  img.style.display = 'none';
+  const gradient = img.nextElementSibling;
+  if (gradient) gradient.style.display = 'none';
+  const el = document.createElement('div');
+  el.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:rgba(255,255,255,0.3);gap:6px;background:#1a1a1a';
+  el.innerHTML = '<i class="fas fa-camera-slash" style="font-size:24px"></i><span style="font-size:11px;letter-spacing:.5px">Sin imagen</span>';
+  img.parentElement.appendChild(el);
+}
+
 // ============ INIT ============
 document.addEventListener('DOMContentLoaded', () => { showPage('dashboard'); });

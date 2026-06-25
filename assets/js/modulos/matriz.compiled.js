@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // MÓDULO MATRIZ DE CONSECUENCIAS — React/JSX (transpilado por Babel standalone)
 // ============================================================
 
@@ -842,7 +842,7 @@ function RowForm({
       padding: "8px 20px",
       borderRadius: 4,
       border: "none",
-      background: "#1ABB9C",
+      background: "#D4A500",
       color: "#fff",
       cursor: "pointer",
       fontSize: 13,
@@ -891,9 +891,9 @@ function ImportPreview({
       fontSize: 12,
       fontWeight: 600,
       cursor: "pointer",
-      border: `1px solid ${mode === v ? "#1ABB9C" : "#CDD3D8"}`,
-      background: mode === v ? "rgba(26,187,156,.08)" : "none",
-      color: mode === v ? "#1ABB9C" : "#73879C",
+      border: `1px solid ${mode === v ? "#D4A500" : "#CDD3D8"}`,
+      background: mode === v ? "rgba(212,165,0,.08)" : "none",
+      color: mode === v ? "#D4A500" : "#73879C",
       fontFamily: "'Barlow',sans-serif"
     }
   }, l)))), /*#__PURE__*/React.createElement("div", {
@@ -994,7 +994,7 @@ function ImportPreview({
       padding: "8px 20px",
       borderRadius: 4,
       border: "none",
-      background: "#26B99A",
+      background: "#D4A500",
       color: "#fff",
       cursor: "pointer",
       fontSize: 13,
@@ -1216,10 +1216,10 @@ function MatrizApp() {
   }, /*#__PURE__*/React.createElement("style", null, `
         .mtz-trow:hover{background:#f0faf8!important}
         .mtz-fchip{border:1px solid #CDD3D8;border-radius:4px;padding:4px 11px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;font-family:'Barlow',sans-serif;background:#fff;color:#73879C}
-        .mtz-fchip:hover{border-color:#1ABB9C;color:#1ABB9C}
+        .mtz-fchip:hover{border-color:#D4A500;color:#D4A500}
         .mtz-ibtn{background:none;border:1px solid #CDD3D8;border-radius:4px;padding:4px 8px;color:#98A6AD;cursor:pointer;font-size:12px;transition:all .15s}.mtz-ibtn:hover{border-color:#98A6AD;color:#555}
-        .mtz-scinp{background:#fff;border:1px solid #CDD3D8;color:#2A3F54;border-radius:4px;padding:7px 10px 7px 34px;font-size:13px;outline:none;font-family:'Barlow',sans-serif;width:100%}.mtz-scinp:focus{border-color:#1ABB9C;box-shadow:0 0 0 3px rgba(26,187,156,.12)}
-        .mtz-th-srt{cursor:pointer;user-select:none}.mtz-th-srt:hover{color:#1ABB9C}
+        .mtz-scinp{background:#fff;border:1px solid #CDD3D8;color:#2A3F54;border-radius:4px;padding:7px 10px 7px 34px;font-size:13px;outline:none;font-family:'Barlow',sans-serif;width:100%}.mtz-scinp:focus{border-color:#D4A500;box-shadow:0 0 0 3px rgba(212,165,0,.12)}
+        .mtz-th-srt{cursor:pointer;user-select:none}.mtz-th-srt:hover{color:#D4A500}
         .mtz-cq{border-radius:4px;padding:3px 7px;font-size:11px;font-weight:500;text-align:center;line-height:1.3;border:1px solid;display:inline-block}
         .mtz-bdg{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap}
         .mtz-tg{display:inline-block;padding:2px 7px;border-radius:3px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
@@ -1247,7 +1247,7 @@ function MatrizApp() {
   }, /*#__PURE__*/React.createElement("i", {
     className: "fas fa-bolt",
     style: {
-      color: "#1ABB9C",
+      color: "#D4A500",
       marginRight: 8
     }
   }), "Matriz de Consecuencias"), /*#__PURE__*/React.createElement("p", {
@@ -1267,9 +1267,9 @@ function MatrizApp() {
     style: {
       padding: "4px 10px",
       borderRadius: 4,
-      background: "rgba(26,187,156,.1)",
-      border: "1px solid rgba(26,187,156,.3)",
-      color: "#1ABB9C",
+      background: "rgba(212,165,0,.1)",
+      border: "1px solid rgba(212,165,0,.3)",
+      color: "#D4A500",
       fontSize: 11,
       fontWeight: 700
     }
@@ -1294,9 +1294,9 @@ function MatrizApp() {
     onClick: () => exportXLSX(filtered),
     style: {
       ...btnBase,
-      background: "rgba(26,187,156,.08)",
-      color: "#1ABB9C",
-      border: "1px solid rgba(26,187,156,.3)"
+      background: "rgba(212,165,0,.08)",
+      color: "#D4A500",
+      border: "1px solid rgba(212,165,0,.3)"
     }
   }, /*#__PURE__*/React.createElement("i", {
     className: "fas fa-file-excel"
@@ -1324,7 +1324,7 @@ function MatrizApp() {
     onClick: () => setEditRow("new"),
     style: {
       ...btnBase,
-      background: "#1ABB9C",
+      background: "#D4A500",
       color: "#fff"
     }
   }, /*#__PURE__*/React.createElement("i", {
@@ -1457,9 +1457,9 @@ function MatrizApp() {
       className: "mtz-fchip",
       onClick: () => setTipoF(t),
       style: {
-        background: a ? c?.bg || "rgba(26,187,156,.1)" : "none",
-        color: a ? c?.color || "#1ABB9C" : "#73879C",
-        borderColor: a ? c?.color || "#1ABB9C" : "#CDD3D8"
+        background: a ? c?.bg || "rgba(212,165,0,.1)" : "none",
+        color: a ? c?.color || "#D4A500" : "#73879C",
+        borderColor: a ? c?.color || "#D4A500" : "#CDD3D8"
       }
     }, c?.icon && c.icon + " ", t);
   })), /*#__PURE__*/React.createElement("div", {
@@ -1486,9 +1486,9 @@ function MatrizApp() {
       className: "mtz-fchip",
       onClick: () => setCritF(c),
       style: {
-        background: a ? cfg?.bg || "rgba(26,187,156,.1)" : "none",
-        color: a ? cfg?.color || "#1ABB9C" : "#73879C",
-        borderColor: a ? cfg?.color || "#1ABB9C" : "#CDD3D8"
+        background: a ? cfg?.bg || "rgba(212,165,0,.1)" : "none",
+        color: a ? cfg?.color || "#D4A500" : "#73879C",
+        borderColor: a ? cfg?.color || "#D4A500" : "#CDD3D8"
       }
     }, c);
   }))), /*#__PURE__*/React.createElement("div", {
@@ -1615,7 +1615,7 @@ function MatrizApp() {
       textTransform: "uppercase",
       letterSpacing: ".09em",
       color: "#98A6AD",
-      borderBottom: "2px solid #1ABB9C",
+      borderBottom: "2px solid #D4A500",
       whiteSpace: "nowrap",
       width: col.w
     }
@@ -1693,7 +1693,7 @@ function MatrizApp() {
       }
     }, isExp ? row.motivo : row.motivo.length > 78 ? row.motivo.slice(0, 76) + "…" : row.motivo, !isExp && row.motivo.length > 78 && /*#__PURE__*/React.createElement("span", {
       style: {
-        color: "#1ABB9C",
+        color: "#D4A500",
         fontSize: 10,
         marginLeft: 4
       }

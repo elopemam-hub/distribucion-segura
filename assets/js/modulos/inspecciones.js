@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // DISTRIBUCIÓN SEGURA — MÓDULO: INSPECCIONES
 // Listado, detalle, guardar, eliminar, PDF, Excel
 // ============================================================
@@ -109,7 +109,7 @@ async function verDetalle(id) {
   const data=await resp.json();
   if (!data.success) { document.getElementById('modalDetalleBody').innerHTML='<p>Error</p>'; return; }
   const d=data.data, i=d.inspeccion, pct=parseFloat(i.resultado)||0, colorPct=pct>=80?'var(--verde)':pct>=60?'var(--naranja)':'var(--rojo)';
-  galeriaFotos=(d.evidencias||[]).map(ev=>'uploads/'+ev.ruta_imagen);
+  galeriaFotos=(d.evidencias||[]).map(ev=>UPLOAD_URL+ev.ruta_imagen);
   document.getElementById('modalDetalleBody').innerHTML=`
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:flex-start;margin-bottom:14px;padding-bottom:14px;border-bottom:2px solid rgba(21,101,192,0.2)">
       <div>
@@ -124,7 +124,7 @@ async function verDetalle(id) {
           <div style="text-align:center;flex-shrink:0">
             <div style="font-family:var(--font-display);font-size:36px;font-weight:900;color:${colorPct};line-height:1">${pct}%</div>
             <div style="font-size:9px;color:#98A6AD;text-transform:uppercase;letter-spacing:1px;margin-top:2px">Cumplimiento</div>
-            <div style="margin-top:6px"><span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:${pct>=80?'rgba(26,187,156,0.12)':pct>=60?'rgba(243,156,18,0.12)':'rgba(231,76,60,0.12)'};color:${colorPct};border:1px solid ${colorPct}">${pct>=80?'✔ APROBADO':pct>=60?'⚠ EN OBSERVACIÓN':'✖ DESAPROBADO'}</span></div>
+            <div style="margin-top:6px"><span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:${pct>=80?'rgba(38,185,154,0.12)':pct>=60?'rgba(243,156,18,0.12)':'rgba(231,76,60,0.12)'};color:${colorPct};border:1px solid ${colorPct}">${pct>=80?'✔ APROBADO':pct>=60?'⚠ EN OBSERVACIÓN':'✖ DESAPROBADO'}</span></div>
           </div>
           <div style="flex:1;min-width:0">${(()=>{
             const pctCh=Math.min(100,Math.round(parseFloat(i.pct_checklist)||0)), cCh=pctCh>=80?'var(--verde)':pctCh>=60?'var(--naranja)':'var(--rojo)';
@@ -190,7 +190,7 @@ async function verDetalle(id) {
       </div>
       <div>
         <div style="font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--amarillo);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px;display:flex;align-items:center;gap:8px"><i class="fas fa-camera"></i> Evidencias Fotográficas <span style="font-size:11px;color:var(--gris-400);font-family:var(--font-body);text-transform:none;letter-spacing:0;font-weight:400">(${d.evidencias.length} foto${d.evidencias.length!==1?'s':''})</span></div>
-        ${d.evidencias.length?`<div style="display:grid;grid-template-columns:${d.evidencias.length===1?'1fr':'1fr 1fr'};gap:10px">${d.evidencias.map((ev,idx)=>`<div onclick="abrirGaleria(${idx})" style="border-radius:12px;overflow:hidden;cursor:pointer;position:relative;background:#111;border:2px solid rgba(255,255,255,0.08);transition:border-color 0.2s,transform 0.15s;aspect-ratio:${d.evidencias.length===1?'16/9':'4/3'}" onmouseover="this.style.borderColor='var(--amarillo)';this.style.transform='scale(1.02)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)';this.style.transform='scale(1)'"><img src="uploads/${ev.ruta_imagen}" style="width:100%;height:100%;object-fit:cover;display:block"><div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.8));padding:10px;display:flex;align-items:center;justify-content:space-between"><span style="font-size:11px;color:#fff;font-weight:600"><i class="fas fa-search-plus"></i> Foto ${idx+1}/${d.evidencias.length}</span><span style="font-size:10px;color:rgba(255,255,255,0.6)">Clic para ampliar</span></div></div>`).join('')}</div>`:`<div style="background:var(--gris-700);border-radius:10px;padding:40px;text-align:center;color:var(--gris-400)"><i class="fas fa-camera-slash" style="font-size:32px;margin-bottom:10px;display:block"></i>Sin evidencias fotográficas</div>`}
+        ${d.evidencias.length?`<div style="display:grid;grid-template-columns:${d.evidencias.length===1?'1fr':'1fr 1fr'};gap:10px">${d.evidencias.map((ev,idx)=>`<div onclick="abrirGaleria(${idx})" style="border-radius:12px;overflow:hidden;cursor:pointer;position:relative;background:#111;border:2px solid rgba(255,255,255,0.08);transition:border-color 0.2s,transform 0.15s;aspect-ratio:${d.evidencias.length===1?'16/9':'4/3'}" onmouseover="this.style.borderColor='var(--amarillo)';this.style.transform='scale(1.02)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)';this.style.transform='scale(1)'"><img src="${UPLOAD_URL}${ev.ruta_imagen}" style="width:100%;height:100%;object-fit:cover;display:block" onerror="onEvidenciaError(this)"><div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.8));padding:10px;display:flex;align-items:center;justify-content:space-between"><span style="font-size:11px;color:#fff;font-weight:600"><i class="fas fa-search-plus"></i> Foto ${idx+1}/${d.evidencias.length}</span><span style="font-size:10px;color:rgba(255,255,255,0.6)">Clic para ampliar</span></div></div>`).join('')}</div>`:`<div style="background:var(--gris-700);border-radius:10px;padding:40px;text-align:center;color:var(--gris-400)"><i class="fas fa-camera-slash" style="font-size:32px;margin-bottom:10px;display:block"></i>Sin evidencias fotográficas</div>`}
       </div>
     </div>
     <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:24px;padding-top:18px;border-top:1px solid rgba(255,255,255,0.08)">

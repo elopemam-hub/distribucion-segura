@@ -9,7 +9,7 @@ $csrf = csrfToken();
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#1ABB9C">
+<meta name="theme-color" content="#D4A500">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Dist. Segura">
@@ -1827,6 +1827,7 @@ $csrf = csrfToken();
 <script src="assets/js/modulos/matriz.compiled.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/matriz.compiled.js') ?>"></script>
 <?php endif; ?>
 <script>
+  const UPLOAD_URL = '<?= BASE_URL ?>/uploads/';
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/distribucion-segura/sw.js', { scope: '/distribucion-segura/' })
       .catch(() => {});

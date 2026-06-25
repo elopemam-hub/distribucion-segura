@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // MÓDULO GEOCERCAS — Rutas Críticas, Zonas N3, Zonas Rojas
 // ============================================================
 
@@ -228,7 +228,7 @@ function renderGeoTabla(rows) {
       <td><span style="font-size:11px;color:var(--gris-300)">${puntosLabel}</span></td>
       <td>
         <span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:11px;font-weight:600;
-          background:${r.activo ? 'rgba(26,187,156,.12)' : 'var(--gris-600)'};
+          background:${r.activo ? 'rgba(212,165,0,.12)' : 'var(--gris-600)'};
           color:${r.activo ? 'var(--primary)' : 'var(--gris-400)'}">
           ${r.activo ? 'Activa' : 'Inactiva'}
         </span>
