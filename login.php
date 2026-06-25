@@ -77,7 +77,7 @@ $csrf = csrfToken();
   /* ── Panel izquierdo: sidebar oscuro Gentelella ── */
   .panel-left {
     width: 42%;
-    background: #2A3F54;
+    background: #1A1A1A;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -92,7 +92,7 @@ $csrf = csrfToken();
     position: absolute;
     width: 380px; height: 380px;
     border-radius: 50%;
-    border: 50px solid rgba(212,165,0,.08);
+    border: 50px solid rgba(245,200,0,.08);
     top: -100px; left: -100px;
   }
   .panel-left::after {
@@ -100,7 +100,7 @@ $csrf = csrfToken();
     position: absolute;
     width: 260px; height: 260px;
     border-radius: 50%;
-    border: 35px solid rgba(212,165,0,.06);
+    border: 35px solid rgba(245,200,0,.06);
     bottom: -70px; right: -70px;
   }
 
@@ -108,12 +108,12 @@ $csrf = csrfToken();
 
   .logo-badge {
     width: 80px; height: 80px;
-    background: #D4A500;
+    background: #F5C800;
     border-radius: 16px;
     display: flex; align-items: center; justify-content: center;
     margin: 0 auto 24px;
     font-size: 36px; color: #fff;
-    box-shadow: 0 6px 24px rgba(212,165,0,.35);
+    box-shadow: 0 6px 24px rgba(245,200,0,.35);
   }
 
   .brand h1 {
@@ -217,13 +217,13 @@ $csrf = csrfToken();
   }
   .input-wrap input::placeholder { color: #CDD3D8; }
   .input-wrap input:focus {
-    border-color: #D4A500;
-    box-shadow: 0 0 0 3px rgba(212,165,0,.15);
+    border-color: #F5C800;
+    box-shadow: 0 0 0 3px rgba(245,200,0,.15);
   }
 
   .btn-login {
     width: 100%;
-    background: #D4A500;
+    background: #F5C800;
     color: #1A1A1A;
     border: none;
     border-radius: 4px;
@@ -235,11 +235,11 @@ $csrf = csrfToken();
     transition: background .2s, box-shadow .2s, transform .1s;
     margin-top: 6px;
     display: flex; align-items: center; justify-content: center; gap: 8px;
-    box-shadow: 0 3px 10px rgba(212,165,0,.30);
+    box-shadow: 0 3px 10px rgba(245,200,0,.30);
   }
   .btn-login:hover {
-    background: #A88200;
-    box-shadow: 0 5px 16px rgba(212,165,0,.40);
+    background: #D4A500;
+    box-shadow: 0 5px 16px rgba(245,200,0,.40);
     transform: translateY(-1px);
   }
   .btn-login:active { transform: translateY(0); }
@@ -292,8 +292,8 @@ $csrf = csrfToken();
 
   <div class="features">
     <div class="feature-item">
-      <div class="feature-icon" style="background:rgba(212,165,0,.15)">
-        <i class="fas fa-clipboard-check" style="color:#D4A500"></i>
+      <div class="feature-icon" style="background:rgba(245,200,0,.15)">
+        <i class="fas fa-clipboard-check" style="color:#F5C800"></i>
       </div>
       <div class="txt">
         <strong>Inspecciones en ruta</strong>
@@ -301,8 +301,8 @@ $csrf = csrfToken();
       </div>
     </div>
     <div class="feature-item">
-      <div class="feature-icon" style="background:rgba(212,165,0,.15)">
-        <i class="fas fa-id-card" style="color:#D4A500"></i>
+      <div class="feature-icon" style="background:rgba(245,200,0,.15)">
+        <i class="fas fa-id-card" style="color:#F5C800"></i>
       </div>
       <div class="txt">
         <strong>Gestión de personal</strong>
@@ -310,8 +310,8 @@ $csrf = csrfToken();
       </div>
     </div>
     <div class="feature-item">
-      <div class="feature-icon" style="background:rgba(212,165,0,.15)">
-        <i class="fas fa-bolt" style="color:#D4A500"></i>
+      <div class="feature-icon" style="background:rgba(245,200,0,.15)">
+        <i class="fas fa-bolt" style="color:#F5C800"></i>
       </div>
       <div class="txt">
         <strong>Matriz de consecuencias</strong>
@@ -319,8 +319,8 @@ $csrf = csrfToken();
       </div>
     </div>
     <div class="feature-item">
-      <div class="feature-icon" style="background:rgba(212,165,0,.15)">
-        <i class="fas fa-chart-bar" style="color:#D4A500"></i>
+      <div class="feature-icon" style="background:rgba(245,200,0,.15)">
+        <i class="fas fa-chart-bar" style="color:#F5C800"></i>
       </div>
       <div class="txt">
         <strong>Dashboard y reportes</strong>
@@ -336,7 +336,7 @@ $csrf = csrfToken();
 <div class="panel-right">
   <div class="login-card">
     <div class="card-header">
-      <h2><i class="fas fa-lock" style="color:#D4A500;margin-right:8px;font-size:18px"></i>Acceso al Sistema</h2>
+      <h2><i class="fas fa-lock" style="color:#F5C800;margin-right:8px;font-size:18px"></i>Acceso al Sistema</h2>
       <p>Ingresa tus credenciales para continuar</p>
     </div>
 

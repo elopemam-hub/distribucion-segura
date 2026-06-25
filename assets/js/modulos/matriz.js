@@ -170,7 +170,7 @@ function RowForm({ row, onSave, onCancel }) {
       </div>
       <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:8}}>
         <button onClick={onCancel} style={{padding:"8px 18px",borderRadius:4,border:"1px solid #CDD3D8",background:"none",color:"#73879C",cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:"'Barlow',sans-serif"}}>Cancelar</button>
-        <button onClick={()=>onSave(form)} style={{padding:"8px 20px",borderRadius:4,border:"none",background:"#D4A500",color:"#fff",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"'Barlow',sans-serif"}}>
+        <button onClick={()=>onSave(form)} style={{padding:"8px 20px",borderRadius:4,border:"none",background:"#F5C800",color:"#fff",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"'Barlow',sans-serif"}}>
           {row ? "Guardar cambios" : "Agregar fila"}
         </button>
       </div>
@@ -189,7 +189,7 @@ function ImportPreview({ rows, onConfirm, onCancel }) {
         </p>
         <div style={{display:"flex",gap:10}}>
           {[["replace","Reemplazar todo"],["append","Agregar al final"]].map(([v,l])=>(
-            <button key={v} onClick={()=>setMode(v)} style={{padding:"6px 14px",borderRadius:4,fontSize:12,fontWeight:600,cursor:"pointer",border:`1px solid ${mode===v?"#D4A500":"#CDD3D8"}`,background:mode===v?"rgba(212,165,0,.08)":"none",color:mode===v?"#D4A500":"#73879C",fontFamily:"'Barlow',sans-serif"}}>{l}</button>
+            <button key={v} onClick={()=>setMode(v)} style={{padding:"6px 14px",borderRadius:4,fontSize:12,fontWeight:600,cursor:"pointer",border:`1px solid ${mode===v?"#F5C800":"#CDD3D8"}`,background:mode===v?"rgba(245,200,0,.08)":"none",color:mode===v?"#F5C800":"#73879C",fontFamily:"'Barlow',sans-serif"}}>{l}</button>
           ))}
         </div>
       </div>
@@ -218,7 +218,7 @@ function ImportPreview({ rows, onConfirm, onCancel }) {
       </div>
       <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:14}}>
         <button onClick={onCancel} style={{padding:"8px 18px",borderRadius:4,border:"1px solid #CDD3D8",background:"none",color:"#73879C",cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:"'Barlow',sans-serif"}}>Cancelar</button>
-        <button onClick={()=>onConfirm(rows,mode)} style={{padding:"8px 20px",borderRadius:4,border:"none",background:"#D4A500",color:"#fff",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"'Barlow',sans-serif"}}>
+        <button onClick={()=>onConfirm(rows,mode)} style={{padding:"8px 20px",borderRadius:4,border:"none",background:"#F5C800",color:"#fff",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"'Barlow',sans-serif"}}>
           <i className="fas fa-check" style={{marginRight:6}}></i>Confirmar importación
         </button>
       </div>
@@ -354,10 +354,10 @@ function MatrizApp() {
       <style>{`
         .mtz-trow:hover{background:#f0faf8!important}
         .mtz-fchip{border:1px solid #CDD3D8;border-radius:4px;padding:4px 11px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;font-family:'Barlow',sans-serif;background:#fff;color:#73879C}
-        .mtz-fchip:hover{border-color:#D4A500;color:#D4A500}
+        .mtz-fchip:hover{border-color:#F5C800;color:#F5C800}
         .mtz-ibtn{background:none;border:1px solid #CDD3D8;border-radius:4px;padding:4px 8px;color:#98A6AD;cursor:pointer;font-size:12px;transition:all .15s}.mtz-ibtn:hover{border-color:#98A6AD;color:#555}
-        .mtz-scinp{background:#fff;border:1px solid #CDD3D8;color:#2A3F54;border-radius:4px;padding:7px 10px 7px 34px;font-size:13px;outline:none;font-family:'Barlow',sans-serif;width:100%}.mtz-scinp:focus{border-color:#D4A500;box-shadow:0 0 0 3px rgba(212,165,0,.12)}
-        .mtz-th-srt{cursor:pointer;user-select:none}.mtz-th-srt:hover{color:#D4A500}
+        .mtz-scinp{background:#fff;border:1px solid #CDD3D8;color:#2A3F54;border-radius:4px;padding:7px 10px 7px 34px;font-size:13px;outline:none;font-family:'Barlow',sans-serif;width:100%}.mtz-scinp:focus{border-color:#F5C800;box-shadow:0 0 0 3px rgba(245,200,0,.12)}
+        .mtz-th-srt{cursor:pointer;user-select:none}.mtz-th-srt:hover{color:#F5C800}
         .mtz-cq{border-radius:4px;padding:3px 7px;font-size:11px;font-weight:500;text-align:center;line-height:1.3;border:1px solid;display:inline-block}
         .mtz-bdg{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap}
         .mtz-tg{display:inline-block;padding:2px 7px;border-radius:3px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
@@ -368,7 +368,7 @@ function MatrizApp() {
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:10,marginBottom:14}}>
         <div>
           <h2 style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:22,fontWeight:800,color:"#2A3F54",textTransform:"uppercase",letterSpacing:"0.5px",margin:0,lineHeight:1.2}}>
-            <i className="fas fa-bolt" style={{color:"#D4A500",marginRight:8}}></i>
+            <i className="fas fa-bolt" style={{color:"#F5C800",marginRight:8}}></i>
             Matriz de Consecuencias
           </h2>
           <p style={{fontSize:12,color:"#98A6AD",margin:"3px 0 0"}}>Tripulantes de Reparto · {filtered.length} de {data.length} infracciones</p>
@@ -376,14 +376,14 @@ function MatrizApp() {
 
         <div style={{display:"flex",gap:7,alignItems:"center",flexWrap:"wrap"}}>
           {IS_ADMIN && (
-            <span style={{padding:"4px 10px",borderRadius:4,background:"rgba(212,165,0,.1)",border:"1px solid rgba(212,165,0,.3)",color:"#D4A500",fontSize:11,fontWeight:700}}>
+            <span style={{padding:"4px 10px",borderRadius:4,background:"rgba(245,200,0,.1)",border:"1px solid rgba(245,200,0,.3)",color:"#F5C800",fontSize:11,fontWeight:700}}>
               <i className="fas fa-crown" style={{marginRight:5}}></i>{USER_NAME} · Admin
             </span>
           )}
           <button className="mtz-abtn" onClick={()=>exportCSV(filtered)} style={{...btnBase,background:"#F5F7FA",color:"#73879C",border:"1px solid #CDD3D8"}}>
             <i className="fas fa-file-csv"></i> CSV
           </button>
-          <button className="mtz-abtn" onClick={()=>exportXLSX(filtered)} style={{...btnBase,background:"rgba(212,165,0,.08)",color:"#D4A500",border:"1px solid rgba(212,165,0,.3)"}}>
+          <button className="mtz-abtn" onClick={()=>exportXLSX(filtered)} style={{...btnBase,background:"rgba(245,200,0,.08)",color:"#F5C800",border:"1px solid rgba(245,200,0,.3)"}}>
             <i className="fas fa-file-excel"></i> Excel
           </button>
           {IS_ADMIN && <>
@@ -391,7 +391,7 @@ function MatrizApp() {
             <button className="mtz-abtn" onClick={()=>fileRef.current.click()} style={{...btnBase,background:"#F5F7FA",color:"#73879C",border:"1px solid #CDD3D8"}}>
               <i className="fas fa-file-import"></i> Importar
             </button>
-            <button className="mtz-abtn" onClick={()=>setEditRow("new")} style={{...btnBase,background:"#D4A500",color:"#fff"}}>
+            <button className="mtz-abtn" onClick={()=>setEditRow("new")} style={{...btnBase,background:"#F5C800",color:"#fff"}}>
               <i className="fas fa-plus"></i> Nueva fila
             </button>
           </>}
@@ -425,7 +425,7 @@ function MatrizApp() {
         <div style={{display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}}>
           <span style={{fontSize:9,color:"#98A6AD",fontWeight:700,textTransform:"uppercase",letterSpacing:".1em",marginRight:2}}>TIPO:</span>
           {["Todos",...TIPOS_ALL].map(t=>{ const c=TIPO_CFG[t]; const a=tipoF===t; return(
-            <button key={t} className="mtz-fchip" onClick={()=>setTipoF(t)} style={{background:a?(c?.bg||"rgba(212,165,0,.1)"):"none",color:a?(c?.color||"#D4A500"):"#73879C",borderColor:a?(c?.color||"#D4A500"):"#CDD3D8"}}>
+            <button key={t} className="mtz-fchip" onClick={()=>setTipoF(t)} style={{background:a?(c?.bg||"rgba(245,200,0,.1)"):"none",color:a?(c?.color||"#F5C800"):"#73879C",borderColor:a?(c?.color||"#F5C800"):"#CDD3D8"}}>
               {c?.icon&&c.icon+" "}{t}
             </button>);
           })}
@@ -433,7 +433,7 @@ function MatrizApp() {
         <div style={{display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}}>
           <span style={{fontSize:9,color:"#98A6AD",fontWeight:700,textTransform:"uppercase",letterSpacing:".1em",marginRight:2}}>CRITICIDAD:</span>
           {["Todas",...CRITS_ALL].map(c=>{ const cfg=CRIT_CFG[c]; const a=critF===c; return(
-            <button key={c} className="mtz-fchip" onClick={()=>setCritF(c)} style={{background:a?(cfg?.bg||"rgba(212,165,0,.1)"):"none",color:a?(cfg?.color||"#D4A500"):"#73879C",borderColor:a?(cfg?.color||"#D4A500"):"#CDD3D8"}}>{c}</button>);
+            <button key={c} className="mtz-fchip" onClick={()=>setCritF(c)} style={{background:a?(cfg?.bg||"rgba(245,200,0,.1)"):"none",color:a?(cfg?.color||"#F5C800"):"#73879C",borderColor:a?(cfg?.color||"#F5C800"):"#CDD3D8"}}>{c}</button>);
           })}
         </div>
       </div>
@@ -464,7 +464,7 @@ function MatrizApp() {
                 ...(IS_ADMIN?[{l:"",k:null,w:75}]:[]),
               ].map(col=>(
                 <th key={col.l} className={col.k?"mtz-th-srt":""} onClick={col.k?()=>handleSort(col.k):undefined}
-                    style={{padding:"10px 12px",textAlign:"left",fontSize:9,fontWeight:700,textTransform:"uppercase",letterSpacing:".09em",color:"#98A6AD",borderBottom:"2px solid #D4A500",whiteSpace:"nowrap",width:col.w}}>
+                    style={{padding:"10px 12px",textAlign:"left",fontSize:9,fontWeight:700,textTransform:"uppercase",letterSpacing:".09em",color:"#98A6AD",borderBottom:"2px solid #F5C800",whiteSpace:"nowrap",width:col.w}}>
                   {col.l}{col.k&&<span style={{marginLeft:3,opacity:sortF===col.k?1:.3,fontSize:8}}>{sortF===col.k?(sortD==="asc"?"▲":"▼"):"↕"}</span>}
                 </th>
               ))}
@@ -487,7 +487,7 @@ function MatrizApp() {
                   <td style={{padding:"8px 12px"}}>
                     <div style={{color:"#555",lineHeight:1.4,fontSize:12}}>
                       {isExp ? row.motivo : row.motivo.length>78 ? row.motivo.slice(0,76)+"…" : row.motivo}
-                      {!isExp && row.motivo.length>78 && <span style={{color:"#D4A500",fontSize:10,marginLeft:4}}>▾</span>}
+                      {!isExp && row.motivo.length>78 && <span style={{color:"#F5C800",fontSize:10,marginLeft:4}}>▾</span>}
                     </div>
                   </td>
                   <td style={{padding:"8px 12px"}}><span className="mtz-bdg" style={{background:cc.bg,color:cc.color,border:`1px solid ${cc.color}30`}}>{row.criticidad}</span></td>
