@@ -368,7 +368,9 @@ function abrirGaleria(idx) { galeriaIdx=idx; renderLightbox(); abrirModal('modal
 function verFotoLightbox(url) { galeriaFotos=[url]; galeriaIdx=0; renderLightbox(); abrirModal('modalFoto'); document.addEventListener('keydown',onLightboxKey); }
 function renderLightbox() {
   const total=galeriaFotos.length, url=galeriaFotos[galeriaIdx];
-  document.getElementById('modalFotoImg').src=url;
+  const lbImg=document.getElementById('modalFotoImg');
+  lbImg.src=url;
+  lbImg.onerror=function(){ this.onerror=null; const f=url.split('/uploads/')[1]; if(f) this.src=PROD_IMG_BASE+f; };
   document.getElementById('lbContador').textContent=`Foto ${galeriaIdx+1} de ${total}`;
   const btnP=document.getElementById('lbBtnPrev'), btnN=document.getElementById('lbBtnNext');
   if(btnP) btnP.style.display=total>1?'flex':'none';
@@ -389,7 +391,15 @@ function onLightboxKey(e) {
 }
 
 // ============ IMAGEN ERROR HANDLER ============
+const PROD_IMG_BASE = 'https://roka50safety.online/distribucion-segura/uploads/';
+
 function onEvidenciaError(img) {
+  const fname = img.dataset.fname;
+  if (fname && !img.dataset.triedProd) {
+    img.dataset.triedProd = '1';
+    img.src = PROD_IMG_BASE + encodeURIComponent(fname);
+    return;
+  }
   img.style.display = 'none';
   const gradient = img.nextElementSibling;
   if (gradient) gradient.style.display = 'none';
