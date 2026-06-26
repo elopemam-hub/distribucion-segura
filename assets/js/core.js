@@ -391,7 +391,7 @@ function onLightboxKey(e) {
 }
 
 // ============ IMAGEN ERROR HANDLER ============
-const PROD_IMG_BASE = 'https://roka50safety.online/distribucion-segura/uploads/';
+const PROD_IMG_BASE = 'https://roka50safety.online' + UPLOAD_URL;
 
 function onEvidenciaError(img) {
   const fname = img.dataset.fname;

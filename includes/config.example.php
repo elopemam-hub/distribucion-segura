@@ -60,12 +60,22 @@ define('BASE_URL', '/distribucion-segura');
 define('APP_NAME',    'Distribución Segura');
 define('APP_VERSION', '1.1.0');
 
-// UPLOAD_DIR: ruta absoluta al directorio uploads/.
-// Usa DOCUMENT_ROOT para que funcione sin importar dónde esté este config.
-// En Hostinger: /home/u.../public_html/distribucion-segura/uploads/
-// En XAMPP:     C:/xampp/htdocs/distribucion-segura/uploads/
-define('UPLOAD_DIR',  rtrim($_SERVER['DOCUMENT_ROOT'] ?? '', '/\\') . BASE_URL . '/uploads/');
-define('UPLOAD_URL',  BASE_URL . '/uploads/');
+// ── UPLOAD_DIR / UPLOAD_URL ───────────────────────────────────
+// El Git Auto-Deploy de Hostinger borra archivos no rastreados
+// dentro de public_html/distribucion-segura/ en cada deploy.
+// Para evitar perder los uploads, guárdalos FUERA de ese directorio.
+//
+// ── HOSTINGER (producción) ──────────────────────────────────
+//   1. Crea la carpeta:  public_html/ds-uploads/
+//   2. Mueve los archivos de uploads/ a ds-uploads/
+//   3. Usa estas rutas:
+define('UPLOAD_DIR',  rtrim($_SERVER['DOCUMENT_ROOT'] ?? '', '/\\') . '/ds-uploads/');
+define('UPLOAD_URL',  '/ds-uploads/');
+//
+// ── LOCAL (XAMPP) ─────────────────────────────────────────────
+//   Comenta las líneas de arriba y descomenta estas:
+// define('UPLOAD_DIR',  rtrim($_SERVER['DOCUMENT_ROOT'] ?? '', '/\\') . BASE_URL . '/uploads/');
+// define('UPLOAD_URL',  BASE_URL . '/uploads/');
 define('MAX_FILE_SIZE', 5 * 1024 * 1024);  // 5 MB
 define('ALLOWED_TYPES', ['image/jpeg', 'image/png', 'image/webp']);
 

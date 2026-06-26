@@ -85,7 +85,7 @@ function motivoCodBadge(cod) {
 
 function amonDocs(a) {
   let html='';
-  if(a.imagen_evento) html+=`<a class="btn btn-outline btn-sm btn-icon" href="uploads/${a.imagen_evento}" target="_blank" title="Ver imagen"><i class="fas fa-image"></i></a>`;
+  if(a.imagen_evento) html+=`<a class="btn btn-outline btn-sm btn-icon" href="${UPLOAD_URL}${a.imagen_evento}" target="_blank" title="Ver imagen"><i class="fas fa-image"></i></a>`;
   if(a.archivo_amonestacion) html+=`<a class="btn btn-secondary btn-sm btn-icon" href="api/documento.php?f=${encodeURIComponent(a.archivo_amonestacion)}" target="_blank" title="Descargar doc"><i class="fas fa-file-alt"></i></a>`;
   return html||'<span style="color:var(--gris-400);font-size:11px">—</span>';
 }
@@ -208,7 +208,7 @@ function renderTablaAmon(tipo) {
       <td>${a.tipo_sancion?`<span class="badge badge-info" style="font-size:11px">${escapeHtml(a.tipo_sancion)}</span>`:'—'}</td>
       <td>${nivelSancionBadge(a.tipo_sancion_nivel)}</td>
       <td style="text-align:center">${a.reincidente==1?'<span class="badge badge-danger" style="font-weight:700">&#9888; SÍ</span>':'<span class="badge badge-success">NO</span>'}</td>
-      <td>${a.imagen_evento?`<img src="uploads/${a.imagen_evento}" style="width:72px;height:48px;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid var(--gris-500)" onclick="verFotoLightbox('uploads/${a.imagen_evento}')">`:'<span style="color:var(--gris-400);font-size:11px">—</span>'}</td>
+      <td>${a.imagen_evento?`<img src="${UPLOAD_URL}${a.imagen_evento}" style="width:72px;height:48px;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid var(--gris-500)" onclick="verFotoLightbox('${UPLOAD_URL}${a.imagen_evento}')">`:'<span style="color:var(--gris-400);font-size:11px">—</span>'}</td>
       <td>${AMON_ESTADO_BADGE[a.estado]||'<span style="color:var(--gris-400)">—</span>'}</td>
       <td style="font-size:11px;color:var(--gris-300);max-width:160px;line-height:1.6">${escapeHtml(a.plan_acciones||'—')}</td>
       <td style="font-size:12px">${a.fecha_cierre||'—'}</td>

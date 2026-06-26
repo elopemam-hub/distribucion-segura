@@ -1827,7 +1827,7 @@ $csrf = csrfToken();
 <script src="assets/js/modulos/matriz.compiled.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/matriz.compiled.js') ?>"></script>
 <?php endif; ?>
 <script>
-  const UPLOAD_URL = '<?= BASE_URL ?>/uploads/';
+  const UPLOAD_URL = '<?= defined("UPLOAD_URL") ? rtrim(UPLOAD_URL,"/")."/" : BASE_URL."/uploads/" ?>';
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/distribucion-segura/sw.js', { scope: '/distribucion-segura/' })
       .catch(() => {});
