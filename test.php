@@ -1,26 +1,22 @@
 <?php
 require_once __DIR__ . '/includes/auth.php';
 echo '<pre>';
+echo "UPLOAD_DIR: " . UPLOAD_DIR . "\n\n";
 
-echo "DOCUMENT_ROOT: " . ($_SERVER['DOCUMENT_ROOT'] ?? 'NO DEFINIDO') . "\n";
-echo "BASE_URL: "      . (defined('BASE_URL')   ? BASE_URL   : 'NO DEFINIDO') . "\n";
-echo "UPLOAD_DIR: "    . (defined('UPLOAD_DIR')  ? UPLOAD_DIR  : 'NO DEFINIDO') . "\n\n";
-
-echo "¿UPLOAD_DIR existe? " . (is_dir(UPLOAD_DIR) ? '✓ SÍ' : '✗ NO') . "\n";
-echo "¿UPLOAD_DIR/amonestaciones/ existe? " . (is_dir(UPLOAD_DIR . 'amonestaciones/') ? '✓ SÍ' : '✗ NO') . "\n\n";
-
-// Listar primeros 5 PDFs en amonestaciones/
-$pdfs = glob(UPLOAD_DIR . 'amonestaciones/*.pdf') ?: [];
-echo "PDFs encontrados en UPLOAD_DIR/amonestaciones/ (" . count($pdfs) . "):\n";
-foreach (array_slice($pdfs, 0, 5) as $p) {
-    echo "  " . basename($p) . "\n";
+$dir = UPLOAD_DIR . 'amonestaciones/';
+echo "Contenido de amonestaciones/ (" . $dir . "):\n";
+$files = scandir($dir) ?: [];
+foreach ($files as $f) {
+    if ($f === '.' || $f === '..') continue;
+    $full = $dir . $f;
+    echo "  $f  (" . (is_file($full) ? filesize($full).' bytes' : 'directorio') . ")\n";
 }
+if (count($files) <= 2) echo "  (vacía)\n";
 
-// Probar el primer PDF
-if (!empty($pdfs)) {
-    $test = 'amonestaciones/' . basename($pdfs[0]);
-    $url  = BASE_URL . '/api/documento.php?f=' . urlencode($test);
-    echo "\nTest URL para primer PDF:\n  $url\n";
+echo "\nContenido de uploads/ (raíz):\n";
+$root = scandir(UPLOAD_DIR) ?: [];
+foreach ($root as $f) {
+    if ($f === '.' || $f === '..') continue;
+    echo "  $f\n";
 }
-
 echo '</pre>';
