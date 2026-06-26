@@ -59,8 +59,13 @@ define('BASE_URL', '/distribucion-segura');
 
 define('APP_NAME',    'Distribución Segura');
 define('APP_VERSION', '1.1.0');
-define('UPLOAD_DIR',  __DIR__ . '/../uploads/');
-define('UPLOAD_URL',  '../uploads/');
+
+// UPLOAD_DIR: ruta absoluta al directorio uploads/.
+// Usa DOCUMENT_ROOT para que funcione sin importar dónde esté este config.
+// En Hostinger: /home/u.../public_html/distribucion-segura/uploads/
+// En XAMPP:     C:/xampp/htdocs/distribucion-segura/uploads/
+define('UPLOAD_DIR',  rtrim($_SERVER['DOCUMENT_ROOT'] ?? '', '/\\') . BASE_URL . '/uploads/');
+define('UPLOAD_URL',  BASE_URL . '/uploads/');
 define('MAX_FILE_SIZE', 5 * 1024 * 1024);  // 5 MB
 define('ALLOWED_TYPES', ['image/jpeg', 'image/png', 'image/webp']);
 
