@@ -2,13 +2,28 @@
 // ============================================================
 // CONFIGURACIÓN — PLANTILLA
 //
-// INSTRUCCIONES:
-//   1. Copia este archivo: cp config.example.php config.php
-//   2. Edita config.php con tus credenciales reales
-//   3. NUNCA subas config.php a git (está en .gitignore)
+// INSTRUCCIONES SEGÚN ENTORNO:
 //
-// EN HOSTINGER: sube config.php via Administrador de Archivos
-//   Ruta: public_html/distribucion-segura/includes/config.php
+// ── LOCAL (XAMPP) ───────────────────────────────────────────
+//   Guarda como: includes/config.php
+//   El deploy de git nunca toca tu máquina local.
+//
+// ── HOSTINGER (producción) ──────────────────────────────────
+//   El Git Auto-Deploy borra archivos no rastreados dentro
+//   de public_html/distribucion-segura/. Para evitarlo,
+//   guarda este archivo UNA SOLA VEZ en:
+//
+//     /home/u248634042/domains/roka50safety.online/dist-segura.config.php
+//
+//   Es decir: UN NIVEL ARRIBA de public_html/
+//   Desde Hostinger File Manager: sube a la carpeta
+//   "roka50safety.online" (la que contiene a public_html)
+//   con el nombre "dist-segura.config.php"
+//
+//   Así el deploy NUNCA lo borra porque está fuera del
+//   directorio que gestiona git.
+//
+// ── NUNCA subas este archivo a git con credenciales reales ──
 // ============================================================
 
 // ── Elige tu entorno y descomenta el bloque correspondiente ──
