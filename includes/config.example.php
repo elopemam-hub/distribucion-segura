@@ -1,35 +1,55 @@
 <?php
 // ============================================================
-// CONFIGURACIÓN DE BASE DE DATOS - PLANTILLA PARA PRODUCCIÓN
+// CONFIGURACIÓN — PLANTILLA
 //
-// Copia este archivo como config.php y edita los 4 valores:
-//   cp includes/config.example.php includes/config.php
+// INSTRUCCIONES:
+//   1. Copia este archivo: cp config.example.php config.php
+//   2. Edita config.php con tus credenciales reales
+//   3. NUNCA subas config.php a git (está en .gitignore)
+//
+// EN HOSTINGER: sube config.php via Administrador de Archivos
+//   Ruta: public_html/distribucion-segura/includes/config.php
 // ============================================================
 
-define('DB_HOST', 'localhost');              // Normalmente "localhost" en Hostinger
-define('DB_USER', 'u123456789_usuario');     // Usuario de BD en Hostinger
-define('DB_PASS', 'TuPasswordAqui');         // Contraseña de BD en Hostinger
-define('DB_NAME', 'u123456789_distribucion');// Nombre de la BD en Hostinger
+// ── Elige tu entorno y descomenta el bloque correspondiente ──
+
+// ============================================================
+// ENTORNO LOCAL (XAMPP)
+// ============================================================
+// define('DB_HOST', 'localhost');
+// define('DB_USER', 'root');
+// define('DB_PASS', '');
+// define('DB_NAME', 'distribucion_segura');
+// define('DEBUG_MODE', true);
+
+// ============================================================
+// ENTORNO PRODUCCIÓN (HOSTINGER)
+// ============================================================
+define('DB_HOST', 'localhost');
+define('DB_USER', 'u123456789_usuario');   // ← tu usuario de BD en Hostinger
+define('DB_PASS', 'TuPasswordAqui');        // ← tu contraseña
+define('DB_NAME', 'u123456789_bd');         // ← nombre de tu BD
+define('DEBUG_MODE', false);
 
 // ============================================================
 // NO MODIFIQUES NADA DE AQUÍ HACIA ABAJO
 // ============================================================
 
 define('DB_CHARSET', 'utf8mb4');
-define('BASE_URL', '/distribucion-segura'); // Cambiar a '' si está en la raíz del dominio
 
-define('APP_NAME', 'Distribución Segura');
+// BASE_URL: ruta desde la raíz del dominio hasta la app
+//   Hostinger en subcarpeta:  '/distribucion-segura'
+//   Hostinger en raíz:        ''
+define('BASE_URL', '/distribucion-segura');
+
+define('APP_NAME',    'Distribución Segura');
 define('APP_VERSION', '1.1.0');
-define('UPLOAD_DIR', __DIR__ . '/../uploads/');
-define('UPLOAD_URL', '../uploads/');
-define('MAX_FILE_SIZE', 5 * 1024 * 1024); // 5MB
+define('UPLOAD_DIR',  __DIR__ . '/../uploads/');
+define('UPLOAD_URL',  '../uploads/');
+define('MAX_FILE_SIZE', 5 * 1024 * 1024);  // 5 MB
 define('ALLOWED_TYPES', ['image/jpeg', 'image/png', 'image/webp']);
 
-// Zona horaria Perú
 date_default_timezone_set('America/Lima');
-
-// Modo debug (déjalo en false en producción)
-define('DEBUG_MODE', false);
 
 if (DEBUG_MODE) {
     ini_set('display_errors', 1);

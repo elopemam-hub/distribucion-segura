@@ -4,6 +4,21 @@
 // Archivo: includes/db.php
 // ============================================================
 
+// Verificar que config.php existe antes de requerirlo
+if (!file_exists(__DIR__ . '/config.php')) {
+    http_response_code(503);
+    $ejemplo = file_exists(__DIR__ . '/config.example.php') ? 'config.example.php' : 'N/A';
+    die('<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Configuración requerida</title>
+    <style>body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f5f5f5}
+    .box{background:#fff;padding:40px;border-radius:8px;max-width:500px;box-shadow:0 2px 12px rgba(0,0,0,.1)}
+    h2{color:#1a1a1a;margin:0 0 16px}code{background:#f0f0f0;padding:2px 6px;border-radius:3px;font-size:13px}
+    p{color:#555;line-height:1.6}</style></head><body><div class="box">
+    <h2>⚙️ Configuración requerida</h2>
+    <p>El archivo <code>includes/config.php</code> no existe.</p>
+    <p>Copia <code>' . $ejemplo . '</code> como <code>config.php</code> y completa las credenciales de base de datos.</p>
+    <p>En Hostinger: sube el archivo via <strong>Administrador de Archivos</strong> o FTP.</p>
+    </div></body></html>');
+}
 require_once __DIR__ . '/config.php';
 
 class Database {
