@@ -23,7 +23,7 @@ foreach ($_configPaths as $_path) {
 }
 if (!$_configLoaded) {
     http_response_code(503);
-    $tried = implode('<br>', array_map(fn($p) => '<code>' . htmlspecialchars($p) . '</code>', $_configPaths));
+    $tried = implode('<br>', array_map(function($p){ return '<code>'.htmlspecialchars($p).'</code>'; }, $_configPaths));
     die('<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Configuración requerida</title>
     <style>body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f5f5f5}
     .box{background:#fff;padding:40px;border-radius:8px;max-width:620px;box-shadow:0 2px 12px rgba(0,0,0,.1)}
