@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // DISTRIBUCIÓN SEGURA — MÓDULO: AMONESTACIONES
 // Bancarización, N3, Telemetría
 // ============================================================
@@ -86,7 +86,7 @@ function motivoCodBadge(cod) {
 function amonDocs(a) {
   let html='';
   if(a.imagen_evento) html+=`<a class="btn btn-outline btn-sm btn-icon" href="uploads/${a.imagen_evento}" target="_blank" title="Ver imagen"><i class="fas fa-image"></i></a>`;
-  if(a.archivo_amonestacion) html+=`<a class="btn btn-secondary btn-sm btn-icon" href="uploads/${a.archivo_amonestacion}" target="_blank" title="Descargar doc"><i class="fas fa-file-alt"></i></a>`;
+  if(a.archivo_amonestacion) html+=`<a class="btn btn-secondary btn-sm btn-icon" href="api/documento.php?f=${encodeURIComponent(a.archivo_amonestacion)}" target="_blank" title="Descargar doc"><i class="fas fa-file-alt"></i></a>`;
   return html||'<span style="color:var(--gris-400);font-size:11px">—</span>';
 }
 
@@ -261,7 +261,7 @@ async function editarAmon(id) {
     const planB=(a.plan_acciones||'').split(',').map(s=>s.trim());
     document.querySelectorAll('.plan-banc-check').forEach(cb=>cb.checked=planB.includes(cb.value));
     const abDiv=document.getElementById('amon_archivo_actual_banc');
-    if(a.archivo_amonestacion&&abDiv){document.getElementById('amon_archivo_link_banc').href='uploads/'+a.archivo_amonestacion;document.getElementById('amon_archivo_nom_banc').textContent=a.archivo_amonestacion.split('/').pop();abDiv.style.display='block';}else if(abDiv)abDiv.style.display='none';
+    if(a.archivo_amonestacion&&abDiv){document.getElementById('amon_archivo_link_banc').href='api/documento.php?f='+encodeURIComponent(a.archivo_amonestacion);document.getElementById('amon_archivo_nom_banc').textContent=a.archivo_amonestacion.split('/').pop();abDiv.style.display='block';}else if(abDiv)abDiv.style.display='none';
   } else if (a.tipo==='n3') {
     document.getElementById('amon_cliente').value=a.cliente||'';
     document.getElementById('amon_codigo_cliente_n3').value=a.codigo_cliente||'';
@@ -272,7 +272,7 @@ async function editarAmon(id) {
     const planN=(a.plan_acciones||'').split(',').map(s=>s.trim());
     document.querySelectorAll('.plan-n3-check').forEach(cb=>cb.checked=planN.includes(cb.value));
     const anDiv=document.getElementById('amon_archivo_actual_n3');
-    if(a.archivo_amonestacion&&anDiv){document.getElementById('amon_archivo_link_n3').href='uploads/'+a.archivo_amonestacion;document.getElementById('amon_archivo_nom_n3').textContent=a.archivo_amonestacion.split('/').pop();anDiv.style.display='block';}else if(anDiv)anDiv.style.display='none';
+    if(a.archivo_amonestacion&&anDiv){document.getElementById('amon_archivo_link_n3').href='api/documento.php?f='+encodeURIComponent(a.archivo_amonestacion);document.getElementById('amon_archivo_nom_n3').textContent=a.archivo_amonestacion.split('/').pop();anDiv.style.display='block';}else if(anDiv)anDiv.style.display='none';
   } else if (a.tipo==='telemetria') {
     document.getElementById('amon_unidad').value=a.unidad||''; document.getElementById('amon_evento_tele').value=a.evento_tele||'';
     document.getElementById('amon_valor_registrado').value=a.valor_registrado||'';
@@ -285,7 +285,7 @@ async function editarAmon(id) {
     document.querySelectorAll('.plan-accion-check').forEach(cb=>cb.checked=planActual.includes(cb.value));
     if(a.imagen_evento){const prev=document.getElementById('amon_imagen_preview'),img=document.getElementById('amon_img_thumb');if(prev&&img){img.src='uploads/'+a.imagen_evento;prev.style.display='block';}}
     const archDiv=document.getElementById('amon_archivo_actual'),archLink=document.getElementById('amon_archivo_link'),archNom=document.getElementById('amon_archivo_nombre');
-    if(a.archivo_amonestacion&&archDiv&&archLink&&archNom){archLink.href='uploads/'+a.archivo_amonestacion;archNom.textContent=a.archivo_amonestacion.split('/').pop();archDiv.style.display='block';}else if(archDiv)archDiv.style.display='none';
+    if(a.archivo_amonestacion&&archDiv&&archLink&&archNom){archLink.href='api/documento.php?f='+encodeURIComponent(a.archivo_amonestacion);archNom.textContent=a.archivo_amonestacion.split('/').pop();archDiv.style.display='block';}else if(archDiv)archDiv.style.display='none';
   }
   document.getElementById('modalAmonTitulo').textContent='Editar — '+AMON_TITULOS[a.tipo];
   mostrarSeccionAmon(a.tipo); abrirModal('modalAmon');
