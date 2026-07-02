@@ -48,11 +48,25 @@ $itemsCumplen = 0;
 foreach ($checklistItems as $item) {
     if (!empty($item['estado'])) $itemsCumplen++;
 }
-$resultado = $totalItems > 0 ? round(($itemsCumplen / $totalItems) * 100, 2) : 0;
+$pctChecklist = $totalItems > 0 ? round(($itemsCumplen / $totalItems) * 100, 2) : 0;
 
 // --- Tripulación ---
 $tripulacion = json_decode($_POST['tripulacion'] ?? '[]', true);
 if (!is_array($tripulacion)) $tripulacion = [];
+
+// Calcular EPP parcial antes de insertar (cumplimiento proporcional de ítems EPP)
+$sumaEpp = 0; $cntMiembros = 0;
+foreach ($tripulacion as $m) {
+    if (empty(trim($m['nombre'] ?? ''))) continue;
+    $cntMiembros++;
+    $det = $m['epp_detalle'] ?? [];
+    if (!is_array($det)) $det = [];
+    $sumaEpp += count($det) / 5 * 100;
+}
+$pctEpp = $cntMiembros > 0 ? $sumaEpp / $cntMiembros : 100;
+
+// Resultado ponderado: 70% checklist + 30% EPP
+$resultado = round(($pctChecklist * 0.70) + ($pctEpp * 0.30), 2);
 
 // Validación: ningún miembro puede repetirse (mismo nombre)
 $nombresNorm = [];

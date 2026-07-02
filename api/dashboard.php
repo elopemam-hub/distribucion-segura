@@ -44,11 +44,14 @@ $kpisAnt = db()->fetchOne(
 );
 
 // ── EPP global del mes ──────────────────────────────────────
+// pct = promedio de ítems marcados / 5 ítems totales × 100 (cumplimiento parcial)
 $eppGlobal = db()->fetchOne(
     "SELECT
-        COUNT(*)                AS total,
-        SUM(t.epp_completo)     AS completos,
-        COALESCE(ROUND(SUM(t.epp_completo)/NULLIF(COUNT(*),0)*100,1),0) AS pct
+        COUNT(*)            AS total,
+        SUM(t.epp_completo) AS completos,
+        COALESCE(ROUND(
+            SUM(COALESCE(JSON_LENGTH(t.epp_detalle),0)) / (NULLIF(COUNT(*),0) * 5) * 100
+        ,1),0) AS pct
      FROM tripulacion t
      JOIN inspecciones i ON i.id=t.inspeccion_id
      WHERE YEAR(i.fecha)=? AND MONTH(i.fecha)=?
@@ -57,7 +60,9 @@ $eppGlobal = db()->fetchOne(
 );
 
 $eppGlobalAnt = db()->fetchOne(
-    "SELECT COALESCE(ROUND(SUM(t.epp_completo)/NULLIF(COUNT(*),0)*100,1),0) AS pct
+    "SELECT COALESCE(ROUND(
+        SUM(COALESCE(JSON_LENGTH(t.epp_detalle),0)) / (NULLIF(COUNT(*),0) * 5) * 100
+    ,1),0) AS pct
      FROM tripulacion t
      JOIN inspecciones i ON i.id=t.inspeccion_id
      WHERE YEAR(i.fecha)=? AND MONTH(i.fecha)=?
@@ -132,11 +137,14 @@ $porItem = db()->fetchAll(
 );
 
 // ── EPP por rol ─────────────────────────────────────────────
+// pct_cumplimiento = promedio de ítems EPP marcados / 5 por rol
 $epp = db()->fetchAll(
     "SELECT t.rol,
             COUNT(*) AS total,
             SUM(t.epp_completo) AS completos,
-            ROUND(SUM(t.epp_completo)/NULLIF(COUNT(*),0)*100,1) AS pct_cumplimiento
+            COALESCE(ROUND(
+                SUM(COALESCE(JSON_LENGTH(t.epp_detalle),0)) / (NULLIF(COUNT(*),0) * 5) * 100
+            ,1),0) AS pct_cumplimiento
      FROM tripulacion t
      JOIN inspecciones i ON i.id=t.inspeccion_id
      WHERE YEAR(i.fecha)=? AND MONTH(i.fecha)=?
