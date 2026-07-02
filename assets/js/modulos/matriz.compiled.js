@@ -500,56 +500,56 @@ const DEFAULT_DATA = [{
 }];
 const TIPO_CFG = {
   "Seguridad Vial": {
-    color: "#0d5c9a",
-    bg: "#A4E9FF",
+    color: "#6FB6F7",
+    bg: "rgba(61,153,245,0.15)",
     icon: "🛣️"
   },
   "Prevención Violencia": {
-    color: "#a02020",
-    bg: "#FFACA8",
+    color: "#FF8A8A",
+    bg: "rgba(229,83,83,0.15)",
     icon: "🛡️"
   },
   "Seguridad": {
-    color: "#0d6b68",
-    bg: "#A1E0DD",
+    color: "#4FD3AE",
+    bg: "rgba(46,184,140,0.15)",
     icon: "⚠️"
   },
   "Políticas": {
-    color: "#7B52A0",
-    bg: "#F7DFF6",
+    color: "#B99CE0",
+    bg: "rgba(146,109,222,0.15)",
     icon: "📋"
   }
 };
 const CRIT_CFG = {
   "Bajo": {
-    color: "#7B52A0",
-    bg: "#F7DFF6"
+    color: "#B99CE0",
+    bg: "rgba(146,109,222,0.15)"
   },
   "Grave": {
-    color: "#a05018",
-    bg: "#FFDBBA"
+    color: "#F5C453",
+    bg: "rgba(249,177,21,0.15)"
   },
   "Muy Grave": {
-    color: "#a02020",
-    bg: "#FFACA8"
+    color: "#F0A67E",
+    bg: "rgba(230,120,90,0.15)"
   },
   "Muy Crítico": {
-    color: "#8B0020",
-    bg: "#FF8894"
+    color: "#FF8A8A",
+    bg: "rgba(229,83,83,0.18)"
   }
 };
 const VIG_CFG = {
   "6 meses": {
-    color: "#0d7a78",
-    bg: "#A1E0DD"
+    color: "#4FD3AE",
+    bg: "rgba(46,184,140,0.15)"
   },
   "No reingreso": {
-    color: "#8B0020",
-    bg: "#FF8894"
+    color: "#FF8A8A",
+    bg: "rgba(229,83,83,0.16)"
   },
   "18 meses": {
-    color: "#a05018",
-    bg: "#FFDBBA"
+    color: "#F5C453",
+    bg: "rgba(249,177,21,0.15)"
   }
 };
 const TIPOS_ALL = ["Seguridad Vial", "Prevención Violencia", "Seguridad", "Políticas"];
@@ -570,35 +570,37 @@ const LS_KEY = "dist-segura-matriz-v2";
 function consecStyle(text) {
   if (!text) return null;
   const t = text.toLowerCase();
+  // Tema oscuro: fondo translúcido + texto en color vivo + borde sutil.
+  // Escala de severidad: rojo (desvinculación) → azul (llamada/reinducción).
   if (t.includes("desvinculación")) return {
-    bg: "#FF8894",
-    color: "#6b0020",
-    border: "#FA65B9"
+    bg: "rgba(229,83,83,0.16)",
+    color: "#FF8A8A",
+    border: "rgba(229,83,83,0.45)"
   };
   if (t.includes("semana")) return {
-    bg: "#FFACA8",
-    color: "#a02020",
-    border: "#FF8894"
+    bg: "rgba(230,120,90,0.15)",
+    color: "#F0A67E",
+    border: "rgba(230,120,90,0.40)"
   };
   if (t.includes("suspensión")) return {
-    bg: "#FFDBBA",
-    color: "#a05018",
-    border: "#FFACA8"
+    bg: "rgba(249,177,21,0.15)",
+    color: "#F5C453",
+    border: "rgba(249,177,21,0.40)"
   };
   if (t.includes("amonestación")) return {
-    bg: "#A1E0DD",
-    color: "#0d6b68",
-    border: "#5CC2C6"
+    bg: "rgba(46,184,140,0.15)",
+    color: "#4FD3AE",
+    border: "rgba(46,184,140,0.40)"
   };
   if (t.includes("llamada") || t.includes("reinducción")) return {
-    bg: "#A4E9FF",
-    color: "#0d5c9a",
-    border: "#5EA8E6"
+    bg: "rgba(61,153,245,0.15)",
+    color: "#6FB6F7",
+    border: "rgba(61,153,245,0.42)"
   };
   return {
-    bg: "#F1F5F9",
-    color: "#64748B",
-    border: "#CBD5E1"
+    bg: "var(--mtz-surface-2)",
+    color: "var(--mtz-text-muted)",
+    border: "var(--mtz-border-2)"
   };
 }
 
@@ -621,7 +623,7 @@ function MatrizToast({
     style: {
       background: t.type === "error" ? "#7f1d1d" : t.type === "warn" ? "#713f12" : "#14532d",
       border: `1px solid ${t.type === "error" ? "#ef4444" : t.type === "warn" ? "#eab308" : "#22c55e"}`,
-      color: "#FFFFFF",
+      color: "var(--mtz-surface)",
       padding: "10px 16px",
       borderRadius: 8,
       fontSize: 13,
@@ -658,8 +660,8 @@ function MatrizModal({
     onClick: e => e.target === e.currentTarget && onClose()
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      background: "#FFFFFF",
-      border: "1px solid #E6E9ED",
+      background: "var(--mtz-surface)",
+      border: "1px solid var(--mtz-border)",
       borderRadius: 5,
       width: "100%",
       maxWidth: width,
@@ -673,17 +675,17 @@ function MatrizModal({
       justifyContent: "space-between",
       alignItems: "center",
       padding: "14px 20px",
-      borderBottom: "1px solid #E6E9ED",
+      borderBottom: "1px solid var(--mtz-border)",
       position: "sticky",
       top: 0,
-      background: "#FFFFFF",
+      background: "var(--mtz-surface)",
       zIndex: 1
     }
   }, /*#__PURE__*/React.createElement("h2", {
     style: {
       fontSize: 14,
       fontWeight: 700,
-      color: "#2A3F54",
+      color: "var(--mtz-text)",
       margin: 0
     }
   }, title), /*#__PURE__*/React.createElement("button", {
@@ -691,7 +693,7 @@ function MatrizModal({
     style: {
       background: "none",
       border: "none",
-      color: "#98A6AD",
+      color: "var(--mtz-text-muted)",
       fontSize: 18,
       cursor: "pointer",
       lineHeight: 1,
@@ -708,9 +710,9 @@ function MatrizModal({
 
 // ── RowForm ────────────────────────────────────────────────────────────────
 const ROW_FORM_INP = {
-  background: "#F5F7FA",
-  border: "1px solid #CDD3D8",
-  color: "#2A3F54",
+  background: "var(--mtz-surface-2)",
+  border: "1px solid var(--mtz-border-2)",
+  color: "var(--mtz-text)",
   borderRadius: 4,
   padding: "7px 10px",
   fontSize: 13,
@@ -722,7 +724,7 @@ const ROW_FORM_INP = {
 const ROW_FORM_LBL = {
   fontSize: 10,
   fontWeight: 700,
-  color: "#73879C",
+  color: "var(--mtz-text-3)",
   textTransform: "uppercase",
   letterSpacing: "0.07em",
   marginBottom: 4,
@@ -828,9 +830,9 @@ function RowForm({
     style: {
       padding: "8px 18px",
       borderRadius: 4,
-      border: "1px solid #CDD3D8",
+      border: "1px solid var(--mtz-border-2)",
       background: "none",
-      color: "#73879C",
+      color: "var(--mtz-text-3)",
       cursor: "pointer",
       fontSize: 13,
       fontWeight: 600,
@@ -843,7 +845,7 @@ function RowForm({
       borderRadius: 4,
       border: "none",
       background: "#F5C800",
-      color: "#fff",
+      color: "var(--mtz-surface)",
       cursor: "pointer",
       fontSize: 13,
       fontWeight: 700,
@@ -863,19 +865,19 @@ function ImportPreview({
     style: {
       marginBottom: 14,
       padding: "12px 16px",
-      background: "#F5F7FA",
+      background: "var(--mtz-surface-2)",
       borderRadius: 4,
-      border: "1px solid #E6E9ED"
+      border: "1px solid var(--mtz-border)"
     }
   }, /*#__PURE__*/React.createElement("p", {
     style: {
       fontSize: 13,
-      color: "#73879C",
+      color: "var(--mtz-text-3)",
       marginBottom: 10
     }
   }, "Se encontraron ", /*#__PURE__*/React.createElement("strong", {
     style: {
-      color: "#2A3F54"
+      color: "var(--mtz-text)"
     }
   }, rows.length, " filas"), ". ¿Cómo deseas importar?"), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -891,16 +893,16 @@ function ImportPreview({
       fontSize: 12,
       fontWeight: 600,
       cursor: "pointer",
-      border: `1px solid ${mode === v ? "#F5C800" : "#CDD3D8"}`,
+      border: `1px solid ${mode === v ? "#F5C800" : "var(--mtz-border-2)"}`,
       background: mode === v ? "rgba(245,200,0,.08)" : "none",
-      color: mode === v ? "#F5C800" : "#73879C",
+      color: mode === v ? "#F5C800" : "var(--mtz-text-3)",
       fontFamily: "'Barlow',sans-serif"
     }
   }, l)))), /*#__PURE__*/React.createElement("div", {
     style: {
       maxHeight: 250,
       overflow: "auto",
-      border: "1px solid #E6E9ED",
+      border: "1px solid var(--mtz-border)",
       borderRadius: 4
     }
   }, /*#__PURE__*/React.createElement("table", {
@@ -911,42 +913,42 @@ function ImportPreview({
     }
   }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", {
     style: {
-      background: "#F5F7FA"
+      background: "var(--mtz-surface-2)"
     }
   }, ["Tipo", "Vigencia", "Criticidad", "Motivo (extracto)", "1ra Vez"].map(h => /*#__PURE__*/React.createElement("th", {
     key: h,
     style: {
       padding: "8px 10px",
-      color: "#98A6AD",
+      color: "var(--mtz-text-muted)",
       fontWeight: 700,
       textAlign: "left",
-      borderBottom: "1px solid #E6E9ED",
+      borderBottom: "1px solid var(--mtz-border)",
       whiteSpace: "nowrap"
     }
   }, h)))), /*#__PURE__*/React.createElement("tbody", null, rows.slice(0, 20).map((r, i) => /*#__PURE__*/React.createElement("tr", {
     key: i,
     style: {
-      borderBottom: "1px solid #F5F7FA"
+      borderBottom: "1px solid var(--mtz-surface-2)"
     }
   }, /*#__PURE__*/React.createElement("td", {
     style: {
       padding: "6px 10px",
-      color: "#555"
+      color: "var(--mtz-text-2)"
     }
   }, r.tipo), /*#__PURE__*/React.createElement("td", {
     style: {
       padding: "6px 10px",
-      color: "#98A6AD"
+      color: "var(--mtz-text-muted)"
     }
   }, r.vigencia), /*#__PURE__*/React.createElement("td", {
     style: {
       padding: "6px 10px",
-      color: "#555"
+      color: "var(--mtz-text-2)"
     }
   }, r.criticidad), /*#__PURE__*/React.createElement("td", {
     style: {
       padding: "6px 10px",
-      color: "#2A3F54",
+      color: "var(--mtz-text)",
       maxWidth: 200,
       overflow: "hidden",
       textOverflow: "ellipsis",
@@ -955,7 +957,7 @@ function ImportPreview({
   }, r.motivo), /*#__PURE__*/React.createElement("td", {
     style: {
       padding: "6px 10px",
-      color: "#98A6AD",
+      color: "var(--mtz-text-muted)",
       maxWidth: 120,
       overflow: "hidden",
       textOverflow: "ellipsis",
@@ -965,7 +967,7 @@ function ImportPreview({
     colSpan: 5,
     style: {
       padding: "8px 10px",
-      color: "#98A6AD",
+      color: "var(--mtz-text-muted)",
       textAlign: "center"
     }
   }, "...y ", rows.length - 20, " filas más"))))), /*#__PURE__*/React.createElement("div", {
@@ -980,9 +982,9 @@ function ImportPreview({
     style: {
       padding: "8px 18px",
       borderRadius: 4,
-      border: "1px solid #CDD3D8",
+      border: "1px solid var(--mtz-border-2)",
       background: "none",
-      color: "#73879C",
+      color: "var(--mtz-text-3)",
       cursor: "pointer",
       fontSize: 13,
       fontWeight: 600,
@@ -995,7 +997,7 @@ function ImportPreview({
       borderRadius: 4,
       border: "none",
       background: "#F5C800",
-      color: "#fff",
+      color: "var(--mtz-surface)",
       cursor: "pointer",
       fontSize: 13,
       fontWeight: 700,
@@ -1211,14 +1213,14 @@ function MatrizApp() {
   return /*#__PURE__*/React.createElement("div", {
     style: {
       fontFamily: "'Barlow',sans-serif",
-      color: "#2A3F54"
+      color: "var(--mtz-text)"
     }
   }, /*#__PURE__*/React.createElement("style", null, `
-        .mtz-trow:hover{background:#f0faf8!important}
-        .mtz-fchip{border:1px solid #CDD3D8;border-radius:4px;padding:4px 11px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;font-family:'Barlow',sans-serif;background:#fff;color:#73879C}
+        .mtz-trow:hover{background:var(--mtz-row-hover)!important}
+        .mtz-fchip{border:1px solid var(--mtz-border-2);border-radius:4px;padding:4px 11px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;font-family:'Barlow',sans-serif;background:var(--mtz-surface-2);color:var(--mtz-text-3)}
         .mtz-fchip:hover{border-color:#F5C800;color:#F5C800}
-        .mtz-ibtn{background:none;border:1px solid #CDD3D8;border-radius:4px;padding:4px 8px;color:#98A6AD;cursor:pointer;font-size:12px;transition:all .15s}.mtz-ibtn:hover{border-color:#98A6AD;color:#555}
-        .mtz-scinp{background:#fff;border:1px solid #CDD3D8;color:#2A3F54;border-radius:4px;padding:7px 10px 7px 34px;font-size:13px;outline:none;font-family:'Barlow',sans-serif;width:100%}.mtz-scinp:focus{border-color:#F5C800;box-shadow:0 0 0 3px rgba(245,200,0,.12)}
+        .mtz-ibtn{background:none;border:1px solid var(--mtz-border-2);border-radius:4px;padding:4px 8px;color:var(--mtz-text-muted);cursor:pointer;font-size:12px;transition:all .15s}.mtz-ibtn:hover{border-color:var(--mtz-text-muted);color:var(--mtz-text-2)}
+        .mtz-scinp{background:var(--mtz-surface-2);border:1px solid var(--mtz-border-2);color:var(--mtz-text);border-radius:4px;padding:7px 10px 7px 34px;font-size:13px;outline:none;font-family:'Barlow',sans-serif;width:100%}.mtz-scinp:focus{border-color:#F5C800;box-shadow:0 0 0 3px rgba(245,200,0,.12)}
         .mtz-th-srt{cursor:pointer;user-select:none}.mtz-th-srt:hover{color:#F5C800}
         .mtz-cq{border-radius:4px;padding:3px 7px;font-size:11px;font-weight:500;text-align:center;line-height:1.3;border:1px solid;display:inline-block}
         .mtz-bdg{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap}
@@ -1238,7 +1240,7 @@ function MatrizApp() {
       fontFamily: "'Barlow Condensed',sans-serif",
       fontSize: 22,
       fontWeight: 800,
-      color: "#2A3F54",
+      color: "var(--mtz-text)",
       textTransform: "uppercase",
       letterSpacing: "0.5px",
       margin: 0,
@@ -1253,7 +1255,7 @@ function MatrizApp() {
   }), "Matriz de Consecuencias"), /*#__PURE__*/React.createElement("p", {
     style: {
       fontSize: 12,
-      color: "#98A6AD",
+      color: "var(--mtz-text-muted)",
       margin: "3px 0 0"
     }
   }, "Tripulantes de Reparto · ", filtered.length, " de ", data.length, " infracciones")), /*#__PURE__*/React.createElement("div", {
@@ -1283,9 +1285,9 @@ function MatrizApp() {
     onClick: () => exportCSV(filtered),
     style: {
       ...btnBase,
-      background: "#F5F7FA",
-      color: "#73879C",
-      border: "1px solid #CDD3D8"
+      background: "var(--mtz-surface-2)",
+      color: "var(--mtz-text-3)",
+      border: "1px solid var(--mtz-border-2)"
     }
   }, /*#__PURE__*/React.createElement("i", {
     className: "fas fa-file-csv"
@@ -1313,9 +1315,9 @@ function MatrizApp() {
     onClick: () => fileRef.current.click(),
     style: {
       ...btnBase,
-      background: "#F5F7FA",
-      color: "#73879C",
-      border: "1px solid #CDD3D8"
+      background: "var(--mtz-surface-2)",
+      color: "var(--mtz-text-3)",
+      border: "1px solid var(--mtz-border-2)"
     }
   }, /*#__PURE__*/React.createElement("i", {
     className: "fas fa-file-import"
@@ -1325,7 +1327,7 @@ function MatrizApp() {
     style: {
       ...btnBase,
       background: "#F5C800",
-      color: "#fff"
+      color: "var(--mtz-surface)"
     }
   }, /*#__PURE__*/React.createElement("i", {
     className: "fas fa-plus"
@@ -1339,20 +1341,20 @@ function MatrizApp() {
   }, [{
     label: "Total",
     val: data.length,
-    color: "#2A3F54"
+    color: "var(--mtz-text)"
   }, ...byTipo.map(({
     t,
     n
   }) => ({
     label: t,
     val: n,
-    color: TIPO_CFG[t]?.color || "#555",
+    color: TIPO_CFG[t]?.color || "var(--mtz-text-2)",
     icon: TIPO_CFG[t]?.icon
   }))].map(s => /*#__PURE__*/React.createElement("div", {
     key: s.label,
     style: {
-      background: "#fff",
-      border: "1px solid #E6E9ED",
+      background: "var(--mtz-surface)",
+      border: "1px solid var(--mtz-border)",
       borderRadius: 4,
       padding: "8px 14px",
       minWidth: 90,
@@ -1368,7 +1370,7 @@ function MatrizApp() {
   }, s.val), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 10,
-      color: "#98A6AD",
+      color: "var(--mtz-text-muted)",
       fontWeight: 600,
       marginTop: 2
     }
@@ -1377,9 +1379,9 @@ function MatrizApp() {
     onClick: exportTemplate,
     style: {
       ...btnBase,
-      background: "#F5F7FA",
-      color: "#73879C",
-      border: "1px solid #CDD3D8",
+      background: "var(--mtz-surface-2)",
+      color: "var(--mtz-text-3)",
+      border: "1px solid var(--mtz-border-2)",
       marginLeft: "auto",
       alignSelf: "center",
       fontSize: 11
@@ -1401,8 +1403,8 @@ function MatrizApp() {
     className: "fas fa-rotate-left"
   }), " Restaurar original"))), /*#__PURE__*/React.createElement("div", {
     style: {
-      background: "#fff",
-      border: "1px solid #E6E9ED",
+      background: "var(--mtz-surface)",
+      border: "1px solid var(--mtz-border)",
       borderRadius: 4,
       padding: "12px 14px",
       marginBottom: 8,
@@ -1424,7 +1426,7 @@ function MatrizApp() {
       left: 9,
       top: "50%",
       transform: "translateY(-50%)",
-      color: "#98A6AD",
+      color: "var(--mtz-text-muted)",
       fontSize: 12,
       pointerEvents: "none"
     }
@@ -1443,7 +1445,7 @@ function MatrizApp() {
   }, /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 9,
-      color: "#98A6AD",
+      color: "var(--mtz-text-muted)",
       fontWeight: 700,
       textTransform: "uppercase",
       letterSpacing: ".1em",
@@ -1458,8 +1460,8 @@ function MatrizApp() {
       onClick: () => setTipoF(t),
       style: {
         background: a ? c?.bg || "rgba(245,200,0,.1)" : "none",
-        color: a ? c?.color || "#F5C800" : "#73879C",
-        borderColor: a ? c?.color || "#F5C800" : "#CDD3D8"
+        color: a ? c?.color || "#F5C800" : "var(--mtz-text-3)",
+        borderColor: a ? c?.color || "#F5C800" : "var(--mtz-border-2)"
       }
     }, c?.icon && c.icon + " ", t);
   })), /*#__PURE__*/React.createElement("div", {
@@ -1472,7 +1474,7 @@ function MatrizApp() {
   }, /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 9,
-      color: "#98A6AD",
+      color: "var(--mtz-text-muted)",
       fontWeight: 700,
       textTransform: "uppercase",
       letterSpacing: ".1em",
@@ -1487,14 +1489,14 @@ function MatrizApp() {
       onClick: () => setCritF(c),
       style: {
         background: a ? cfg?.bg || "rgba(245,200,0,.1)" : "none",
-        color: a ? cfg?.color || "#F5C800" : "#73879C",
-        borderColor: a ? cfg?.color || "#F5C800" : "#CDD3D8"
+        color: a ? cfg?.color || "#F5C800" : "var(--mtz-text-3)",
+        borderColor: a ? cfg?.color || "#F5C800" : "var(--mtz-border-2)"
       }
     }, c);
   }))), /*#__PURE__*/React.createElement("div", {
     style: {
-      background: "#fff",
-      border: "1px solid #E6E9ED",
+      background: "var(--mtz-surface)",
+      border: "1px solid var(--mtz-border)",
       borderRadius: 4,
       padding: "8px 14px",
       marginBottom: 12,
@@ -1506,7 +1508,7 @@ function MatrizApp() {
   }, /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 9,
-      color: "#98A6AD",
+      color: "var(--mtz-text-muted)",
       fontWeight: 700,
       textTransform: "uppercase",
       letterSpacing: ".1em",
@@ -1514,29 +1516,29 @@ function MatrizApp() {
     }
   }, "LEYENDA:"), [{
     l: "Llamada / Reinducción",
-    bg: "#A4E9FF",
-    c: "#0d5c9a",
-    b: "#5EA8E6"
+    bg: "rgba(61,153,245,0.15)",
+    c: "#6FB6F7",
+    b: "rgba(61,153,245,0.42)"
   }, {
     l: "Amonestación Escrita",
-    bg: "#A1E0DD",
-    c: "#0d6b68",
-    b: "#5CC2C6"
+    bg: "rgba(46,184,140,0.15)",
+    c: "#4FD3AE",
+    b: "rgba(46,184,140,0.40)"
   }, {
     l: "Suspensión",
-    bg: "#FFDBBA",
-    c: "#a05018",
-    b: "#FFACA8"
+    bg: "rgba(249,177,21,0.15)",
+    c: "#F5C453",
+    b: "rgba(249,177,21,0.40)"
   }, {
     l: "Susp. extendida",
-    bg: "#FFACA8",
-    c: "#a02020",
-    b: "#FF8894"
+    bg: "rgba(230,120,90,0.15)",
+    c: "#F0A67E",
+    b: "rgba(230,120,90,0.40)"
   }, {
     l: "Desvinculación",
-    bg: "#FF8894",
-    c: "#6b0020",
-    b: "#FA65B9"
+    bg: "rgba(229,83,83,0.16)",
+    c: "#FF8A8A",
+    b: "rgba(229,83,83,0.45)"
   }].map(x => /*#__PURE__*/React.createElement("div", {
     key: x.l,
     className: "mtz-cq",
@@ -1547,8 +1549,8 @@ function MatrizApp() {
     }
   }, x.l))), /*#__PURE__*/React.createElement("div", {
     style: {
-      background: "#fff",
-      border: "1px solid #E6E9ED",
+      background: "var(--mtz-surface)",
+      border: "1px solid var(--mtz-border)",
       borderRadius: 4,
       overflow: "auto",
       boxShadow: "0 1px 3px rgba(0,0,0,.05)"
@@ -1561,7 +1563,7 @@ function MatrizApp() {
     }
   }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", {
     style: {
-      background: "#F5F7FA"
+      background: "var(--mtz-surface-2)"
     }
   }, [{
     l: "Tipo",
@@ -1614,7 +1616,7 @@ function MatrizApp() {
       fontWeight: 700,
       textTransform: "uppercase",
       letterSpacing: ".09em",
-      color: "#98A6AD",
+      color: "var(--mtz-text-muted)",
       borderBottom: "2px solid #F5C800",
       whiteSpace: "nowrap",
       width: col.w
@@ -1630,7 +1632,7 @@ function MatrizApp() {
     style: {
       textAlign: "center",
       padding: 48,
-      color: "#98A6AD"
+      color: "var(--mtz-text-muted)"
     }
   }, "No hay resultados.")), filtered.map((row, i) => {
     const tc = TIPO_CFG[row.tipo] || {};
@@ -1641,9 +1643,9 @@ function MatrizApp() {
       key: row.id,
       className: "mtz-trow",
       style: {
-        background: i % 2 === 0 ? "#FFFFFF" : "#F9FAFB",
+        background: i % 2 === 0 ? "var(--mtz-surface)" : "var(--mtz-row-alt)",
         cursor: "pointer",
-        borderBottom: "1px solid #E6E9ED"
+        borderBottom: "1px solid var(--mtz-border)"
       },
       onClick: () => setExp(isExp ? null : row.id)
     }, /*#__PURE__*/React.createElement("td", {
@@ -1661,14 +1663,14 @@ function MatrizApp() {
         width: 3,
         height: 26,
         borderRadius: 2,
-        background: tc.color || "#CDD3D8",
+        background: tc.color || "var(--mtz-border-2)",
         flexShrink: 0
       }
     }), /*#__PURE__*/React.createElement("span", {
       style: {
         fontSize: 11,
         fontWeight: 700,
-        color: tc.color || "#98A6AD"
+        color: tc.color || "var(--mtz-text-muted)"
       }
     }, tc.icon, " ", row.tipo))), /*#__PURE__*/React.createElement("td", {
       style: {
@@ -1687,7 +1689,7 @@ function MatrizApp() {
       }
     }, /*#__PURE__*/React.createElement("div", {
       style: {
-        color: "#555",
+        color: "var(--mtz-text-2)",
         lineHeight: 1.4,
         fontSize: 12
       }
@@ -1724,7 +1726,7 @@ function MatrizApp() {
         }
       }, v) : /*#__PURE__*/React.createElement("span", {
         style: {
-          color: "#CDD3D8"
+          color: "var(--mtz-border-2)"
         }
       }, "—"));
     }), IS_ADMIN && /*#__PURE__*/React.createElement("td", {
@@ -1765,16 +1767,16 @@ function MatrizApp() {
   }, /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 10,
-      color: "#98A6AD"
+      color: "var(--mtz-text-muted)"
     }
   }, "Clic en fila para expandir el motivo completo"), /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 10,
-      color: "#98A6AD"
+      color: "var(--mtz-text-muted)"
     }
   }, "Exportaciones incluyen ", /*#__PURE__*/React.createElement("strong", {
     style: {
-      color: "#555"
+      color: "var(--mtz-text-2)"
     }
   }, filtered.length), " filas visibles")), editRow && /*#__PURE__*/React.createElement(MatrizModal, {
     title: editRow === "new" ? "Nueva infracción" : "Editar infracción",
@@ -1798,7 +1800,7 @@ function MatrizApp() {
     width: 380
   }, /*#__PURE__*/React.createElement("p", {
     style: {
-      color: "#73879C",
+      color: "var(--mtz-text-3)",
       fontSize: 14,
       marginBottom: 20,
       lineHeight: 1.6
@@ -1814,9 +1816,9 @@ function MatrizApp() {
     style: {
       padding: "8px 18px",
       borderRadius: 4,
-      border: "1px solid #CDD3D8",
+      border: "1px solid var(--mtz-border-2)",
       background: "none",
-      color: "#73879C",
+      color: "var(--mtz-text-3)",
       cursor: "pointer",
       fontSize: 13,
       fontWeight: 600,
@@ -1845,8 +1847,18 @@ function MatrizApp() {
   }));
 }
 
-// Montar en el contenedor del SPA
-const _mtzContainer = document.getElementById('page-matriz');
-if (_mtzContainer) {
-  ReactDOM.createRoot(_mtzContainer).render(/*#__PURE__*/React.createElement(MatrizApp, null));
+// ── Montaje diferido ─────────────────────────────────────────────────────
+// Se monta la primera vez que el usuario abre la página "Matriz Consecuencias"
+// (cuando showPage('matriz') es llamado desde el SPA).
+// Esto evita montar en un contenedor con display:none y garantiza que
+// el contenedor tenga dimensiones reales al renderizar.
+let _mtzMounted = false;
+function initMatriz() {
+  if (_mtzMounted) return;
+  const container = document.getElementById('page-matriz');
+  if (!container) return;
+  _mtzMounted = true;
+  ReactDOM.createRoot(container).render(
+    /*#__PURE__*/React.createElement(MatrizApp, null)
+  );
 }
