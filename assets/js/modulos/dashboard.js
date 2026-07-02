@@ -18,7 +18,7 @@ async function cargarDashboard() {
     renderTendencia(d.tendencia, mes);
     renderDonut(d.kpis, d.totalHallazgos, d.hallazgosCrit);
     renderRankingConductores(d.ranking);
-    renderHallazgos(d.hallazgos, d.hallazgosCrit);
+    renderDashHallazgos(d.hallazgos, d.hallazgosCrit);
     renderEpp(d.epp, d.eppGlobal);
     renderItemsChecklist(d.porItem);
   } catch(e) { console.error(e); }
@@ -265,7 +265,7 @@ function renderRankingConductores(ranking) {
 }
 
 // ── Hallazgos más frecuentes ──────────────────────────────────
-function renderHallazgos(hallazgos, critMap) {
+function renderDashHallazgos(hallazgos, critMap) {
   const c  = document.getElementById('principalesHallazgos');
   const bd = document.getElementById('hallazgosBadges');
   if (bd) {
