@@ -5,37 +5,53 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  /* ── Acento teal ── */
+  /* ══════════════════════════════════════════════════════════
+     TEMA OSCURO estilo CoreUI · colores extraídos de la referencia
+     Acento corporativo AB InBev (#F5C800) conservado.
+     Los nombres de variable (--gris-XXX, --negro) se mantienen
+     para que todo el CSS existente herede el nuevo tema.
+     ══════════════════════════════════════════════════════════ */
+
+  /* ── Acento corporativo AB InBev ── */
   --primary:        #F5C800;
   --primary-dark:   #D4A500;
-  --primary-light:  rgba(245,200,0,0.10);
+  --primary-light:  rgba(245,200,0,0.14);
   --primary-mid:    #F5C800;
 
   /* ── Aliases legacy ── */
   --amarillo:       #F5C800;
   --amarillo-dark:  #D4A500;
-  --amarillo-light: rgba(245,200,0,0.10);
+  --amarillo-light: rgba(245,200,0,0.14);
 
-  /* ── Sidebar ── */
-  --negro:          #1A1A1A;
+  /* ── Superficies oscuras (CoreUI) ── */
+  --negro:          #212631;   /* sidebar / topbar     */
+  --surface:        #212631;   /* tarjetas / paneles   */
 
-  /* ── Superficies claras ── */
-  --gris-900:       #F5F7FA;   /* fondo página         */
-  --gris-800:       #FFFFFF;   /* tarjetas             */
-  --gris-700:       #F9FAFB;   /* inputs / surface 2   */
-  --gris-600:       #E6E9ED;   /* separadores / bordes suaves */
-  --gris-500:       #CDD3D8;   /* bordes visibles      */
-  --gris-400:       #98A6AD;   /* texto apagado        */
-  --gris-300:       #73879C;   /* texto secundario     */
-  --gris-200:       #555555;   /* texto cuerpo         */
-  --gris-100:       #2A3F54;   /* texto primario       */
+  /* Escala reinterpretada para tema oscuro:
+     900 = fondo más profundo … 100 = texto más claro */
+  --gris-900:       #1D222B;   /* fondo página         */
+  --gris-800:       #212631;   /* tarjetas / superficie 1 */
+  --gris-700:       #2A303D;   /* inputs / superficie 2 */
+  --gris-600:       #2E3440;   /* separadores / bordes suaves */
+  --gris-500:       #3A4150;   /* bordes visibles      */
+  --gris-400:       #8A93A2;   /* texto apagado        */
+  --gris-300:       #A9B2C0;   /* texto secundario     */
+  --gris-200:       #C4CCD8;   /* texto cuerpo         */
+  --gris-100:       #E9ECF1;   /* texto primario       */
   --blanco:         #FFFFFF;
 
-  /* ── Semáforo ── */
-  --verde:   #26B99A;
-  --naranja: #F39C12;
-  --rojo:    #E74C3C;
-  --azul:    #3498DB;
+  /* ── Semáforo (tonos CoreUI, algo más suaves para fondo oscuro) ── */
+  --verde:   #2EB85C;
+  --naranja: #F9B115;
+  --rojo:    #E55353;
+  --azul:    #3D99F5;
+
+  /* ── Paleta KPI multicolor (CoreUI) ── */
+  --kpi-purpura:  #6261CC;
+  --kpi-azul:     #3D99F5;
+  --kpi-amarillo: #EDAD21;
+  --kpi-rojo:     #DB5D5D;
+  --kpi-verde:    #2EB85C;
 
   /* ── Layout ── */
   --sidebar-w: 260px;
@@ -44,13 +60,45 @@
   --font-display: 'Barlow Condensed', sans-serif;
   --font-body:    'Barlow', sans-serif;
 
-  /* ── Sombras ── */
-  --shadow-sm:  0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
-  --shadow-md:  0 4px 12px rgba(0,0,0,.10);
-  --shadow-lg:  0 12px 32px rgba(0,0,0,.14);
+  /* ── Sombras (más marcadas sobre fondo oscuro) ── */
+  --shadow-sm:  0 1px 3px rgba(0,0,0,.30), 0 1px 2px rgba(0,0,0,.24);
+  --shadow-md:  0 4px 14px rgba(0,0,0,.38);
+  --shadow-lg:  0 12px 34px rgba(0,0,0,.48);
 
   /* ── Transiciones ── */
   --t: 0.2s ease;
+}
+
+/* ══════════════════════════════════════════════════════════
+   TEMA CLARO · se activa con <html data-theme="light">
+   Solo redefine las variables que cambian entre claro y oscuro;
+   el acento amarillo, layout, tipografías y KPIs se heredan.
+   ══════════════════════════════════════════════════════════ */
+[data-theme="light"] {
+  --primary-light:  rgba(245,200,0,0.10);
+  --amarillo-light: rgba(245,200,0,0.10);
+
+  --negro:          #1A1A1A;   /* sidebar (se mantiene oscuro en claro) */
+  --surface:        #FFFFFF;   /* tarjetas / paneles   */
+
+  --gris-900:       #F5F7FA;   /* fondo página         */
+  --gris-800:       #FFFFFF;   /* tarjetas             */
+  --gris-700:       #F9FAFB;   /* inputs / superficie 2 */
+  --gris-600:       #E6E9ED;   /* separadores / bordes suaves */
+  --gris-500:       #CDD3D8;   /* bordes visibles      */
+  --gris-400:       #98A6AD;   /* texto apagado        */
+  --gris-300:       #73879C;   /* texto secundario     */
+  --gris-200:       #555555;   /* texto cuerpo         */
+  --gris-100:       #2A3F54;   /* texto primario       */
+
+  --verde:   #26B99A;
+  --naranja: #F39C12;
+  --rojo:    #E74C3C;
+  --azul:    #3498DB;
+
+  --shadow-sm:  0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
+  --shadow-md:  0 4px 12px rgba(0,0,0,.10);
+  --shadow-lg:  0 12px 32px rgba(0,0,0,.14);
 }
 
 body {
@@ -83,10 +131,11 @@ body {
 
 .sidebar-logo .logo-badge {
   width: 42px; height: 42px;
-  background: var(--primary);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
   border-radius: 8px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 18px; color: #fff; flex-shrink: 0;
+  font-size: 18px; color: #1A1A1A; flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(245,200,0,.25);
 }
 
 .sidebar-logo .logo-text {
@@ -123,7 +172,7 @@ body {
 
 .sidebar-footer { border-top: 1px solid rgba(255,255,255,.06); padding: 14px 20px; }
 .user-pill { display: flex; align-items: center; gap: 10px; }
-.user-avatar { width: 34px; height: 34px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #fff; flex-shrink: 0; }
+.user-avatar { width: 34px; height: 34px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: #1A1A1A; flex-shrink: 0; }
 .user-info { flex: 1; min-width: 0; }
 .user-info .user-name  { font-size: 13px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .user-info .user-role  { font-size: 11px; color: rgba(255,255,255,.42); text-transform: capitalize; }
@@ -134,21 +183,21 @@ body {
 .main-content { margin-left: var(--sidebar-w); flex: 1; min-height: 100vh; display: flex; flex-direction: column; }
 
 .topbar {
-  background: #fff;
+  background: var(--surface);
   border-bottom: 1px solid var(--gris-600);
   padding: 0 24px; height: 58px;
   display: flex; align-items: center; justify-content: space-between;
   position: sticky; top: 0; z-index: 100;
   box-shadow: 0 1px 3px rgba(0,0,0,.07);
 }
-.topbar-title { font-family: var(--font-display); font-size: 20px; font-weight: 800; color: var(--negro); text-transform: uppercase; letter-spacing: 1px; }
+.topbar-title { font-family: var(--font-display); font-size: 20px; font-weight: 800; color: var(--gris-100); text-transform: uppercase; letter-spacing: 1px; }
 .topbar-title span { color: var(--primary); }
 .topbar-actions { display: flex; align-items: center; gap: 12px; }
 .page-content { flex: 1; padding: 26px; }
 
 /* ======================== CARDS ======================== */
 .card {
-  background: #fff;
+  background: var(--surface);
   border: 1px solid var(--gris-600);
   border-radius: 5px;
   overflow: hidden;
@@ -158,41 +207,93 @@ body {
   padding: 14px 20px;
   border-bottom: 1px solid var(--gris-600);
   display: flex; align-items: center; justify-content: space-between;
-  background: #fff;
+  background: var(--surface);
 }
 .card-header h3 {
   font-family: var(--font-display); font-size: 15px; font-weight: 700;
-  color: var(--gris-200); text-transform: uppercase; letter-spacing: 0.5px;
+  color: var(--gris-100); text-transform: uppercase; letter-spacing: 0.5px;
   display: flex; align-items: center; gap: 8px;
 }
 .card-header h3 i { color: var(--primary); font-size: 14px; }
 .card-body { padding: 20px; }
 
-/* ======================== KPI CARDS ======================== */
+/* ======================== DASHBOARD KPI (nuevo) ======================== */
+.dash-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 14px;
+}
+@media (max-width: 1200px) { .dash-kpi-grid { grid-template-columns: repeat(3,1fr); } }
+@media (max-width: 640px)  { .dash-kpi-grid { grid-template-columns: repeat(2,1fr); } }
+
+.dash-kpi-card {
+  background: var(--gris-800);
+  border: 1px solid var(--gris-600);
+  border-radius: 10px;
+  padding: 14px 16px;
+  position: relative;
+  transition: transform var(--t), box-shadow var(--t);
+}
+.dash-kpi-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+
+.dash-kpi-top   { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.dash-kpi-label { font-size:11px; font-weight:600; color:var(--gris-400); text-transform:uppercase; letter-spacing:.5px; }
+.dash-kpi-icon  { font-size:16px; opacity:.7; }
+.dash-kpi-icon.verde   { color:var(--verde);   }
+.dash-kpi-icon.rojo    { color:var(--rojo);    }
+.dash-kpi-icon.amarillo{ color:var(--amarillo);}
+.dash-kpi-icon.azul    { color:var(--azul);    }
+.dash-kpi-icon.naranja { color:var(--naranja); }
+
+.dash-kpi-value { font-family:var(--font-display); font-size:30px; font-weight:900; line-height:1; margin-bottom:4px; }
+.dash-kpi-value.verde   { color:var(--verde);   }
+.dash-kpi-value.rojo    { color:var(--rojo);    }
+.dash-kpi-value.amarillo{ color:var(--amarillo);}
+.dash-kpi-value.azul    { color:var(--azul);    }
+.dash-kpi-value.naranja { color:var(--naranja); }
+
+.dash-kpi-sub   { font-size:11px; color:var(--gris-400); margin-bottom:6px; line-height:1.4; }
+
+.dash-kpi-delta { font-size:11px; font-weight:600; display:inline-flex; align-items:center; gap:3px; padding:2px 7px; border-radius:10px; }
+.dash-kpi-delta.positivo { background:rgba(46,184,92,.12); color:var(--verde); }
+.dash-kpi-delta.negativo { background:rgba(229,83,83,.12);  color:var(--rojo);  }
+.dash-kpi-delta.neutro   { background:rgba(138,147,162,.12);color:var(--gris-400); }
+
+.dash-kpi-skeleton {
+  background: var(--gris-700);
+  border-radius: 10px;
+  height: 110px;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* ======================== KPI CARDS (legacy) ======================== */
 .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; margin-bottom: 22px; }
 
 .kpi-card {
-  background: #fff;
-  border: 1px solid var(--gris-600);
-  border-radius: 5px; padding: 18px 20px;
+  background: var(--surface);
+  border: none;
+  border-radius: 8px; padding: 18px 20px;
   position: relative; overflow: hidden;
-  transition: box-shadow var(--t);
+  transition: transform var(--t), box-shadow var(--t);
   box-shadow: var(--shadow-sm);
+  color: #fff;
 }
-.kpi-card:hover { box-shadow: var(--shadow-md); }
-.kpi-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
-.kpi-card.amarillo::before { background: var(--primary); }
-.kpi-card.verde::before    { background: var(--verde); }
-.kpi-card.rojo::before     { background: var(--rojo); }
-.kpi-card.azul::before     { background: var(--azul); }
+.kpi-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+/* Fondo de color sólido con gradiente diagonal sutil (estilo CoreUI) */
+.kpi-card.amarillo { background: linear-gradient(135deg, var(--kpi-amarillo) 0%, #D89818 100%); }
+.kpi-card.verde    { background: linear-gradient(135deg, var(--kpi-verde) 0%, #249B4C 100%); }
+.kpi-card.rojo     { background: linear-gradient(135deg, var(--kpi-rojo) 0%, #C94A4A 100%); }
+.kpi-card.azul     { background: linear-gradient(135deg, var(--kpi-azul) 0%, #2C7FD6 100%); }
+.kpi-card.naranja  { background: linear-gradient(135deg, var(--naranja) 0%, #E09A0C 100%); }
+.kpi-card.purpura  { background: linear-gradient(135deg, var(--kpi-purpura) 0%, #4F4FB3 100%); }
+/* Ya no usamos la barra superior: el color es el fondo */
+.kpi-card::before { display: none; }
 
-.kpi-label { font-size: 11px; font-weight: 700; color: var(--gris-400); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px; }
-.kpi-value { font-family: var(--font-display); font-size: 38px; font-weight: 800; color: var(--negro); line-height: 1; }
-.kpi-value.amarillo { color: var(--primary); }
-.kpi-value.verde    { color: var(--verde); }
-.kpi-value.rojo     { color: var(--rojo); }
-.kpi-sub { font-size: 12px; color: var(--gris-400); margin-top: 5px; }
-.kpi-icon { position: absolute; right: 16px; top: 16px; font-size: 26px; opacity: 0.07; color: var(--negro); }
+.kpi-label { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.85); letter-spacing: 0.3px; margin-bottom: 6px; }
+.kpi-value { font-family: var(--font-display); font-size: 38px; font-weight: 800; color: #fff; line-height: 1; }
+.kpi-value.amarillo, .kpi-value.verde, .kpi-value.rojo, .kpi-value.azul, .kpi-value.purpura { color: #fff; }
+.kpi-sub { font-size: 12px; color: rgba(255,255,255,0.78); margin-top: 5px; }
+.kpi-icon { position: absolute; right: 16px; top: 16px; font-size: 26px; opacity: 0.22; color: #fff; }
 
 /* ======================== BOTONES ======================== */
 .btn {
@@ -224,7 +325,7 @@ body {
 .form-label { font-size: 11px; font-weight: 700; color: var(--gris-300); text-transform: uppercase; letter-spacing: 1.2px; }
 
 .form-control {
-  background: #fff;
+  background: var(--gris-700);
   border: 1px solid var(--gris-500);
   border-radius: 4px; padding: 9px 13px;
   color: var(--gris-100); font-family: var(--font-body); font-size: 14px;
@@ -309,14 +410,15 @@ select.form-control {
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 500; display: flex; align-items: center; justify-content: center; padding: 20px; opacity: 0; pointer-events: none; transition: opacity var(--t); }
 .modal-overlay.open { opacity: 1; pointer-events: all; }
 
-.modal-box { background: #fff; border: 1px solid var(--gris-600); border-radius: 6px; width: 100%; max-width: 820px; max-height: 90vh; overflow-y: auto; transform: scale(0.97); transition: transform var(--t); box-shadow: var(--shadow-lg); }
+.modal-box { background: var(--surface); border: 1px solid var(--gris-600); border-radius: 6px; width: 100%; max-width: 820px; max-height: 90vh; overflow-y: auto; transform: scale(0.97); transition: transform var(--t); box-shadow: var(--shadow-lg); }
 .modal-overlay.open .modal-box { transform: scale(1); }
 
-.modal-header { padding: 16px 22px; border-bottom: 1px solid var(--gris-600); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: #fff; z-index: 1; border-radius: 6px 6px 0 0; }
+.modal-header { padding: 16px 22px; border-bottom: 1px solid var(--gris-600); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: var(--surface); z-index: 1; border-radius: 6px 6px 0 0; }
 .modal-header h3 { font-family: var(--font-display); font-size: 17px; font-weight: 800; color: var(--gris-100); text-transform: uppercase; }
 .modal-close { background: none; border: none; color: var(--gris-400); font-size: 18px; cursor: pointer; padding: 4px; transition: color var(--t); }
 .modal-close:hover { color: var(--rojo); }
 .modal-body { padding: 22px; }
+.modal-footer { padding: 12px 22px; border-top: 1px solid var(--gris-600); background: var(--surface); display: flex; align-items: center; justify-content: flex-end; gap: 8px; border-radius: 0 0 6px 6px; }
 #modalDetalle .modal-body { padding: 16px; }
 
 /* ======================== TOAST ======================== */
@@ -329,8 +431,8 @@ select.form-control {
 /* ======================== TABS ======================== */
 .tabs { display: flex; gap: 2px; margin-bottom: 18px; border-bottom: 2px solid var(--gris-600); padding-bottom: 0; }
 .tab-btn { padding: 9px 17px; background: var(--gris-700); border: 1px solid var(--gris-600); border-bottom: none; border-radius: 4px 4px 0 0; color: var(--gris-300); font-family: var(--font-display); font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; transition: all var(--t); margin-bottom: -2px; }
-.tab-btn:hover { background: #fff; color: var(--gris-200); }
-.tab-btn.active { background: #fff; color: var(--primary); border-color: var(--gris-600); border-bottom: 2px solid #fff; font-weight: 700; }
+.tab-btn:hover { background: var(--gris-700); color: var(--gris-100); }
+.tab-btn.active { background: var(--surface); color: var(--primary); border-color: var(--gris-600); border-bottom: 2px solid var(--surface); font-weight: 700; }
 .tab-panel { display: none; }
 .tab-panel.active { display: block; }
 
@@ -396,7 +498,7 @@ select.form-control {
 .sidebar-overlay.open { display: block; }
 
 /* ======================== AUTOCOMPLETE ======================== */
-.autocomplete-box { display: none; position: absolute; top: calc(100% + 2px); left: 0; right: 0; z-index: 100; background: #fff; border: 1px solid var(--gris-500); border-radius: 4px; max-height: 260px; overflow-y: auto; box-shadow: var(--shadow-md); }
+.autocomplete-box { display: none; position: absolute; top: calc(100% + 2px); left: 0; right: 0; z-index: 100; background: var(--gris-700); border: 1px solid var(--gris-500); border-radius: 4px; max-height: 260px; overflow-y: auto; box-shadow: var(--shadow-md); }
 .auto-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid var(--gris-600); color: var(--gris-200); font-size: 13px; }
 .auto-item:last-child { border-bottom: none; }
 .auto-item:hover { background: var(--primary-light); color: var(--primary); }
@@ -420,3 +522,77 @@ select.form-control {
 .modulo-check input[type=checkbox] { accent-color: var(--primary); width:15px; height:15px; cursor:pointer; }
 .modulo-check input[type=checkbox]:disabled { cursor: not-allowed; opacity:.5; }
 .modulo-check i { color: var(--primary); font-size:13px; }
+
+/* ══════════════════════════════════════════════════════════
+   SELECTOR DE TEMA (Claro / Oscuro / Automático)
+   ══════════════════════════════════════════════════════════ */
+.theme-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  background: var(--gris-700);
+  border: 1px solid var(--gris-600);
+  border-radius: 8px;
+}
+.theme-opt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--gris-400);
+  cursor: pointer;
+  font-size: 13px;
+  transition: background var(--t), color var(--t);
+}
+.theme-opt:hover { color: var(--gris-100); }
+.theme-opt.active {
+  background: var(--primary);
+  color: #1A1A1A;
+}
+/* Transición suave al cambiar de tema (se activa tras la carga
+   inicial para evitar parpadeo). */
+.theme-ready body,
+.theme-ready .sidebar,
+.theme-ready .topbar,
+.theme-ready .card,
+.theme-ready .card-header,
+.theme-ready .kpi-card,
+.theme-ready .modal-box,
+.theme-ready .form-control,
+.theme-ready .data-table thead th {
+  transition: background-color var(--t), color var(--t), border-color var(--t);
+}
+
+/* ══════════════════════════════════════════════════════════
+   VARIABLES DEL MÓDULO MATRIZ (React con estilos inline)
+   Permiten que la Matriz cambie de tema como el resto de la app.
+   ══════════════════════════════════════════════════════════ */
+:root {
+  --mtz-surface:    #212631;
+  --mtz-surface-2:  #2A303D;
+  --mtz-row-alt:    #252B36;
+  --mtz-row-hover:  #283039;
+  --mtz-border:     #2E3440;
+  --mtz-border-2:   #3A4150;
+  --mtz-text:       #E9ECF1;
+  --mtz-text-2:     #C4CCD8;
+  --mtz-text-3:     #A9B2C0;
+  --mtz-text-muted: #8A93A2;
+}
+[data-theme="light"] {
+  --mtz-surface:    #FFFFFF;
+  --mtz-surface-2:  #F5F7FA;
+  --mtz-row-alt:    #F9FAFB;
+  --mtz-row-hover:  #F0FAF8;
+  --mtz-border:     #E6E9ED;
+  --mtz-border-2:   #CDD3D8;
+  --mtz-text:       #2A3F54;
+  --mtz-text-2:     #555555;
+  --mtz-text-3:     #73879C;
+  --mtz-text-muted: #98A6AD;
+}

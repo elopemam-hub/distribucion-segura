@@ -119,7 +119,7 @@ try {
     // 4. Subir evidencias
     $uploadedFiles = [];
     if (!empty($_FILES['evidencias']['name'][0])) {
-        $uploadDir = __DIR__ . '/../uploads/';
+        $uploadDir = __DIR__ . '/../uploads/inspecciones/';
         if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
 
         // Mapeo MIME real → extensión segura
@@ -157,7 +157,7 @@ try {
                 $origSafe = mb_substr(preg_replace('/[^\w\s\.\-]/u', '', $original), 0, 150);
                 db()->query(
                     "INSERT INTO evidencias (inspeccion_id, ruta_imagen, nombre_original, tamaño) VALUES (?, ?, ?, ?)",
-                    [$inspeccionId, $filename, $origSafe, $tamanio]
+                    [$inspeccionId, 'inspecciones/' . $filename, $origSafe, $tamanio]
                 );
                 $uploadedFiles[] = $filename;
             }

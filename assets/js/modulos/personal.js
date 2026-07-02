@@ -91,18 +91,18 @@ function renderPersonalTabla() {
     const diasDni=p.dias_vencer_dni!==null?parseInt(p.dias_vencer_dni):null;
     const diasBrevete=p.dias_vencer_brevete!==null?parseInt(p.dias_vencer_brevete):null;
     return`<tr>
-      <td>${p.foto?`<img src="uploads/${p.foto}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;cursor:pointer" onclick="verFotoLightbox('uploads/${p.foto}')">`:`<div style="width:40px;height:40px;border-radius:50%;background:var(--gris-700);display:flex;align-items:center;justify-content:center;color:var(--gris-400)"><i class="fas fa-user"></i></div>`}</td>
-      <td>${p.dni}</td>
-      <td style="font-size:12px">${p.fecha_nacimiento||'—'}</td>
+      <td>${p.foto?`<img src="${UPLOAD_URL}${p.foto}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;cursor:pointer" onclick="verFotoLightbox('${UPLOAD_URL}${p.foto}')">`:`<div style="width:40px;height:40px;border-radius:50%;background:var(--gris-700);display:flex;align-items:center;justify-content:center;color:var(--gris-400)"><i class="fas fa-user"></i></div>`}</td>
+      <td>${escapeHtml(p.dni)}</td>
+      <td style="font-size:12px">${escapeHtml(p.fecha_nacimiento)||'—'}</td>
       <td><strong>${escapeHtml(p.nombre)}</strong></td>
-      <td><span class="badge">${p.cargo}</span></td>
+      <td><span class="badge">${escapeHtml(p.cargo)}</span></td>
       <td style="font-size:12px">${escapeHtml(p.empresa||'—')}</td>
-      <td>${p.telefono||'—'}</td>
-      <td style="font-size:12px">${p.fecha_ingreso||'—'}</td>
-      <td style="font-size:12px">${p.dni_vencimiento||'—'}</td>
-      <td style="font-size:12px">${p.num_licencia||'—'}</td>
+      <td>${escapeHtml(p.telefono)||'—'}</td>
+      <td style="font-size:12px">${escapeHtml(p.fecha_ingreso)||'—'}</td>
+      <td style="font-size:12px">${escapeHtml(p.dni_vencimiento)||'—'}</td>
+      <td style="font-size:12px">${escapeHtml(p.num_licencia)||'—'}</td>
       <td style="font-size:12px">${p.categoria_licencia?`<span class="badge badge-info">${escapeHtml(p.categoria_licencia)}</span>`:'—'}</td>
-      <td style="font-size:12px">${p.vencimiento_brevete||'—'}</td>
+      <td style="font-size:12px">${escapeHtml(p.vencimiento_brevete)||'—'}</td>
       <td>${badgeDias(diasDni)}</td><td>${badgeDias(diasBrevete)}</td>
       <td>${p.activo==1?'<span class="badge badge-success">Activo</span>':'<span class="badge badge-danger">Inactivo</span>'}</td>
       <td>

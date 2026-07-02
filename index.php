@@ -8,8 +8,22 @@ $csrf = csrfToken();
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<script>
+/* Aplica el tema guardado ANTES de pintar, para evitar parpadeo.
+   'auto' sigue la preferencia del sistema operativo. */
+(function () {
+  try {
+    var pref = localStorage.getItem('dist-segura-tema') || 'dark';
+    var dark = pref === 'dark' ||
+      (pref === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  } catch (e) {
+    document.documentElement.setAttribute('data-theme', 'dark');
+  }
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#F5C800">
+<meta name="theme-color" content="#1D222B">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Dist. Segura">
@@ -164,12 +178,6 @@ $csrf = csrfToken();
     <?php endif; ?>
 
 
-    <?php if (tieneAccesoModulo('reportes')): ?>
-    <div class="nav-section-title" style="margin-top:12px">Análisis</div>
-    <a class="nav-item" data-page="reportes" onclick="showPage('reportes')">
-      <i class="fas fa-chart-column"></i> Reportes
-    </a>
-    <?php endif; ?>
 
 
     <?php if ($user['rol'] === 'administrador'): ?>
@@ -203,7 +211,12 @@ $csrf = csrfToken();
       <div class="topbar-title"><span>DISTRIBUCIÓN SEGURA</span> — JULIACA</div>
     </div>
     <div class="topbar-actions">
-      <div style="font-size:12px;color:#666" id="clock"></div>
+      <div class="theme-switch" role="group" aria-label="Tema de la interfaz">
+        <button type="button" class="theme-opt" data-theme-choice="light" onclick="setTheme('light')" title="Tema claro" aria-label="Tema claro"><i class="fas fa-sun"></i></button>
+        <button type="button" class="theme-opt" data-theme-choice="dark" onclick="setTheme('dark')" title="Tema oscuro" aria-label="Tema oscuro"><i class="fas fa-moon"></i></button>
+        <button type="button" class="theme-opt" data-theme-choice="auto" onclick="setTheme('auto')" title="Automático (según tu sistema)" aria-label="Tema automático"><i class="fas fa-circle-half-stroke"></i></button>
+      </div>
+      <div style="font-size:12px;color:var(--gris-400)" id="clock"></div>
       <button class="btn btn-primary btn-sm" onclick="switchInspeccionTab('nueva')">
         <i class="fas fa-plus"></i> Nueva
       </button>
@@ -212,7 +225,9 @@ $csrf = csrfToken();
 
   <!-- ===== PAGE: DASHBOARD ===== -->
   <div class="page-content" id="page-dashboard">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px">
+
+    <!-- Cabecera -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px">
       <div>
         <h2 style="font-family:var(--font-display);font-size:24px;font-weight:800;color:var(--gris-100)">
           <i class="fas fa-gauge-high" style="color:var(--amarillo)"></i> Dashboard SST
@@ -223,51 +238,85 @@ $csrf = csrfToken();
         <label style="font-size:12px;color:var(--gris-400)">Mes:</label>
         <input type="month" id="filtroMes" class="form-control" style="width:160px"
                value="<?= date('Y-m') ?>" onchange="cargarDashboard()">
+        <button class="btn btn-outline btn-sm" onclick="cargarDashboard()" title="Actualizar">
+          <i class="fas fa-rotate-right"></i>
+        </button>
       </div>
     </div>
 
-    <!-- KPIs -->
-    <div class="kpi-grid" id="kpiGrid">
-      <?php for($i=0;$i<5;$i++): ?>
-      <div class="kpi-card" style="height:100px;background:var(--gris-700);animation:pulse 1.5s infinite"></div>
+    <!-- ── Fila 1: 6 KPI cards ── -->
+    <div id="kpiGrid" class="dash-kpi-grid" style="margin-bottom:18px">
+      <?php for($i=0;$i<6;$i++): ?>
+      <div class="dash-kpi-skeleton"></div>
       <?php endfor; ?>
     </div>
 
-    <!-- Charts row -->
+    <!-- ── Fila 2: Tendencia (2/3) + Distribución donut (1/3) ── -->
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:18px;margin-bottom:18px" class="charts-row">
+      <div class="card">
+        <div class="card-header">
+          <h3><i class="fas fa-chart-line"></i> Tendencia del mes</h3>
+          <div id="dashTendLegend" style="display:flex;gap:14px;font-size:11px;color:var(--gris-400)"></div>
+        </div>
+        <div class="card-body" style="padding-bottom:14px">
+          <canvas id="chartTendencia" height="200"></canvas>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <h3><i class="fas fa-chart-pie"></i> Distribución</h3>
+        </div>
+        <div class="card-body" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px">
+          <div style="position:relative;width:160px;height:160px">
+            <canvas id="chartDonut" width="160" height="160"></canvas>
+            <div id="donutCenter" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none">
+              <div style="font-family:var(--font-display);font-size:26px;font-weight:900;color:var(--gris-100)" id="donutPct">—</div>
+              <div style="font-size:10px;color:var(--gris-400);text-transform:uppercase;letter-spacing:.5px">aprobación</div>
+            </div>
+          </div>
+          <div id="donutLeyenda" style="margin-top:16px;width:100%;display:flex;flex-direction:column;gap:6px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Fila 3: Ranking + Hallazgos ── -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px" class="charts-row">
       <div class="card">
         <div class="card-header">
-          <h3><i class="fas fa-chart-line"></i> Tendencia (7 días)</h3>
+          <h3><i class="fas fa-trophy"></i> Ranking Conductores</h3>
+          <span id="rankingTotal" style="font-size:11px;color:var(--gris-400)"></span>
         </div>
-        <div class="card-body">
-          <canvas id="chartTendencia" height="220"></canvas>
+        <div class="card-body" id="rankingConductores" style="padding:10px 18px"></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <h3><i class="fas fa-triangle-exclamation"></i> Principales Hallazgos</h3>
+          <div id="hallazgosBadges" style="display:flex;gap:6px"></div>
         </div>
+        <div class="card-body" id="principalesHallazgos" style="max-height:290px;overflow-y:auto"></div>
+      </div>
+    </div>
+
+    <!-- ── Fila 4: EPP por rol + Items checklist ── -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px" class="charts-row">
+      <div class="card">
+        <div class="card-header">
+          <h3><i class="fas fa-hard-hat"></i> EPP por Rol</h3>
+          <span id="eppGlobalBadge" style="font-size:12px;font-weight:700"></span>
+        </div>
+        <div class="card-body" id="dashEpp" style="padding:14px 20px"></div>
       </div>
       <div class="card">
         <div class="card-header">
           <h3><i class="fas fa-list-check"></i> Cumplimiento por Ítem</h3>
+          <span style="font-size:11px;color:var(--gris-400)">peores primero</span>
         </div>
-        <div class="card-body" style="max-height:260px;overflow-y:auto">
+        <div class="card-body" style="max-height:290px;overflow-y:auto">
           <div id="itemsChecklist"></div>
         </div>
       </div>
     </div>
 
-    <!-- Ranking + Hallazgos -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px" class="charts-row">
-      <div class="card">
-        <div class="card-header">
-          <h3><i class="fas fa-trophy"></i> Ranking Conductores</h3>
-        </div>
-        <div class="card-body" id="rankingConductores" style="padding:12px 22px"></div>
-      </div>
-      <div class="card">
-        <div class="card-header">
-          <h3><i class="fas fa-triangle-exclamation"></i> Principales Hallazgos</h3>
-        </div>
-        <div class="card-body" id="principalesHallazgos" style="max-height:280px;overflow-y:auto"></div>
-      </div>
-    </div>
   </div>
 
   <?php if (tieneAccesoModulo('inspecciones')): ?>
@@ -945,28 +994,6 @@ $csrf = csrfToken();
   </div>
   <?php endif; // kpi-amonestaciones ?>
 
-  <?php if (tieneAccesoModulo('reportes')): ?>
-  <div class="page-content" id="page-reportes" style="display:none">
-    <h2 style="font-family:var(--font-display);font-size:24px;font-weight:800;color:var(--gris-100);margin-bottom:24px">
-      <i class="fas fa-chart-bar" style="color:var(--amarillo)"></i> Reportes
-    </h2>
-    <div class="card">
-      <div class="card-body" style="text-align:center;padding:48px">
-        <i class="fas fa-file-pdf" style="font-size:48px;color:var(--amarillo);margin-bottom:16px;display:block"></i>
-        <h3 style="font-family:var(--font-display);font-size:20px;color:var(--gris-100);margin-bottom:8px">Generación de Reportes</h3>
-        <p style="color:var(--gris-400);margin-bottom:24px">Selecciona el tipo de reporte que deseas generar</p>
-        <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap">
-          <button class="btn btn-primary" onclick="generarReporteMes()">
-            <i class="fas fa-calendar-alt"></i> Reporte Mensual
-          </button>
-          <button class="btn btn-outline" onclick="exportarExcel()">
-            <i class="fas fa-file-excel"></i> Exportar Excel
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-  <?php endif; // reportes ?>
 
   <?php if (tieneAccesoModulo('matriz')): ?>
   <div class="page-content" id="page-matriz" style="display:none"></div>
@@ -1586,7 +1613,6 @@ $csrf = csrfToken();
             <label class="modulo-check"><input type="checkbox" value="dashboard" disabled checked> <i class="fas fa-gauge-high"></i> Dashboard</label>
             <label class="modulo-check"><input type="checkbox" value="inspecciones" id="mod_inspecciones"> <i class="fas fa-clipboard-list"></i> Inspecciones</label>
             <label class="modulo-check"><input type="checkbox" value="personal" id="mod_personal"> <i class="fas fa-id-card"></i> Personal</label>
-            <label class="modulo-check"><input type="checkbox" value="reportes" id="mod_reportes"> <i class="fas fa-chart-bar"></i> Reportes</label>
             <label class="modulo-check"><input type="checkbox" value="matriz" id="mod_matriz"> <i class="fas fa-bolt"></i> Matriz Consecuencias</label>
             <label class="modulo-check"><input type="checkbox" value="amonestaciones" id="mod_amonestaciones"> <i class="fas fa-file-signature"></i> Amonestaciones</label>
             <label class="modulo-check"><input type="checkbox" value="geocercas" id="mod_geocercas"> <i class="fas fa-draw-polygon"></i> Geocercas</label>
@@ -1657,6 +1683,25 @@ $csrf = csrfToken();
       onmouseout="this.style.background='rgba(0,0,0,0.7)';this.style.color='#fff'">
       <i class="fas fa-chevron-right"></i>
     </button>
+  </div>
+</div>
+
+<!-- ===== MODAL PREVIEW DOCUMENTO ===== -->
+<div class="modal-overlay" id="modalDocPreview" onclick="if(event.target===this)cerrarModal('modalDocPreview')">
+  <div class="modal-box" style="max-width:860px;width:95vw;height:90vh;display:flex;flex-direction:column;padding:0;overflow:hidden">
+    <div class="modal-header" style="flex-shrink:0;padding:14px 18px">
+      <h3 id="modalDocPreviewTitle" style="display:flex;align-items:center;gap:8px">
+        <i class="fas fa-file-alt" style="color:var(--primary)"></i> Documento
+      </h3>
+      <button class="modal-close" onclick="cerrarModal('modalDocPreview')"><i class="fas fa-times"></i></button>
+    </div>
+    <div style="flex:1;overflow:hidden;background:#525659">
+      <iframe id="modalDocPreviewFrame" src="" style="width:100%;height:100%;border:none;display:block"></iframe>
+    </div>
+    <div class="modal-footer" style="flex-shrink:0;padding:10px 18px;display:flex;justify-content:flex-end;gap:8px;border-top:1px solid var(--gris-600)">
+      <a id="modalDocPreviewDownload" href="#" target="_blank" class="btn btn-outline btn-sm"><i class="fas fa-external-link-alt"></i> Abrir en nueva pestaña</a>
+      <button class="btn btn-secondary btn-sm" onclick="cerrarModal('modalDocPreview')"><i class="fas fa-times"></i> Cerrar</button>
+    </div>
   </div>
 </div>
 

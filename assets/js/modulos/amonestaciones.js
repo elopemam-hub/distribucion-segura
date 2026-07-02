@@ -85,8 +85,15 @@ function motivoCodBadge(cod) {
 
 function amonDocs(a) {
   let html='';
-  if(a.imagen_evento) html+=`<a class="btn btn-outline btn-sm btn-icon" href="${UPLOAD_URL}${a.imagen_evento}" target="_blank" title="Ver imagen"><i class="fas fa-image"></i></a>`;
-  if(a.archivo_amonestacion) html+=`<a class="btn btn-secondary btn-sm btn-icon" href="api/documento.php?f=${encodeURIComponent(a.archivo_amonestacion)}" target="_blank" title="Descargar doc"><i class="fas fa-file-alt"></i></a>`;
+  if(a.imagen_evento) {
+    const urlImg=`${UPLOAD_URL}${a.imagen_evento}`;
+    html+=`<button class="btn btn-outline btn-sm btn-icon" onclick="verFotoLightbox('${urlImg.replace(/'/g,"\\'")}')" title="Ver imagen"><i class="fas fa-image"></i></button>`;
+  }
+  if(a.archivo_amonestacion) {
+    const urlDoc=`api/documento.php?f=${encodeURIComponent(a.archivo_amonestacion)}`;
+    const nom=a.archivo_amonestacion.split('/').pop();
+    html+=`<button class="btn btn-secondary btn-sm btn-icon" onclick="verDocModal('${urlDoc.replace(/'/g,"\\'")}','${nom.replace(/'/g,"\\'")}')" title="Ver documento"><i class="fas fa-file-alt"></i></button>`;
+  }
   return html||'<span style="color:var(--gris-400);font-size:11px">—</span>';
 }
 
@@ -283,7 +290,7 @@ async function editarAmon(id) {
     document.getElementById('amon_plan_acciones').value=a.plan_acciones||'';
     const planActual=(a.plan_acciones||'').split(',').map(s=>s.trim());
     document.querySelectorAll('.plan-accion-check').forEach(cb=>cb.checked=planActual.includes(cb.value));
-    if(a.imagen_evento){const prev=document.getElementById('amon_imagen_preview'),img=document.getElementById('amon_img_thumb');if(prev&&img){img.src='uploads/'+a.imagen_evento;prev.style.display='block';}}
+    if(a.imagen_evento){const prev=document.getElementById('amon_imagen_preview'),img=document.getElementById('amon_img_thumb');if(prev&&img){img.src=UPLOAD_URL+a.imagen_evento;prev.style.display='block';}}
     const archDiv=document.getElementById('amon_archivo_actual'),archLink=document.getElementById('amon_archivo_link'),archNom=document.getElementById('amon_archivo_nombre');
     if(a.archivo_amonestacion&&archDiv&&archLink&&archNom){archLink.href='api/documento.php?f='+encodeURIComponent(a.archivo_amonestacion);archNom.textContent=a.archivo_amonestacion.split('/').pop();archDiv.style.display='block';}else if(archDiv)archDiv.style.display='none';
   }

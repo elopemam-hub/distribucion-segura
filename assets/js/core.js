@@ -16,11 +16,53 @@ const EPP_ITEMS = ['Casco', 'Chaleco reflectivo', 'Zapatos de seguridad', 'Lente
 const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.content || '';
 const USER_ROL   = document.querySelector('meta[name="user-rol"]')?.content || '';
 
+// ============ SELECTOR DE TEMA (Claro / Oscuro / Automático) ============
+const TEMA_KEY = 'dist-segura-tema';
+
+function aplicarTemaEfectivo(pref) {
+  const prefiereSistemaDark = window.matchMedia &&
+    window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const dark = pref === 'dark' || (pref === 'auto' && prefiereSistemaDark);
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', dark ? '#1D222B' : '#F5F7FA');
+}
+
+function marcarBotonTema(pref) {
+  document.querySelectorAll('.theme-opt').forEach(b => {
+    b.classList.toggle('active', b.dataset.themeChoice === pref);
+  });
+}
+
+function setTheme(pref) {
+  try { localStorage.setItem(TEMA_KEY, pref); } catch (e) {}
+  aplicarTemaEfectivo(pref);
+  marcarBotonTema(pref);
+}
+
+function initTema() {
+  let pref = 'dark';
+  try { pref = localStorage.getItem(TEMA_KEY) || 'dark'; } catch (e) {}
+  aplicarTemaEfectivo(pref);
+  marcarBotonTema(pref);
+  // Si el usuario está en "auto", reaccionar a cambios del sistema en vivo.
+  if (window.matchMedia) {
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+      let p = 'dark';
+      try { p = localStorage.getItem(TEMA_KEY) || 'dark'; } catch (e) {}
+      if (p === 'auto') aplicarTemaEfectivo('auto');
+    });
+  }
+  // Habilitar transición suave solo después de la carga inicial.
+  requestAnimationFrame(() => document.documentElement.classList.add('theme-ready'));
+}
+document.addEventListener('DOMContentLoaded', initTema);
+
 let checklistEstados = {};
 let filesSeleccionados = [];
 let hallazgosData = [];
 let pageActual = 1;
-let chartTendencia = null;
+// chartTendencia y chartDonut se declaran en dashboard.js
 let inspeccionesData = [];
 
 // ============ UTILIDADES ============
@@ -49,12 +91,13 @@ function showPage(page) {
   const navEl = document.querySelector(`[data-page="${page}"]`);
   if (navEl) navEl.classList.add('active');
   closeSidebar();
-  if (page === 'dashboard')      cargarDashboard();
-  if (page === 'inspecciones')   switchInspeccionTab('listado');
-  if (page === 'personal')       cargarPersonal();
+  if (page === 'dashboard')          cargarDashboard();
+  if (page === 'inspecciones')       switchInspeccionTab('listado');
+  if (page === 'personal')           cargarPersonal();
   if (page === 'amonestaciones')     cargarAmonestaciones();
   if (page === 'kpi-amonestaciones') cargarKpiAmon();
   if (page === 'usuarios')           cargarUsuarios();
+  if (page === 'matriz' && typeof initMatriz === 'function') initMatriz();
 }
 
 function switchInspeccionTab(tab) {
@@ -370,7 +413,7 @@ function renderLightbox() {
   const total=galeriaFotos.length, url=galeriaFotos[galeriaIdx];
   const lbImg=document.getElementById('modalFotoImg');
   lbImg.src=url;
-  lbImg.onerror=function(){ this.onerror=null; const f=url.split('/uploads/')[1]; if(f) this.src=PROD_IMG_BASE+f; };
+  lbImg.onerror=function(){ this.onerror=null; const f=url.split('/uploads/')[1]; if(f) this.src=getProdImgBase()+f; };
   document.getElementById('lbContador').textContent=`Foto ${galeriaIdx+1} de ${total}`;
   const btnP=document.getElementById('lbBtnPrev'), btnN=document.getElementById('lbBtnNext');
   if(btnP) btnP.style.display=total>1?'flex':'none';
@@ -390,14 +433,44 @@ function onLightboxKey(e) {
   if(e.key==='Escape')     cerrarModal('modalFoto');
 }
 
+// ============ PREVIEW DOCUMENTO (PDF / Word) ============
+function verDocModal(url, nombre) {
+  const frame = document.getElementById('modalDocPreviewFrame');
+  const dl    = document.getElementById('modalDocPreviewDownload');
+  const title = document.getElementById('modalDocPreviewTitle');
+  if (!frame) return window.open(url, '_blank');
+  // Los PDF los embebe el iframe directamente; Word/ODT solo ofrece descarga
+  const ext = (nombre || url).split('.').pop().toLowerCase();
+  const esPdf = ext === 'pdf';
+  title.innerHTML = esPdf
+    ? '<i class="fas fa-file-pdf" style="color:#E74C3C"></i> Vista previa PDF'
+    : '<i class="fas fa-file-word" style="color:#2B579A"></i> Documento';
+  frame.src = esPdf ? url : '';
+  if (!esPdf) {
+    frame.srcdoc = `<div style="font-family:sans-serif;padding:60px;text-align:center;color:#555">
+      <div style="font-size:48px;margin-bottom:16px">📄</div>
+      <p>Este tipo de archivo no puede previsualizarse en el navegador.</p>
+      <a href="${url}" target="_blank" style="color:#1565C0;font-weight:600">Haz clic aquí para descargarlo</a>
+    </div>`;
+  }
+  dl.href = url;
+  dl.download = nombre || '';
+  abrirModal('modalDocPreview');
+}
+
 // ============ IMAGEN ERROR HANDLER ============
-const PROD_IMG_BASE = 'https://roka50safety.online' + UPLOAD_URL;
+// Se calcula de forma diferida: UPLOAD_URL se define al final del <body>,
+// después de este script, así que no puede leerse al cargar core.js.
+function getProdImgBase() {
+  const base = (typeof UPLOAD_URL !== 'undefined') ? UPLOAD_URL : '/distribucion-segura/uploads/';
+  return 'https://roka50safety.online' + base;
+}
 
 function onEvidenciaError(img) {
   const fname = img.dataset.fname;
   if (fname && !img.dataset.triedProd) {
     img.dataset.triedProd = '1';
-    img.src = PROD_IMG_BASE + encodeURIComponent(fname);
+    img.src = getProdImgBase() + encodeURIComponent(fname);
     return;
   }
   img.style.display = 'none';

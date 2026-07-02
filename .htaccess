@@ -5,17 +5,35 @@
 Options -Indexes
 ServerSignature Off
 
-# Proteger directorios sensibles
-<FilesMatch "\.(sql|log|env|config\.php)$">
-  Order allow,deny
-  Deny from all
+# Proteger archivos sensibles (config, dumps, credenciales, ini)
+<FilesMatch "\.(sql|log|env|ini|bak|md|example\.php)$">
+  Require all denied
 </FilesMatch>
+<Files "config.php">
+  Require all denied
+</Files>
+<Files "CREDENCIALES.txt">
+  Require all denied
+</Files>
+<Files ".gitignore">
+  Require all denied
+</Files>
 
 # Cabeceras de seguridad
 <IfModule mod_headers.c>
   Header always set X-Content-Type-Options nosniff
   Header always set X-Frame-Options SAMEORIGIN
-  Header always set X-XSS-Protection "1; mode=block"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Permissions-Policy "geolocation=(self), camera=(self), microphone=()"
+
+  # Content-Security-Policy
+  # Nota: se permite 'unsafe-inline' en script/style porque la app usa
+  # muchos handlers onclick=, style= y bloques <script> inline. Para pasar a
+  # una CSP estricta (con nonces y sin unsafe-inline) hay que refactorizar
+  # esos inline a archivos .js/.css externos y a addEventListener.
+  # Aun así, esta política ya restringe orígenes por allowlist (no *),
+  # bloquea object-src y acota frame-src a Google Maps.
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.google.com https://maps.gstatic.com https://roka50safety.online; connect-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://roka50safety.online https://*.tile.openstreetmap.org; frame-src 'self' https://maps.google.com https://www.google.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
 </IfModule>
 
 # Comprimir
