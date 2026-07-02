@@ -470,7 +470,7 @@ function onEvidenciaError(img) {
   const fname = img.dataset.fname;
   if (fname && !img.dataset.triedProd) {
     img.dataset.triedProd = '1';
-    img.src = getProdImgBase() + encodeURIComponent(fname);
+    img.src = getProdImgBase() + fname;
     return;
   }
   img.style.display = 'none';
