@@ -115,12 +115,12 @@ function requireCsrf(): void {
 // PERMISOS POR MÓDULO
 // ============================================================
 
-const MODULOS_VALIDOS = ['dashboard', 'inspecciones', 'personal', 'reportes', 'matriz', 'amonestaciones', 'geocercas'];
+const MODULOS_VALIDOS = ['dashboard', 'inspecciones', 'personal', 'reportes', 'matriz', 'amonestaciones', 'geocercas', 'evaluaciones', 'kpi_analytics'];
 
 // Defaults de acceso según rol (cuando el usuario no tiene filas en permisos)
 const ROL_DEFAULTS = [
-    'supervisor' => ['dashboard', 'inspecciones', 'personal', 'reportes', 'matriz', 'amonestaciones', 'geocercas'],
-    'inspector'  => ['dashboard', 'inspecciones'],
+    'supervisor' => ['dashboard', 'inspecciones', 'personal', 'reportes', 'matriz', 'amonestaciones', 'geocercas', 'evaluaciones', 'kpi_analytics'],
+    'inspector'  => ['dashboard', 'inspecciones', 'evaluaciones'],
 ];
 
 function getModulosUsuario(int $userId): array {
@@ -148,6 +148,53 @@ function tieneAccesoModulo(string $modulo): bool {
 
     // Sin permisos explícitos → usar defaults del rol
     return in_array($modulo, ROL_DEFAULTS[$user['rol']] ?? [], true);
+}
+
+// Crea eval_formularios si no existe y siembra los 3 base.
+// También migra eval_secciones.formulario de ENUM a VARCHAR si aplica.
+function setupEvalFormularios(): void {
+    try {
+        db()->query("CREATE TABLE IF NOT EXISTS eval_formularios (
+            id            INT AUTO_INCREMENT PRIMARY KEY,
+            formulario_id VARCHAR(50)  NOT NULL,
+            titulo        VARCHAR(200) NOT NULL,
+            icono         VARCHAR(60)  NOT NULL DEFAULT 'fa-clipboard-list',
+            color         VARCHAR(30)  NOT NULL DEFAULT '#1565C0',
+            orden         INT          NOT NULL DEFAULT 0,
+            activo        TINYINT(1)   NOT NULL DEFAULT 1,
+            UNIQUE KEY uk_formulario_id (formulario_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", []);
+
+        db()->query("INSERT IGNORE INTO eval_formularios
+            (formulario_id, titulo, icono, color, orden) VALUES
+            ('manejo_practica',  'Manejo Práctica',  'fa-truck',          '#FFC107', 1),
+            ('examen_defensiva', 'Examen Defensiva', 'fa-shield-halved',  '#1565C0', 2),
+            ('induccion_t2',     'Inducción T2',     'fa-graduation-cap', '#28A745', 3)", []);
+    } catch (Exception $e) {
+        error_log('[setupEvalFormularios] ' . $e->getMessage());
+    }
+
+    // Migrar ENUM → VARCHAR si eval_secciones aún tiene ENUM
+    try {
+        db()->query("ALTER TABLE eval_secciones MODIFY formulario VARCHAR(50) NOT NULL", []);
+    } catch (Exception $e) {
+        // Ya es VARCHAR o la tabla no existe — ignorar
+    }
+}
+
+// Valida que un formulario_id exista en eval_formularios.
+// Fallback a los 3 base si la tabla aún no fue migrada.
+function formularioEsValido(string $formulario): bool {
+    if (empty($formulario) || !preg_match('/^[a-z0-9_]+$/', $formulario)) return false;
+    try {
+        $row = db()->fetchOne(
+            "SELECT id FROM eval_formularios WHERE formulario_id = ? AND activo = 1",
+            [$formulario]
+        );
+        return (bool)$row;
+    } catch (Exception $e) {
+        return in_array($formulario, ['manejo_practica', 'examen_defensiva', 'induccion_t2'], true);
+    }
 }
 
 // Respuesta JSON estándar

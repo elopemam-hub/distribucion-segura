@@ -99,6 +99,9 @@ $csrf = csrfToken();
 }
 .geo-tab-btn.active i { color: #fff !important; }
 /* ── */
+.bp-tab-btn { padding:8px 18px;border-radius:50px;border:2px solid var(--gris-600);background:transparent;color:var(--gris-400);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;font-family:var(--font-body);display:inline-flex;align-items:center;gap:6px; }
+.bp-tab-btn:hover { border-color:var(--primary);color:var(--primary); }
+.bp-tab-btn.active { background:var(--primary);border-color:var(--primary);color:#fff;box-shadow:0 3px 10px rgba(21,101,192,.3); }
 .amon-pag-bar { display:flex;align-items:center;justify-content:space-between;padding:10px 4px 4px;flex-wrap:wrap;gap:8px; }
 .amon-pag-info { font-size:12px;color:var(--gris-400); }
 .amon-pag-btns { display:flex;gap:4px;flex-wrap:wrap; }
@@ -115,7 +118,7 @@ $csrf = csrfToken();
 @media print { body > *:not(#printMapWrap) { display:none!important; } #printMapWrap { display:block!important; } }
 </style>
 </head>
-<body>
+<body data-rol="<?= htmlspecialchars($user['rol'] ?? '', ENT_QUOTES) ?>">
 
 <!-- SIDEBAR OVERLAY (mobile) -->
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
@@ -163,6 +166,13 @@ $csrf = csrfToken();
     <?php endif; ?>
 
 
+    <?php if (tieneAccesoModulo('evaluaciones')): ?>
+    <div class="nav-section-title" style="margin-top:12px">Capacitación</div>
+    <a class="nav-item" data-page="evaluaciones" onclick="showPage('evaluaciones')">
+      <i class="fas fa-clipboard-check"></i> Evaluaciones
+    </a>
+    <?php endif; ?>
+
     <?php if (tieneAccesoModulo('amonestaciones') || tieneAccesoModulo('matriz')): ?>
     <div class="nav-section-title" style="margin-top:12px">Seguridad</div>
     <?php endif; ?>
@@ -179,6 +189,13 @@ $csrf = csrfToken();
 
 
 
+
+    <?php if (tieneAccesoModulo('kpi_analytics')): ?>
+    <div class="nav-section-title" style="margin-top:12px">Analítica</div>
+    <a class="nav-item" data-page="kpi-analytics" onclick="showPage('kpi-analytics');kpiDatasetsInit()">
+      <i class="fas fa-chart-line"></i> KPI Analytics
+    </a>
+    <?php endif; ?>
 
     <?php if ($user['rol'] === 'administrador'): ?>
     <div class="nav-section-title" style="margin-top:12px">Administración</div>
@@ -659,7 +676,7 @@ $csrf = csrfToken();
       <div class="kpi-card azul">
         <i class="fas fa-file-alt kpi-icon"></i>
         <div class="kpi-label">Sin licencia registrada</div>
-        <div class="kpi-value" id="kpiPersonalSinLic">—</div>
+        <div class="kpi-value azul" id="kpiPersonalSinLic">—</div>
         <div class="kpi-sub">conductores sin N° licencia</div>
       </div>
     </div>
@@ -793,13 +810,13 @@ $csrf = csrfToken();
       <div class="kpi-card azul">
         <i class="fas fa-list kpi-icon"></i>
         <div class="kpi-label">Total</div>
-        <div class="kpi-value" id="kpiAmonTotal">—</div>
+        <div class="kpi-value azul" id="kpiAmonTotal">—</div>
         <div class="kpi-sub">registros</div>
       </div>
-      <div class="kpi-card" style="border-top:4px solid #5EA8E6">
+      <div class="kpi-card azul">
         <i class="fas fa-wallet kpi-icon"></i>
         <div class="kpi-label">Bancarización</div>
-        <div class="kpi-value" style="color:#0d5c9a" id="kpiAmonBanc">—</div>
+        <div class="kpi-value azul" id="kpiAmonBanc">—</div>
         <div class="kpi-sub">amonestaciones</div>
       </div>
       <div class="kpi-card rojo">
@@ -808,10 +825,10 @@ $csrf = csrfToken();
         <div class="kpi-value rojo" id="kpiAmonN3">—</div>
         <div class="kpi-sub">amonestaciones</div>
       </div>
-      <div class="kpi-card" style="border-top:4px solid #C387C2">
+      <div class="kpi-card purpura">
         <i class="fas fa-satellite-dish kpi-icon"></i>
         <div class="kpi-label">Telemetría</div>
-        <div class="kpi-value" style="color:#7B52A0" id="kpiAmonTele">—</div>
+        <div class="kpi-value purpura" id="kpiAmonTele">—</div>
         <div class="kpi-sub">amonestaciones</div>
       </div>
       <div class="kpi-card amarillo">
@@ -1112,6 +1129,12 @@ $csrf = csrfToken();
 
   </div><!-- /page-geocercas -->
   <?php endif; ?>
+
+  <?php if (tieneAccesoModulo('evaluaciones')): ?>
+  <?php require_once __DIR__ . '/vistas/evaluaciones.php'; ?>
+  <?php endif; ?>
+
+  <?php require_once __DIR__ . '/vistas/kpi_analytics.php'; ?>
 </main>
 
 <!-- ===== MODAL AMONESTACIÓN ===== -->
@@ -1846,7 +1869,10 @@ $csrf = csrfToken();
 
 <!-- ===== SCRIPTS ===== -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="assets/js/vendor/xlsx.full.min.js"></script>
+<?php if (tieneAccesoModulo('kpi_analytics')): ?>
+<script src="assets/js/vendor/apexcharts.min.js"></script>
+<?php endif; ?>
 <!-- Leaflet (para módulo Geocercas) -->
 <?php if (tieneAccesoModulo('geocercas')): ?>
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -1865,11 +1891,22 @@ $csrf = csrfToken();
 <script src="assets/js/modulos/personal.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/personal.js') ?>"></script>
 <script src="assets/js/modulos/amonestaciones.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/amonestaciones.js') ?>"></script>
 <script src="assets/js/modulos/usuarios.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/usuarios.js') ?>"></script>
+<?php if (tieneAccesoModulo('evaluaciones')): ?>
+<script src="assets/js/modulos/evaluaciones.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/evaluaciones.js') ?>"></script>
+<?php if ($user['rol'] === 'administrador'): ?>
+<script src="assets/js/modulos/banco_preguntas.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/banco_preguntas.js') ?>"></script>
+<?php endif; ?>
+<?php endif; ?>
 <?php if (tieneAccesoModulo('geocercas')): ?>
 <script src="assets/js/modulos/geocercas.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/geocercas.js') ?>"></script>
 <?php endif; ?>
 <?php if (tieneAccesoModulo('matriz')): ?>
 <script src="assets/js/modulos/matriz.compiled.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/matriz.compiled.js') ?>"></script>
+<?php endif; ?>
+<?php if (tieneAccesoModulo('kpi_analytics')): ?>
+<script src="assets/js/modulos/kpi_datasets.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/kpi_datasets.js') ?>"></script>
+<script src="assets/js/modulos/kpi_widget_builder.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/kpi_widget_builder.js') ?>"></script>
+<script src="assets/js/modulos/kpi_tlmr.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/kpi_tlmr.js') ?>"></script>
 <?php endif; ?>
 <script>
   const UPLOAD_URL = '<?= defined("UPLOAD_URL") ? rtrim(UPLOAD_URL,"/")."/" : BASE_URL."/uploads/" ?>';

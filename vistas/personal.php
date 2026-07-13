@@ -23,7 +23,7 @@
       <div class="kpi-card verde"><i class="fas fa-users kpi-icon"></i><div class="kpi-label">Total activos</div><div class="kpi-value verde" id="kpiPersonalTotal">—</div><div class="kpi-sub" id="kpiPersonalTotalSub">de 0 registros</div></div>
       <div class="kpi-card rojo"><i class="fas fa-id-card kpi-icon"></i><div class="kpi-label">DNI vencido / por vencer</div><div class="kpi-value rojo" id="kpiPersonalDniVenc">—</div><div class="kpi-sub" id="kpiPersonalDniSub">en los próximos 30 días</div></div>
       <div class="kpi-card amarillo"><i class="fas fa-car kpi-icon"></i><div class="kpi-label">Brevete vencido / por vencer</div><div class="kpi-value amarillo" id="kpiPersonalBreveteVenc">—</div><div class="kpi-sub" id="kpiPersonalBreteSub">en los próximos 30 días</div></div>
-      <div class="kpi-card azul"><i class="fas fa-file-alt kpi-icon"></i><div class="kpi-label">Sin licencia registrada</div><div class="kpi-value" id="kpiPersonalSinLic">—</div><div class="kpi-sub">conductores sin N° licencia</div></div>
+      <div class="kpi-card azul"><i class="fas fa-file-alt kpi-icon"></i><div class="kpi-label">Sin licencia registrada</div><div class="kpi-value azul" id="kpiPersonalSinLic">—</div><div class="kpi-sub">conductores sin N° licencia</div></div>
     </div>
 
     <!-- Filtros -->

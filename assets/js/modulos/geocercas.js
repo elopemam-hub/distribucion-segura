@@ -262,7 +262,7 @@ function renderGeoEnMapa(rows) {
       const cfg     = GEO_TIPOS[r.tipo] || {};
 
       const fila = (label, val) => val
-        ? `<tr><td style="font-weight:700;color:#2A3F54;padding:2px 8px 2px 0;font-size:12px;white-space:nowrap">${label}</td><td style="color:#555;font-size:12px;padding:2px 0">${val}</td></tr>`
+        ? `<tr><td style="font-weight:700;color:#2A3F54;padding:2px 8px 2px 0;font-size:12px;white-space:nowrap">${label}</td><td style="color:#555;font-size:12px;padding:2px 0">${escapeHtml(val)}</td></tr>`
         : '';
 
       let layer, popupCoords = '';
@@ -286,7 +286,7 @@ function renderGeoEnMapa(rows) {
       }
 
       const popup = `<div style="font-family:'Barlow',sans-serif;min-width:200px;max-width:280px">
-        <strong style="color:#2A3F54;font-size:13px;display:block;margin-bottom:6px;border-bottom:1px solid #E6E9ED;padding-bottom:5px">${r.nombre}</strong>
+        <strong style="color:#2A3F54;font-size:13px;display:block;margin-bottom:6px;border-bottom:1px solid #E6E9ED;padding-bottom:5px">${escapeHtml(r.nombre)}</strong>
         <table style="border-collapse:collapse;width:100%">
           ${fila('Código',              r.codigo)}
           ${fila('Dirección de Cliente',r.direccion_cliente)}

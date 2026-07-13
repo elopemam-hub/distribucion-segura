@@ -10,10 +10,10 @@
     </div>
     <!-- KPI cards -->
     <div class="kpi-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:20px">
-      <div class="kpi-card azul"><i class="fas fa-list kpi-icon"></i><div class="kpi-label">Total</div><div class="kpi-value" id="kpiAmonTotal">—</div><div class="kpi-sub">registros</div></div>
-      <div class="kpi-card" style="border-top:4px solid #5EA8E6"><i class="fas fa-wallet kpi-icon"></i><div class="kpi-label">Bancarización</div><div class="kpi-value" style="color:#0d5c9a" id="kpiAmonBanc">—</div><div class="kpi-sub">amonestaciones</div></div>
+      <div class="kpi-card azul"><i class="fas fa-list kpi-icon"></i><div class="kpi-label">Total</div><div class="kpi-value azul" id="kpiAmonTotal">—</div><div class="kpi-sub">registros</div></div>
+      <div class="kpi-card azul"><i class="fas fa-wallet kpi-icon"></i><div class="kpi-label">Bancarización</div><div class="kpi-value azul" id="kpiAmonBanc">—</div><div class="kpi-sub">amonestaciones</div></div>
       <div class="kpi-card rojo"><i class="fas fa-store kpi-icon"></i><div class="kpi-label">N3</div><div class="kpi-value rojo" id="kpiAmonN3">—</div><div class="kpi-sub">amonestaciones</div></div>
-      <div class="kpi-card" style="border-top:4px solid #C387C2"><i class="fas fa-satellite-dish kpi-icon"></i><div class="kpi-label">Telemetría</div><div class="kpi-value" style="color:#7B52A0" id="kpiAmonTele">—</div><div class="kpi-sub">amonestaciones</div></div>
+      <div class="kpi-card purpura"><i class="fas fa-satellite-dish kpi-icon"></i><div class="kpi-label">Telemetría</div><div class="kpi-value purpura" id="kpiAmonTele">—</div><div class="kpi-sub">amonestaciones</div></div>
       <div class="kpi-card amarillo"><i class="fas fa-clock kpi-icon"></i><div class="kpi-label">Pendientes</div><div class="kpi-value amarillo" id="kpiAmonPend">—</div><div class="kpi-sub">por notificar</div></div>
     </div>
     <!-- Tabs -->

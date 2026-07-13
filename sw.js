@@ -2,7 +2,7 @@
 // Service Worker — Distribución Segura SST
 // ============================================================
 
-const CACHE_VERSION = 'dist-segura-v3';
+const CACHE_VERSION = 'dist-segura-v4';
 const BASE = '/distribucion-segura';
 
 const PRECACHE = [
@@ -30,6 +30,10 @@ self.addEventListener('activate', event => {
 // ── Fetch: network-first, cache como fallback ─────────────
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
+
+  // Solo manejar peticiones del mismo origen — dejar que CDNs externos
+  // pasen directamente al browser sin intervención del SW
+  if (url.origin !== self.location.origin) return;
 
   // Llamadas a la API siempre en red (nunca cachear)
   if (url.pathname.includes('/api/') || url.pathname.includes('/uploads/')) {
