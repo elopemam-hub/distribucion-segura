@@ -116,6 +116,23 @@ const EVAL_CONFIG = {
     ],
   },
 
+  cd: {
+    label: 'Inducción CD',
+    titulo: 'EVALUACIÓN INDUCCIÓN SAFETY',
+    subtitulo: 'Inducción de Seguridad Logística',
+    puntajeMaximo: 20,
+    campos: [
+      { id: 'fecha',   label: 'Fecha',             tipo: 'datetime_readonly', subtipo: 'date' },
+      { id: 'hora',    label: 'Hora',              tipo: 'datetime_readonly', subtipo: 'time' },
+      { id: 'nombre',  label: 'Nombre y Apellidos', tipo: 'text',   required: true },
+      { id: 'dni',     label: 'D.N.I.',             tipo: 'text',   required: true },
+      { id: 'empresa', label: 'Empresa',             tipo: 'select', required: true,
+        opciones: ['LIDERMAN','ENGIE','A Y M VIRGEN DE CHAPI S.R.L.','M&F MULTIMOTRIZ E.I.R.L.',
+                   'BACKUS','CONTRATISTA TEMPORAL','VISITANTE','LAVORO','MANPOWER','T77','DA PAUSER'] },
+    ],
+    secciones: [],
+  },
+
   induccion_t2: {
     label: 'Evaluación Inducción T2',
     titulo: 'EVALUACIÓN INDUCCIÓN T2',
@@ -166,9 +183,10 @@ async function cargarFormulariosEval(forzar = false) {
     evalFormulariosCache = data.data;
   } catch {
     evalFormulariosCache = [
-      { formulario_id: 'manejo_practica',  titulo: 'Manejo Práctica',  icono: 'fa-truck',          color: '#FFC107' },
-      { formulario_id: 'examen_defensiva', titulo: 'Examen Defensiva', icono: 'fa-shield-halved',  color: '#1565C0' },
-      { formulario_id: 'induccion_t2',     titulo: 'Inducción T2',     icono: 'fa-graduation-cap', color: '#28A745' },
+      { formulario_id: 'manejo_practica',  titulo: 'Manejo Práctica',   icono: 'fa-truck',          color: '#FFC107' },
+      { formulario_id: 'examen_defensiva', titulo: 'Examen Defensiva',  icono: 'fa-shield-halved',  color: '#1565C0' },
+      { formulario_id: 'induccion_t2',     titulo: 'Inducción T2',      icono: 'fa-graduation-cap', color: '#28A745' },
+      { formulario_id: 'cd',               titulo: 'Inducción CD',       icono: 'fa-warehouse',      color: '#b0a207' },
     ];
   }
   evalRenderSelectorGrid();
