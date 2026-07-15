@@ -192,7 +192,7 @@ $csrf = csrfToken();
 
     <?php if (tieneAccesoModulo('kpi_analytics')): ?>
     <div class="nav-section-title" style="margin-top:12px">Analítica</div>
-    <a class="nav-item" data-page="kpi-analytics" onclick="showPage('kpi-analytics');kpiDatasetsInit()">
+    <a class="nav-item" data-page="kpi-analytics" onclick="showPage('kpi-analytics');<?= $user['rol'] === 'administrador' ? 'kpiDatasetsInit()' : 'tlmrInit()' ?>">
       <i class="fas fa-chart-line"></i> KPI Analytics
     </a>
     <?php endif; ?>

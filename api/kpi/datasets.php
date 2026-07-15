@@ -11,6 +11,7 @@ requireLogin();
 if (!tieneAccesoModulo('kpi_analytics')) {
     jsonResponse(false, 'Acceso no autorizado.', null, 403);
 }
+requireRole(['administrador']);
 header('Content-Type: application/json; charset=utf-8');
 
 $action = $_GET['action'] ?? 'list';

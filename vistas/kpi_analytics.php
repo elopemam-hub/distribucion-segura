@@ -30,11 +30,13 @@ const KPI_JORLAB_API     = '<?= BASE_URL ?>/api/kpi/jorlab.php';
 
   <!-- Tabs -->
   <div class="tabs" style="margin-bottom:0;border-bottom:2px solid var(--gris-600);padding-bottom:0;gap:2px">
-    <button class="tab-btn insp-tab-btn active" id="kpi-btn-datasets"
+    <?php if ($user['rol'] === 'administrador'): ?>
+    <button class="tab-btn insp-tab-btn<?= $user['rol'] === 'administrador' ? ' active' : '' ?>" id="kpi-btn-datasets"
             onclick="kpiSwitchTab('datasets')" style="border-radius:8px 8px 0 0">
       <i class="fas fa-database"></i> Datasets
     </button>
-    <button class="tab-btn insp-tab-btn" id="kpi-btn-graficos"
+    <?php endif; ?>
+    <button class="tab-btn insp-tab-btn<?= $user['rol'] !== 'administrador' ? ' active' : '' ?>" id="kpi-btn-graficos"
             style="border-radius:8px 8px 0 0"
             onclick="kpiSwitchTab('graficos');tlmrInit()">
       <i class="fas fa-satellite-dish"></i> Telemetría
@@ -56,8 +58,8 @@ const KPI_JORLAB_API     = '<?= BASE_URL ?>/api/kpi/jorlab.php';
     </button>
   </div>
 
-  <!-- ── PANEL: DATASETS ── -->
-  <div class="card kpi-tab-panel" id="kpi-panel-datasets" style="border-radius:0 8px 8px 8px;margin-top:0">
+  <!-- ── PANEL: DATASETS (solo administrador) ── -->
+  <div class="card kpi-tab-panel" id="kpi-panel-datasets" style="border-radius:0 8px 8px 8px;margin-top:0;<?= $user['rol'] !== 'administrador' ? 'display:none' : '' ?>">
     <div class="card-body" style="padding:22px">
 
       <!-- ── Upload: Configuración + Archivo ── -->
@@ -229,7 +231,7 @@ const KPI_JORLAB_API     = '<?= BASE_URL ?>/api/kpi/jorlab.php';
 
 <!-- ── PANEL: GRÁFICOS — DASHBOARD TELEMETRÍA ── -->
 <div class="card kpi-tab-panel" id="kpi-panel-graficos"
-     style="border-radius:0 8px 8px 8px;margin-top:0;display:none">
+     style="border-radius:0 8px 8px 8px;margin-top:0;<?= $user['rol'] !== 'administrador' ? '' : 'display:none' ?>">
   <div class="card-body" style="padding:22px">
 
     <!-- ── Cabecera ── -->
