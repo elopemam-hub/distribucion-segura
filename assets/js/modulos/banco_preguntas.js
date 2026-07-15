@@ -570,7 +570,7 @@ async function bpExportar(formulario) {
     {wch:14},{wch:12},{wch:12}
   ];
   XLSX.utils.book_append_sheet(wb, ws, formulario.substring(0, 31));
-  const fecha = new Date().toISOString().split('T')[0];
+  const _fd=new Date(), fecha=_fd.getFullYear()+'-'+String(_fd.getMonth()+1).padStart(2,'0')+'-'+String(_fd.getDate()).padStart(2,'0');
   XLSX.writeFile(wb, `banco_${formulario}_${fecha}.xlsx`);
 }
 

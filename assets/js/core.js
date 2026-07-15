@@ -389,7 +389,7 @@ function limpiarFirma() { const canvas=document.getElementById('firmaCanvas'); f
 
 function resetForm() {
   document.getElementById('formInspeccion').reset();
-  document.getElementById('f_fecha').value=new Date().toISOString().split('T')[0];
+  const _d=new Date(); document.getElementById('f_fecha').value=_d.getFullYear()+'-'+String(_d.getMonth()+1).padStart(2,'0')+'-'+String(_d.getDate()).padStart(2,'0');
   document.getElementById('f_hora').value=new Date().toTimeString().slice(0,5);
   document.getElementById('f_provincia').value='San Román';
   document.getElementById('f_distrito').value='Juliaca';

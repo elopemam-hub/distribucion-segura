@@ -311,7 +311,9 @@ function cancelarEvaluacion() {
 function renderCamposIdentificacion(cfg) {
   const container = document.getElementById('eval-campos-identificacion');
   const now       = new Date();
-  const hoyFecha  = now.toISOString().split('T')[0];
+  const hoyFecha  = now.getFullYear() + '-' +
+    String(now.getMonth() + 1).padStart(2, '0') + '-' +
+    String(now.getDate()).padStart(2, '0');
   const horaAhora = now.toTimeString().slice(0, 5);
   let html = '';
 
@@ -664,7 +666,7 @@ async function guardarEvaluacion() {
   const fd = new FormData();
   fd.append('csrf_token',    CSRF_TOKEN);
   fd.append('tipo',          evalTipoActual);
-  fd.append('fecha',         campos.fecha || new Date().toISOString().split('T')[0]);
+  fd.append('fecha',         campos.fecha || (() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })());
   fd.append('empresa',       campos.empresa       || '');
   fd.append('nombre',        campos.nombre        || '');
   fd.append('dni',           campos.dni           || '');
