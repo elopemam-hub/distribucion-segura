@@ -347,7 +347,10 @@ function renderCamposIdentificacion(cfg) {
     } else if (campo.tipo === 'select') {
       html += `<select class="form-control eval-campo" id="eval-campo-${campo.id}" data-campo="${campo.id}"${campo.required ? ' required' : ''}>`;
       html += `<option value="">— Selecciona —</option>`;
-      for (const op of campo.opciones) html += `<option value="${op}">${op}</option>`;
+      const opciones = (campo.id === 'empresa' && evalEmpresasCache.length)
+        ? evalEmpresasCache.map(e => e.nombre)
+        : (campo.opciones || []);
+      for (const op of opciones) html += `<option value="${op}">${op}</option>`;
       html += `</select>`;
 
     } else if (campo.tipo === 'radio') {
@@ -1059,6 +1062,78 @@ async function procesarAprobacion(accion) {
   btn.disabled = false;
 }
 
+// ── Empresas dinámicas ───────────────────────────────────────
+let evalEmpresasCache = [];
+
+async function cargarEmpresasEval() {
+  try {
+    const r = await fetch('api/eval_empresas.php?action=list');
+    const d = await r.json();
+    if (d.success) evalEmpresasCache = d.data;
+  } catch { /* silencioso */ }
+}
+
+function inyectarEmpresasEnSelect(selectId) {
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">— Selecciona —</option>';
+  evalEmpresasCache.forEach(e => {
+    const opt = document.createElement('option');
+    opt.value = e.nombre; opt.textContent = e.nombre;
+    if (e.nombre === prev) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+async function abrirGestionEmpresas() {
+  abrirModal('modalEvalEmpresas');
+  await renderListaEmpresas();
+}
+
+async function renderListaEmpresas() {
+  const lista = document.getElementById('evalEmpresasLista');
+  lista.innerHTML = '<div style="text-align:center;padding:20px;color:var(--gris-400)"><div class="spinner" style="margin:0 auto 8px"></div></div>';
+  const r = await fetch('api/eval_empresas.php?action=list');
+  const d = await r.json();
+  evalEmpresasCache = d.data || [];
+  if (!evalEmpresasCache.length) {
+    lista.innerHTML = '<p style="color:var(--gris-400);text-align:center;padding:16px">Sin empresas registradas.</p>';
+    return;
+  }
+  lista.innerHTML = evalEmpresasCache.map(e => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--gris-700);border-radius:6px;border:1px solid var(--gris-600)">
+      <span style="font-size:14px;color:var(--gris-100)"><i class="fas fa-building" style="color:var(--primary);margin-right:8px;font-size:12px"></i>${e.nombre}</span>
+      <button class="btn btn-danger btn-sm" style="padding:3px 8px" onclick="eliminarEmpresa(${e.id},'${e.nombre.replace(/'/g,"\\'")}')">
+        <i class="fas fa-trash"></i>
+      </button>
+    </div>`).join('');
+  // Actualizar selects abiertos
+  inyectarEmpresasEnSelect('eval-campo-empresa');
+}
+
+async function agregarEmpresa() {
+  const inp = document.getElementById('evalEmpresaNueva');
+  const nombre = inp.value.trim();
+  if (!nombre) { toast('Escribe el nombre de la empresa', 'error'); return; }
+  const fd = new FormData();
+  fd.append('action', 'add'); fd.append('csrf_token', CSRF_TOKEN); fd.append('nombre', nombre);
+  const r = await fetch('api/eval_empresas.php', { method: 'POST', body: fd });
+  const d = await r.json();
+  if (d.success) { inp.value = ''; toast('Empresa agregada', 'success'); await renderListaEmpresas(); }
+  else toast(d.message || 'Error', 'error');
+}
+
+async function eliminarEmpresa(id, nombre) {
+  if (!confirm(`¿Eliminar la empresa "${nombre}"?`)) return;
+  const fd = new FormData();
+  fd.append('action', 'delete'); fd.append('csrf_token', CSRF_TOKEN); fd.append('id', id);
+  const r = await fetch('api/eval_empresas.php', { method: 'POST', body: fd });
+  const d = await r.json();
+  if (d.success) { toast('Empresa eliminada', 'success'); await renderListaEmpresas(); }
+  else toast(d.message || 'Error', 'error');
+}
+
 // ── Eliminar evaluación ───────────────────────────────────────
 async function eliminarEvaluacion(id, nombre) {
   if (!confirm(`¿Eliminar la evaluación de "${nombre}"? Esta acción no se puede deshacer.`)) return;
@@ -1143,8 +1218,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const hasta = document.getElementById('filtroEvalHasta');
   if (hasta && !hasta.value) hasta.value = hoyStr;
 
-  // Cargar formularios disponibles al inicio (para selector dinámico)
+  // Cargar formularios y empresas al inicio
   cargarFormulariosEval();
+  cargarEmpresasEval();
 
   const observer = new MutationObserver(() => {
     if (page.style.display !== 'none' && !page.dataset.evalInit) {

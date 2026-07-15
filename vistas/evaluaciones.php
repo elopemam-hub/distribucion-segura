@@ -9,6 +9,11 @@
         </h2>
         <p style="color:var(--gris-400);font-size:13px;margin-top:2px">Registro y revisión de evaluaciones de capacitación</p>
       </div>
+      <?php if ($user['rol'] === 'administrador'): ?>
+      <button class="btn btn-outline btn-sm" onclick="abrirGestionEmpresas()">
+        <i class="fas fa-building"></i> Empresas
+      </button>
+      <?php endif; ?>
     </div>
 
     <!-- Tabs -->
@@ -204,6 +209,28 @@
       </div>
     </div>
   </div>
+
+<!-- ===== MODAL: GESTIÓN DE EMPRESAS ===== -->
+<div class="modal-overlay" id="modalEvalEmpresas">
+  <div class="modal-box" style="max-width:420px">
+    <div class="modal-header">
+      <h3><i class="fas fa-building"></i> Empresas</h3>
+      <button class="modal-close" onclick="cerrarModal('modalEvalEmpresas')">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <input type="text" class="form-control" id="evalEmpresaNueva" placeholder="Nombre de la empresa..." style="flex:1"
+               onkeydown="if(event.key==='Enter')agregarEmpresa()">
+        <button class="btn btn-primary btn-sm" onclick="agregarEmpresa()">
+          <i class="fas fa-plus"></i> Agregar
+        </button>
+      </div>
+      <div id="evalEmpresasLista" style="display:flex;flex-direction:column;gap:6px;max-height:320px;overflow-y:auto">
+        <div style="text-align:center;padding:20px;color:var(--gris-400)"><div class="spinner" style="margin:0 auto 8px"></div>Cargando...</div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ===== MODAL: LINK & QR EVALUACIÓN ===== -->
 <div class="modal-overlay" id="modalEvalQr">
