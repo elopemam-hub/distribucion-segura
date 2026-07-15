@@ -1907,6 +1907,8 @@ $csrf = csrfToken();
 <script src="assets/js/modulos/kpi_datasets.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/kpi_datasets.js') ?>"></script>
 <script src="assets/js/modulos/kpi_widget_builder.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/kpi_widget_builder.js') ?>"></script>
 <script src="assets/js/modulos/kpi_tlmr.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/kpi_tlmr.js') ?>"></script>
+<script src="assets/js/modulos/kpi_rsif.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/kpi_rsif.js') ?>"></script>
+<script src="assets/js/modulos/kpi_jorlab.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/kpi_jorlab.js') ?>"></script>
 <?php endif; ?>
 <script>
   const UPLOAD_URL = '<?= defined("UPLOAD_URL") ? rtrim(UPLOAD_URL,"/")."/" : BASE_URL."/uploads/" ?>';

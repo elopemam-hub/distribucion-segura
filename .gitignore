@@ -1,6 +1,7 @@
 includes/config.php
 database.sql
 CREDENCIALES.txt
+deploy/config_hostinger.php
 
 # Archivos subidos por usuarios - ignorar todo excepto la estructura de carpetas
 uploads/*

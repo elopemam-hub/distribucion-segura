@@ -6,6 +6,8 @@ const KPI_QUERY_API      = '<?= BASE_URL ?>/api/kpi/query.php';
 const KPI_WIDGETS_API    = '<?= BASE_URL ?>/api/kpi/widgets.php';
 const KPI_FILE_TYPES_API = '<?= BASE_URL ?>/api/kpi/file_types.php';
 const KPI_TLMR_API       = '<?= BASE_URL ?>/api/kpi/tlmr.php';
+const KPI_RSIF_API       = '<?= BASE_URL ?>/api/kpi/rsif.php';
+const KPI_JORLAB_API     = '<?= BASE_URL ?>/api/kpi/jorlab.php';
 </script>
 
 <!-- ===== PAGE: KPI ANALYTICS ===== -->
@@ -36,6 +38,16 @@ const KPI_TLMR_API       = '<?= BASE_URL ?>/api/kpi/tlmr.php';
             style="border-radius:8px 8px 0 0"
             onclick="kpiSwitchTab('graficos');tlmrInit()">
       <i class="fas fa-satellite-dish"></i> Telemetría
+    </button>
+    <button class="tab-btn insp-tab-btn" id="kpi-btn-rsif"
+            style="border-radius:8px 8px 0 0"
+            onclick="kpiSwitchTab('rsif');rsifInit()">
+      <i class="fas fa-route"></i> RSIF
+    </button>
+    <button class="tab-btn insp-tab-btn" id="kpi-btn-jorlab"
+            style="border-radius:8px 8px 0 0"
+            onclick="kpiSwitchTab('jorlab');jlInit()">
+      <i class="fas fa-business-time"></i> Jornada Lab.
     </button>
     <button class="tab-btn insp-tab-btn" id="kpi-btn-dashboard"
             style="border-radius:8px 8px 0 0;opacity:.4;cursor:not-allowed" disabled
@@ -279,6 +291,137 @@ const KPI_TLMR_API       = '<?= BASE_URL ?>/api/kpi/tlmr.php';
 
     <!-- ── Contenido generado por JS ── -->
     <div id="tlmrContent" style="display:none"></div>
+
+  </div>
+</div>
+
+<!-- ── PANEL: JORLAB — JORNADA LABORAL ── -->
+<div class="card kpi-tab-panel" id="kpi-panel-jorlab"
+     style="border-radius:0 8px 8px 8px;margin-top:0;display:none">
+  <div class="card-body" style="padding:22px">
+
+    <!-- Cabecera -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+      <div>
+        <h3 style="font-family:var(--font-display);font-size:18px;font-weight:800;color:var(--gris-100);margin:0">
+          <i class="fas fa-business-time" style="color:#14B8A6"></i>
+          Dashboard JORLAB — Jornada Laboral
+        </h3>
+        <p style="color:var(--gris-400);font-size:12px;margin:3px 0 0">
+          Análisis de horas trabajadas a partir de columnas ENTRADA / SALIDA — datasets con tipo
+          <code style="background:rgba(20,184,166,.12);color:#14B8A6;padding:1px 6px;border-radius:3px">JORLAB</code>
+        </p>
+      </div>
+      <button class="btn btn-sm" id="jlRefreshBtn" onclick="jlRefresh()"
+              style="min-width:110px;background:#14B8A6;color:#fff;border:none;border-radius:7px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer">
+        <i class="fas fa-rotate-right"></i> Actualizar
+      </button>
+    </div>
+
+    <!-- Filtros fecha -->
+    <div style="background:var(--gris-700);border:1px solid var(--gris-600);border-radius:10px;padding:13px 16px;margin-bottom:8px">
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
+        <div class="form-group" style="margin:0;min-width:140px">
+          <label class="form-label" style="font-size:11px;text-transform:uppercase;letter-spacing:.06em">Desde</label>
+          <input type="date" class="form-control" id="jlDesde" style="font-size:13px">
+        </div>
+        <div class="form-group" style="margin:0;min-width:140px">
+          <label class="form-label" style="font-size:11px;text-transform:uppercase;letter-spacing:.06em">Hasta</label>
+          <input type="date" class="form-control" id="jlHasta" style="font-size:13px">
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="jlRefresh()" style="margin-top:18px">
+          <i class="fas fa-filter"></i> Filtrar
+        </button>
+      </div>
+    </div>
+
+    <!-- Estado vacío / Cargando -->
+    <div id="jlEmpty" style="text-align:center;padding:60px 20px;color:var(--gris-500)">
+      <i class="fas fa-business-time" style="font-size:48px;opacity:.18;display:block;margin-bottom:16px;color:#14B8A6"></i>
+      <div style="font-size:15px;font-weight:600;color:var(--gris-400)">Sin datos JORLAB</div>
+      <div style="font-size:12px;margin-top:8px;line-height:1.6">
+        Importa un archivo desde <strong style="color:var(--gris-300)">Datasets</strong> con tipo
+        <code style="background:rgba(20,184,166,.12);color:#14B8A6;padding:1px 6px;border-radius:3px">JORLAB</code>
+        que contenga columnas <strong>ENTRADA</strong> y <strong>SALIDA</strong>.
+      </div>
+    </div>
+    <div id="jlLoading" style="display:none;text-align:center;padding:50px 20px">
+      <div class="spinner" style="margin:0 auto 14px;width:32px;height:32px;border-width:3px;border-top-color:#14B8A6"></div>
+      <div style="font-size:13px;color:var(--gris-400)">Calculando horas de jornada...</div>
+    </div>
+
+    <!-- Contenido generado por JS -->
+    <div id="jlContent" style="display:none"></div>
+
+  </div>
+</div>
+
+<!-- ── PANEL: RSIF — DASHBOARD RUTA SIF ── -->
+<div class="card kpi-tab-panel" id="kpi-panel-rsif"
+     style="border-radius:0 8px 8px 8px;margin-top:0;display:none">
+  <div class="card-body" style="padding:22px">
+
+    <!-- Cabecera -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+      <div>
+        <h3 style="font-family:var(--font-display);font-size:18px;font-weight:800;color:var(--gris-100);margin:0">
+          <i class="fas fa-route" style="color:#E55353"></i>
+          Dashboard RSIF — Ruta SIF
+        </h3>
+        <p style="color:var(--gris-400);font-size:12px;margin:3px 0 0">
+          Análisis de eventos en rutas de alto riesgo (SIF) — datasets importados con tipo
+          <code style="background:rgba(229,83,83,.12);color:#E55353;padding:1px 6px;border-radius:3px">RSIF</code>
+        </p>
+      </div>
+      <button class="btn btn-sm" id="rsifRefreshBtn" onclick="rsifRefresh()"
+              style="min-width:110px;background:#E55353;color:#fff;border:none;border-radius:7px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer">
+        <i class="fas fa-rotate-right"></i> Actualizar
+      </button>
+    </div>
+
+    <!-- Barra de filtros: fechas -->
+    <div style="background:var(--gris-700);border:1px solid var(--gris-600);border-radius:10px;padding:13px 16px;margin-bottom:8px">
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
+
+        <div class="form-group" style="margin:0;min-width:140px">
+          <label class="form-label" style="font-size:11px;text-transform:uppercase;letter-spacing:.06em">Desde</label>
+          <input type="date" class="form-control" id="rsifDesde" style="font-size:13px">
+        </div>
+
+        <div class="form-group" style="margin:0;min-width:140px">
+          <label class="form-label" style="font-size:11px;text-transform:uppercase;letter-spacing:.06em">Hasta</label>
+          <input type="date" class="form-control" id="rsifHasta" style="font-size:13px">
+        </div>
+
+        <button class="btn btn-outline btn-sm" onclick="rsifRefresh()" style="margin-top:18px">
+          <i class="fas fa-filter"></i> Filtrar
+        </button>
+
+      </div>
+    </div>
+
+    <!-- selectores ocultos para mantener compatibilidad con rsifRefresh() -->
+    <select id="rsifColFecha"    style="display:none"><option value="">(auto)</option></select>
+    <select id="rsifColPlaca"    style="display:none"><option value="">(auto)</option></select>
+    <select id="rsifColDistrito" style="display:none"><option value="">(auto)</option></select>
+
+    <!-- Estado vacío / Cargando -->
+    <div id="rsifEmpty" style="text-align:center;padding:60px 20px;color:var(--gris-500)">
+      <i class="fas fa-route" style="font-size:48px;opacity:.18;display:block;margin-bottom:16px;color:#E55353"></i>
+      <div style="font-size:15px;font-weight:600;color:var(--gris-400)">Sin datos RSIF</div>
+      <div style="font-size:12px;margin-top:8px;line-height:1.6">
+        Importa un archivo desde la pestaña <strong style="color:var(--gris-300)">Datasets</strong>
+        con tipo <code style="background:rgba(229,83,83,.12);color:#E55353;padding:1px 6px;border-radius:3px">RSIF</code>
+        para visualizar los gráficos de Ruta SIF.
+      </div>
+    </div>
+    <div id="rsifLoading" style="display:none;text-align:center;padding:50px 20px">
+      <div class="spinner" style="margin:0 auto 14px;width:32px;height:32px;border-width:3px;border-top-color:#E55353"></div>
+      <div style="font-size:13px;color:var(--gris-400)">Cargando datos RSIF...</div>
+    </div>
+
+    <!-- Contenido generado por JS -->
+    <div id="rsifContent" style="display:none"></div>
 
   </div>
 </div>

@@ -152,6 +152,20 @@ function tlmrProcesar(array $datasetIds, array $cols, array $params): array {
     );
     $rows = array_map(fn($r) => json_decode($r['fila'], true) ?? [], $raw);
 
+    // ── Años disponibles (antes del filtro) ──
+    $añosDisp = [];
+    if ($fechaCol) {
+        foreach ($rows as $row) {
+            $iso = tlmrToIso((string)($row[$fechaCol] ?? ''));
+            if (preg_match('/^(\d{4})-/', $iso, $m)) {
+                $yr = (int)$m[1];
+                if ($yr >= 2000 && $yr <= 2100) $añosDisp[$yr] = true;
+            }
+        }
+        ksort($añosDisp);
+        $añosDisp = array_keys($añosDisp);
+    }
+
     // Filtro fecha
     if ($fechaCol && ($fechaDesde || $fechaHasta)) {
         $rows = array_values(array_filter($rows, function ($row) use ($fechaCol, $fechaDesde, $fechaHasta) {
@@ -266,6 +280,7 @@ function tlmrProcesar(array $datasetIds, array $cols, array $params): array {
 
     return [
         'total'          => $total,
+        'años'           => $añosDisp,
         'rows'           => count($rows),
         'fecha_col'      => $fechaCol,
         'regla_col'      => $reglaCol,

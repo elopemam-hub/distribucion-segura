@@ -20,6 +20,7 @@ const TLMR_COLORS_MULTI = [
 let _tlmrCharts  = {};  // keyed: 'TLMR_mensual', 'TLMR_reglas', etc.
 let _tlmrLoading = false;
 let _tlmrBuilt   = false;
+let _tlmrAñoSel  = null; // null=todos, número=año seleccionado
 
 // ── Selector de agrupación ─────────────────────────────────────
 
@@ -96,6 +97,9 @@ function _tlmrRenderAll(tipos) {
 
   // KPI cards (orden: TLMD, TLMC, TLMR para coincidir con referencia)
   _tlmrRenderKpiRow(tipos);
+
+  // ── Barra de año (encima de KPIs, insertada afterbegin después de kpiRow) ──
+  _tlmrRenderAñoBar(tipos, content);
 
   // Una sección por tipo (TLMR, TLMC, TLMD)
   // Generar HTML de secciones si no están creadas
@@ -679,6 +683,64 @@ function _tlmrShowLoading() {
   if (c) c.style.display = 'none';
   if (e) e.style.display = 'none';
   if (l) l.style.display = '';
+}
+
+// ── Barra de año ──────────────────────────────────────────────
+function _tlmrRenderAñoBar(tipos, content) {
+  // Unión de todos los años de todos los tipos
+  const añosSet = new Set();
+  Object.values(tipos).forEach(t => (t?.años || []).forEach(a => añosSet.add(a)));
+  const años = [...añosSet].sort();
+  if (!años.length) return;
+
+  let bar = document.getElementById('tlmrAñoBar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'tlmrAñoBar';
+    bar.style.cssText = [
+      'background:var(--gris-700);border:1px solid var(--gris-600)',
+      'border-radius:10px;padding:10px 16px;display:flex;align-items:center',
+      'gap:8px;flex-wrap:wrap;margin-bottom:4px',
+    ].join(';');
+    content.insertAdjacentElement('afterbegin', bar);
+  }
+  bar.innerHTML = '';
+
+  const label = document.createElement('span');
+  label.style.cssText = 'font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--gris-400);white-space:nowrap';
+  label.textContent = 'Año:';
+  bar.appendChild(label);
+
+  const list = document.createElement('div');
+  list.style.cssText = 'display:flex;gap:5px;flex-wrap:wrap;align-items:center';
+  list.appendChild(_tlmrAñoBtn('Todos', null, _tlmrAñoSel === null));
+  años.forEach(a => list.appendChild(_tlmrAñoBtn(String(a), a, _tlmrAñoSel === a)));
+  bar.appendChild(list);
+}
+
+function _tlmrSelectAño(añoKey) {
+  _tlmrAñoSel = añoKey;
+  const desde = document.getElementById('tlmrDesde');
+  const hasta = document.getElementById('tlmrHasta');
+  if (desde) desde.value = añoKey ? `${añoKey}-01-01` : '';
+  if (hasta) hasta.value = añoKey ? `${añoKey}-12-31` : '';
+  tlmrRefresh();
+}
+
+function _tlmrAñoBtn(label, añoKey, active = false) {
+  const GOLD = '#F5C800';
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.textContent = label;
+  btn.style.cssText = [
+    'padding:4px 12px;border-radius:20px;cursor:pointer',
+    'font-size:11px;font-weight:600;transition:all .15s;white-space:nowrap;border:1.5px solid',
+    active
+      ? `background:${GOLD};color:#000;border-color:${GOLD}`
+      : `background:transparent;color:var(--gris-200);border-color:rgba(245,200,0,.35)`,
+  ].join(';');
+  btn.onclick = () => _tlmrSelectAño(añoKey);
+  return btn;
 }
 
 function _tlmrFmt(n) {
