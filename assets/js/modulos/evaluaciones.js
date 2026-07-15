@@ -192,6 +192,7 @@ function evalRenderSelectorGrid() {
   }
   grid.innerHTML = evalFormulariosCache.map(f => {
     const colorRgb = f.color || '#1565C0';
+    const tituloEsc = f.titulo.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     return `
     <div class="card eval-tipo-card" onclick="seleccionarTipoEval('${f.formulario_id}')"
          style="cursor:pointer;transition:all .2s;border:2px solid var(--gris-600)">
@@ -203,6 +204,10 @@ function evalRenderSelectorGrid() {
           <div style="font-weight:700;font-size:15px;color:var(--gris-100)">${f.titulo}</div>
           <div style="font-size:12px;color:var(--gris-400);margin-top:4px">Evaluación · 20 pts</div>
         </div>
+        <button class="btn btn-outline btn-sm" style="font-size:11px;margin-top:2px"
+                onclick="event.stopPropagation();abrirEvalQr('${f.formulario_id}','${tituloEsc}','${colorRgb}')">
+          <i class="fas fa-qrcode"></i> Link & QR
+        </button>
       </div>
     </div>`;
   }).join('');
@@ -1051,6 +1056,56 @@ async function procesarAprobacion(accion) {
   btn.disabled = false;
 }
 
+// ── Link & QR por tipo de evaluación ─────────────────────────
+let _evalQrInstance = null;
+
+function abrirEvalQr(formularioId, titulo, color) {
+  document.getElementById('modalEvalQrTitulo').innerHTML =
+    `<i class="fas fa-qrcode"></i> ${titulo}`;
+
+  const base = window.location.origin + window.location.pathname;
+  const url  = `${base}?eval=${encodeURIComponent(formularioId)}`;
+  document.getElementById('evalQrLink').value = url;
+
+  const qrDiv = document.getElementById('evalQrCanvas');
+  qrDiv.innerHTML = '';
+  _evalQrInstance = null;
+
+  if (window.QRCode) {
+    _evalQrInstance = new QRCode(qrDiv, {
+      text: url,
+      width: 200,
+      height: 200,
+      colorDark:  color || '#1565C0',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M,
+    });
+  } else {
+    qrDiv.innerHTML = '<p style="color:var(--gris-400);font-size:13px">QR no disponible (sin conexión)</p>';
+  }
+
+  abrirModal('modalEvalQr');
+}
+
+function copiarLinkEval() {
+  const val = document.getElementById('evalQrLink').value;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(val).then(() => toast('Link copiado', 'success'));
+  } else {
+    const inp = document.getElementById('evalQrLink');
+    inp.select(); document.execCommand('copy'); toast('Link copiado', 'success');
+  }
+}
+
+function descargarQrEval() {
+  const canvas = document.querySelector('#evalQrCanvas canvas');
+  if (!canvas) { toast('QR no generado aún', 'error'); return; }
+  const a = document.createElement('a');
+  a.download = 'qr-evaluacion.png';
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+}
+
 // ── Init al mostrar la página ─────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   // Cerrar autocomplete DNI al hacer clic fuera
@@ -1073,4 +1128,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
   observer.observe(page, { attributes: true, attributeFilter: ['style'] });
+
+  // Auto-abrir formulario si viene ?eval=tipo en la URL
+  const urlEvalParam = new URLSearchParams(window.location.search).get('eval');
+  if (urlEvalParam) {
+    const tryOpen = () => {
+      if (evalFormulariosCache.length) {
+        if (typeof showPage === 'function') showPage('evaluaciones');
+        switchEvalTab('nueva');
+        seleccionarTipoEval(urlEvalParam);
+      } else {
+        setTimeout(tryOpen, 250);
+      }
+    };
+    setTimeout(tryOpen, 400);
+  }
 });

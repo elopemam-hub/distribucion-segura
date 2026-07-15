@@ -234,9 +234,6 @@ $csrf = csrfToken();
         <button type="button" class="theme-opt" data-theme-choice="auto" onclick="setTheme('auto')" title="Automático (según tu sistema)" aria-label="Tema automático"><i class="fas fa-circle-half-stroke"></i></button>
       </div>
       <div style="font-size:12px;color:var(--gris-400)" id="clock"></div>
-      <button class="btn btn-primary btn-sm" onclick="switchInspeccionTab('nueva')">
-        <i class="fas fa-plus"></i> Nueva
-      </button>
     </div>
   </div>
 
@@ -1639,6 +1636,8 @@ $csrf = csrfToken();
             <label class="modulo-check"><input type="checkbox" value="matriz" id="mod_matriz"> <i class="fas fa-bolt"></i> Matriz Consecuencias</label>
             <label class="modulo-check"><input type="checkbox" value="amonestaciones" id="mod_amonestaciones"> <i class="fas fa-file-signature"></i> Amonestaciones</label>
             <label class="modulo-check"><input type="checkbox" value="geocercas" id="mod_geocercas"> <i class="fas fa-draw-polygon"></i> Geocercas</label>
+            <label class="modulo-check"><input type="checkbox" value="evaluaciones" id="mod_evaluaciones"> <i class="fas fa-clipboard-check"></i> Evaluaciones</label>
+            <label class="modulo-check"><input type="checkbox" value="kpi_analytics" id="mod_kpi_analytics"> <i class="fas fa-chart-line"></i> KPI Analytics</label>
           </div>
           <p style="font-size:11px;color:var(--gris-400);margin-top:8px"><i class="fas fa-info-circle"></i> Dashboard siempre visible. Desmarca todo para usar defaults del rol.</p>
         </div>
@@ -1892,6 +1891,7 @@ $csrf = csrfToken();
 <script src="assets/js/modulos/amonestaciones.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/amonestaciones.js') ?>"></script>
 <script src="assets/js/modulos/usuarios.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/usuarios.js') ?>"></script>
 <?php if (tieneAccesoModulo('evaluaciones')): ?>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="assets/js/modulos/evaluaciones.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/evaluaciones.js') ?>"></script>
 <?php if ($user['rol'] === 'administrador'): ?>
 <script src="assets/js/modulos/banco_preguntas.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/banco_preguntas.js') ?>"></script>

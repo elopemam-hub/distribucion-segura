@@ -204,3 +204,29 @@
       </div>
     </div>
   </div>
+
+<!-- ===== MODAL: LINK & QR EVALUACIÓN ===== -->
+<div class="modal-overlay" id="modalEvalQr">
+  <div class="modal-box" style="max-width:400px">
+    <div class="modal-header">
+      <h3 id="modalEvalQrTitulo"><i class="fas fa-qrcode"></i> Link & QR</h3>
+      <button class="modal-close" onclick="cerrarModal('modalEvalQr')">×</button>
+    </div>
+    <div class="modal-body" style="text-align:center">
+      <p style="font-size:13px;color:var(--gris-400);margin-bottom:20px">
+        Comparte el link o escanea el QR para abrir directamente este formulario.
+      </p>
+      <div id="evalQrCanvas" style="display:flex;justify-content:center;margin-bottom:20px;min-height:200px;align-items:center"></div>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px">
+        <input type="text" class="form-control" id="evalQrLink" readonly
+               style="font-size:11px;font-family:monospace;background:var(--gris-700);color:var(--gris-300)">
+        <button class="btn btn-primary btn-sm" onclick="copiarLinkEval()" title="Copiar link">
+          <i class="fas fa-copy"></i>
+        </button>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="descargarQrEval()">
+        <i class="fas fa-download"></i> Descargar QR
+      </button>
+    </div>
+  </div>
+</div>
