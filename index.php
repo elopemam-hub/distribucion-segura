@@ -1491,6 +1491,17 @@ $csrf = csrfToken();
               <option value="0">Inactivo</option>
             </select>
           </div>
+          <div class="form-group">
+            <label class="form-label">Tipo de Contrato</label>
+            <select class="form-control" id="personal_tipo_contrato">
+              <option value="">— Sin especificar —</option>
+              <option value="Planilla">Planilla</option>
+              <option value="SCTR">SCTR</option>
+              <option value="Planilla + SCTR">Planilla + SCTR</option>
+              <option value="Locación de Servicios">Locación de Servicios</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </div>
         </div>
 
         <p style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--gris-400);letter-spacing:.08em;margin:18px 0 10px">Licencia / Brevete</p>

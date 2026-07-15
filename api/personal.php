@@ -129,6 +129,7 @@ function guardar() {
     $vencBrevete    = $_POST['vencimiento_brevete'] ?? null;
     $obs            = trim($_POST['observaciones'] ?? '');
     $activo         = isset($_POST['activo']) ? (int)$_POST['activo'] : 1;
+    $tipoContrato   = trim($_POST['tipo_contrato'] ?? '');
 
     if ($dni === '' || mb_strlen($dni) < 6) jsonResponse(false, 'DNI inválido.', null, 422);
     if ($nombre === '')                     jsonResponse(false, 'El nombre es requerido.', null, 422);
@@ -152,14 +153,14 @@ function guardar() {
                     dni=?, nombre=?, cargo=?, empresa=?, telefono=?,
                     fecha_nacimiento=?, fecha_ingreso=?, dni_vencimiento=?,
                     num_licencia=?, categoria_licencia=?, vencimiento_brevete=?,
-                    observaciones=?, activo=?"
+                    observaciones=?, activo=?, tipo_contrato=?"
              . ($fotoNombre ? ", foto=?" : "")
              . " WHERE id=?";
         $params = [
             $dni, $nombre, $cargo, $empresa ?: null, $tel ?: null,
             $fechaNac ?: null, $fechaIng ?: null, $dniVenc ?: null,
             $numLicencia ?: null, $catLicencia ?: null, $vencBrevete ?: null,
-            $obs ?: null, $activo
+            $obs ?: null, $activo, $tipoContrato ?: null
         ];
         if ($fotoNombre) $params[] = $fotoNombre;
         $params[] = $id;
@@ -171,13 +172,13 @@ function guardar() {
             "INSERT INTO personal
                 (dni, nombre, cargo, empresa, telefono, fecha_nacimiento,
                  fecha_ingreso, dni_vencimiento, num_licencia, categoria_licencia,
-                 vencimiento_brevete, foto, observaciones, activo)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                 vencimiento_brevete, foto, observaciones, activo, tipo_contrato)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 $dni, $nombre, $cargo, $empresa ?: null, $tel ?: null,
                 $fechaNac ?: null, $fechaIng ?: null, $dniVenc ?: null,
                 $numLicencia ?: null, $catLicencia ?: null, $vencBrevete ?: null,
-                $fotoNombre, $obs ?: null, $activo
+                $fotoNombre, $obs ?: null, $activo, $tipoContrato ?: null
             ]
         );
         jsonResponse(true, 'Personal creado.', ['id' => db()->lastInsertId()]);

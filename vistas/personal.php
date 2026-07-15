@@ -68,11 +68,11 @@
                 <th>Foto</th><th>DNI</th><th>Nombre</th><th>Cargo</th><th>Empresa</th>
                 <th>Teléfono</th><th>Ingreso</th><th>Venc. DNI</th><th>N° Licencia</th>
                 <th>Categoría</th><th>Venc. Brevete</th><th>Días DNI</th><th>Días Brevete</th>
-                <th>Estado</th><th>Acciones</th>
+                <th>Contrato</th><th>Estado</th><th>Acciones</th>
               </tr>
             </thead>
             <tbody id="tablaPersonalBody">
-              <tr><td colspan="15" style="text-align:center;padding:32px;color:var(--gris-400)"><div class="spinner"></div> Cargando...</td></tr>
+              <tr><td colspan="17" style="text-align:center;padding:32px;color:var(--gris-400)"><div class="spinner"></div> Cargando...</td></tr>
             </tbody>
           </table>
         </div>

@@ -84,7 +84,7 @@ function renderPaginacionPersonal() {
 
 function renderPersonalTabla() {
   const tb=document.getElementById('tablaPersonalBody');
-  if (!personalData.length) { tb.innerHTML='<tr><td colspan="16" style="text-align:center;padding:32px;color:var(--gris-400)">Sin resultados</td></tr>'; renderPaginacionPersonal(); return; }
+  if (!personalData.length) { tb.innerHTML='<tr><td colspan="17" style="text-align:center;padding:32px;color:var(--gris-400)">Sin resultados</td></tr>'; renderPaginacionPersonal(); return; }
   const filas = personalData.slice((personalPagina-1)*PERSONAL_PAGE_SIZE, personalPagina*PERSONAL_PAGE_SIZE);
   renderPaginacionPersonal();
   tb.innerHTML=filas.map(p=>{
@@ -104,6 +104,7 @@ function renderPersonalTabla() {
       <td style="font-size:12px">${p.categoria_licencia?`<span class="badge badge-info">${escapeHtml(p.categoria_licencia)}</span>`:'—'}</td>
       <td style="font-size:12px">${escapeHtml(p.vencimiento_brevete)||'—'}</td>
       <td>${badgeDias(diasDni)}</td><td>${badgeDias(diasBrevete)}</td>
+      <td style="font-size:12px">${p.tipo_contrato?`<span class="badge badge-secondary">${escapeHtml(p.tipo_contrato)}</span>`:'—'}</td>
       <td>${p.activo==1?'<span class="badge badge-success">Activo</span>':'<span class="badge badge-danger">Inactivo</span>'}</td>
       <td>
         <button class="btn btn-outline btn-sm" onclick="editarPersonal(${p.id})" title="Editar"><i class="fas fa-edit"></i></button>
@@ -139,6 +140,7 @@ async function editarPersonal(id) {
   document.getElementById('personal_vencimiento_brevete').value=p.vencimiento_brevete||'';
   document.getElementById('personal_observaciones').value=p.observaciones||'';
   document.getElementById('personal_activo').value=p.activo;
+  document.getElementById('personal_tipo_contrato').value=p.tipo_contrato||'';
   document.getElementById('modalPersonalTitulo').textContent='Editar Personal';
   abrirModal('modalPersonal');
 }
@@ -172,6 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
     fd.append('vencimiento_brevete',  document.getElementById('personal_vencimiento_brevete').value);
     fd.append('observaciones',        document.getElementById('personal_observaciones').value.trim());
     fd.append('activo',               document.getElementById('personal_activo').value);
+    fd.append('tipo_contrato',        document.getElementById('personal_tipo_contrato').value);
     const foto=document.getElementById('personal_foto').files[0];
     if (foto) fd.append('foto',foto);
     try {
@@ -201,7 +204,7 @@ function exportarExcelPersonal() {
   const ws=XLSX.utils.json_to_sheet(personalData.map(p=>{
     const diasDni=p.dias_vencer_dni!==null?parseInt(p.dias_vencer_dni):null;
     const diasBrevete=p.dias_vencer_brevete!==null?parseInt(p.dias_vencer_brevete):null;
-    return {DNI:p.dni,Nombre:p.nombre,Cargo:p.cargo,Empresa:p.empresa||'',Teléfono:p.telefono||'','Fecha Ingreso':p.fecha_ingreso||'','Venc. DNI':p.dni_vencimiento||'','Días DNI':diasDni!==null?diasDni:'',' N° Licencia':p.num_licencia||'','Categoría':p.categoria_licencia||'','Venc. Brevete':p.vencimiento_brevete||'','Días Brevete':diasBrevete!==null?diasBrevete:'',Estado:p.activo==1?'Activo':'Inactivo',Observaciones:p.observaciones||''};
+    return {DNI:p.dni,Nombre:p.nombre,Cargo:p.cargo,'Tipo Contrato':p.tipo_contrato||'',Empresa:p.empresa||'',Teléfono:p.telefono||'','Fecha Ingreso':p.fecha_ingreso||'','Venc. DNI':p.dni_vencimiento||'','Días DNI':diasDni!==null?diasDni:'',' N° Licencia':p.num_licencia||'','Categoría':p.categoria_licencia||'','Venc. Brevete':p.vencimiento_brevete||'','Días Brevete':diasBrevete!==null?diasBrevete:'',Estado:p.activo==1?'Activo':'Inactivo',Observaciones:p.observaciones||''};
   }));
   const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Personal');
   XLSX.writeFile(wb,`personal_${new Date().toISOString().slice(0,10)}.xlsx`);
