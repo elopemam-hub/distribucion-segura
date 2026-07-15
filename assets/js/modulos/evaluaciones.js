@@ -802,10 +802,11 @@ function renderTablaEval({ rows, total, page, limit, totalPages }) {
       <td style="text-align:center">
         <span class="badge" style="${estadoInfo.color}">${estadoInfo.label}</span>
       </td>
-      <td style="text-align:center">
+      <td style="text-align:center;white-space:nowrap">
         <button class="btn btn-outline btn-sm" onclick="verEvaluacion(${r.id})" title="Ver detalle">
           <i class="fas fa-eye"></i>
         </button>
+        ${USER_ROL === 'administrador' ? `<button class="btn btn-danger btn-sm" onclick="eliminarEvaluacion(${r.id},\`${r.nombre}\`)" title="Eliminar"><i class="fas fa-trash"></i></button>` : ''}
       </td>
     </tr>`;
   }).join('');
@@ -1056,6 +1057,20 @@ async function procesarAprobacion(accion) {
   }
 
   btn.disabled = false;
+}
+
+// ── Eliminar evaluación ───────────────────────────────────────
+async function eliminarEvaluacion(id, nombre) {
+  if (!confirm(`¿Eliminar la evaluación de "${nombre}"? Esta acción no se puede deshacer.`)) return;
+  const fd = new FormData();
+  fd.append('csrf_token', CSRF_TOKEN);
+  fd.append('id', id);
+  try {
+    const r = await fetch('api/eliminar_evaluacion.php', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (d.success) { toast('Evaluación eliminada', 'success'); cargarListadoEval(evalPageActual); }
+    else toast(d.message || 'Error al eliminar', 'error');
+  } catch { toast('Error de conexión', 'error'); }
 }
 
 // ── Link & QR por tipo de evaluación ─────────────────────────
