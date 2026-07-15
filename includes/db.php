@@ -50,6 +50,7 @@ class Database {
         ];
         try {
             $this->pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
+            $this->pdo->exec("SET time_zone = '-05:00'");
         } catch (PDOException $e) {
             http_response_code(500);
             die(json_encode(['success' => false, 'message' => 'Error de conexión a base de datos.']));
