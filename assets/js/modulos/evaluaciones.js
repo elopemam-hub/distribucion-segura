@@ -1118,6 +1118,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const page = document.getElementById('page-evaluaciones');
   if (!page) return;
 
+  // Usar fecha local del cliente para evitar desfase de timezone servidor
+  const hoy = new Date();
+  const hoyStr = hoy.getFullYear() + '-' +
+    String(hoy.getMonth() + 1).padStart(2, '0') + '-' +
+    String(hoy.getDate()).padStart(2, '0');
+  const hasta = document.getElementById('filtroEvalHasta');
+  if (hasta && !hasta.value) hasta.value = hoyStr;
+
   // Cargar formularios disponibles al inicio (para selector dinámico)
   cargarFormulariosEval();
 

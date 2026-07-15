@@ -56,7 +56,7 @@
             </div>
             <div class="form-group">
               <label class="form-label">Hasta</label>
-              <input type="date" class="form-control" id="filtroEvalHasta" value="<?= date('Y-m-d') ?>">
+              <input type="date" class="form-control" id="filtroEvalHasta">
             </div>
             <div class="form-group">
               <label class="form-label">Buscar</label>
