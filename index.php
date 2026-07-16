@@ -522,23 +522,6 @@ $csrf = csrfToken();
         </div>
       </div>
 
-      <!-- PASO 6: Firma Digital -->
-      <div class="card" style="margin-bottom:24px">
-        <div class="card-header">
-          <h3><i class="fas fa-signature"></i> 6. Firma Digital del Inspector</h3>
-        </div>
-        <div class="card-body">
-          <div class="firma-canvas-wrap">
-            <canvas id="firmaCanvas" width="760" height="160" style="max-width:100%"></canvas>
-          </div>
-          <div class="firma-actions">
-            <button type="button" class="btn btn-secondary btn-sm" onclick="limpiarFirma()">
-              <i class="fas fa-eraser"></i> Limpiar
-            </button>
-          </div>
-        </div>
-      </div>
-
       <!-- BOTÓN GUARDAR -->
       <div style="display:flex;justify-content:flex-end;gap:12px">
         <button type="button" class="btn btn-secondary" onclick="resetForm();switchInspeccionTab('listado')">
