@@ -40,8 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
     fd.append('tripulacion',  JSON.stringify(tripData));
     fd.append('checklist',    JSON.stringify(obtenerChecklist()));
     fd.append('hallazgos',    JSON.stringify(hallazgosData.filter(h=>h.descripcion.trim())));
-    if (firmaHasContent) fd.append('firma_digital', document.getElementById('firmaCanvas').toDataURL());
-    archivos.forEach(f=>fd.append('evidencias[]',f));
+archivos.forEach(f=>fd.append('evidencias[]',f));
     try {
       const resp=await fetch('api/guardar_inspeccion.php',{method:'POST',body:fd});
       const data=await resp.json();
