@@ -204,7 +204,7 @@ function renderMiembro(id, rol, requerido, withNA=false) {
   return `<div class="trip-miembro">
     <div class="trip-rol-label">
       <i class="fas fa-hard-hat" style="color:var(--amarillo)"></i> ${rol}
-      ${withNA?`<label style="margin-left:auto;display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--gris-400);cursor:pointer;text-transform:uppercase;letter-spacing:1px"><input type="checkbox" id="trip_${id}_na" onchange="toggleTripNA('${id}')"> N/A</label>`:''}
+      ${withNA?`<label style="margin-left:auto;display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:#ffffff;cursor:pointer;text-transform:uppercase;letter-spacing:1px"><input type="checkbox" id="trip_${id}_na" onchange="toggleTripNA('${id}')" style="width:18px;height:18px;cursor:pointer;accent-color:var(--amarillo)"> N/A</label>`:''}
     </div>
     <div class="trip-fields">
       <div class="trip-nombre-wrap">
