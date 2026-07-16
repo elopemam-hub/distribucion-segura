@@ -522,6 +522,22 @@ $csrf = csrfToken();
         </div>
       </div>
 
+      <!-- INSPECTOR RESPONSABLE -->
+      <div class="card" style="margin-bottom:24px">
+        <div class="card-header"><h3><i class="fas fa-user-shield"></i> 6. Inspector Responsable</h3></div>
+        <div class="card-body">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:44px;height:44px;border-radius:50%;background:rgba(245,200,0,0.15);border:2px solid rgba(245,200,0,0.3);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <i class="fas fa-user-shield" style="color:var(--amarillo);font-size:20px"></i>
+            </div>
+            <div>
+              <div style="font-weight:700;color:var(--gris-100);font-size:15px"><?= htmlspecialchars($user['nombre']) ?></div>
+              <div style="font-size:12px;color:var(--gris-400);text-transform:uppercase;letter-spacing:1px">@<?= htmlspecialchars($user['usuario']) ?></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- BOTÓN GUARDAR -->
       <div style="display:flex;justify-content:flex-end;gap:12px">
         <button type="button" class="btn btn-secondary" onclick="resetForm();switchInspeccionTab('listado')">
