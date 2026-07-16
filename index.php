@@ -437,9 +437,6 @@ $csrf = csrfToken();
       <div class="card" style="margin-bottom:18px">
         <div class="card-header">
           <h3><i class="fas fa-users"></i> 2. Tripulación y EPP</h3>
-          <button type="button" class="btn btn-outline btn-sm" onclick="agregarAuxiliar()">
-            <i class="fas fa-plus"></i> Auxiliar
-          </button>
         </div>
         <div class="card-body">
           <div id="tripulacionContainer"></div>

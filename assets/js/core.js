@@ -191,11 +191,12 @@ function inicializarFormulario() {
 }
 
 function inicializarTripulacion() {
-  auxCount = 0; // reset al inicializar el formulario
+  auxCount = 0;
   const c=document.getElementById('tripulacionContainer');
-  c.innerHTML=`${renderMiembro('conductor','Conductor',true)}${renderMiembro('reparto','Reparto',false)}<div id="auxiliaresContainer"></div>`;
+  c.innerHTML=`${renderMiembro('conductor','Conductor',true)}${renderMiembro('reparto','Reparto',false)}${renderMiembro('auxiliar','Auxiliar',false)}<div id="auxiliaresContainer"></div>`;
   setupAutocomplete('trip_conductor_nombre','conductor');
   setupAutocomplete('trip_reparto_nombre','reparto');
+  setupAutocomplete('trip_auxiliar_nombre','auxiliar');
 }
 
 function renderMiembro(id, rol, requerido) {
@@ -297,6 +298,7 @@ function obtenerTripulacion() {
   // Miembros fijos
   addMiembro('trip_conductor_nombre', 'conductor', 'conductor');
   addMiembro('trip_reparto_nombre',   'reparto',   'reparto');
+  addMiembro('trip_auxiliar_nombre',  'auxiliar',  'auxiliar');
 
   // Auxiliares — recorridos dentro de #auxiliaresContainer en orden del DOM,
   // así garantizamos que cada input se lee SOLO UNA VEZ y por su id propio.
