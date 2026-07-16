@@ -193,16 +193,18 @@ function inicializarFormulario() {
 function inicializarTripulacion() {
   auxCount = 0;
   const c=document.getElementById('tripulacionContainer');
-  c.innerHTML=`${renderMiembro('conductor','Conductor',true)}${renderMiembro('reparto','Reparto',false)}${renderMiembro('auxiliar','Auxiliar',false)}<div id="auxiliaresContainer"></div>`;
+  c.innerHTML=`${renderMiembro('conductor','Conductor',true)}${renderMiembro('reparto','Reparto',false)}${renderMiembro('auxiliar','Auxiliar 1',false,true)}${renderMiembro('auxiliar2','Auxiliar 2',false,true)}<div id="auxiliaresContainer"></div>`;
   setupAutocomplete('trip_conductor_nombre','conductor');
   setupAutocomplete('trip_reparto_nombre','reparto');
   setupAutocomplete('trip_auxiliar_nombre','auxiliar');
+  setupAutocomplete('trip_auxiliar2_nombre','auxiliar');
 }
 
-function renderMiembro(id, rol, requerido) {
+function renderMiembro(id, rol, requerido, withNA=false) {
   return `<div class="trip-miembro">
     <div class="trip-rol-label">
       <i class="fas fa-hard-hat" style="color:var(--amarillo)"></i> ${rol}
+      ${withNA?`<label style="margin-left:auto;display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--gris-400);cursor:pointer;text-transform:uppercase;letter-spacing:1px"><input type="checkbox" id="trip_${id}_na" onchange="toggleTripNA('${id}')"> N/A</label>`:''}
     </div>
     <div class="trip-fields">
       <div class="trip-nombre-wrap">
@@ -218,6 +220,19 @@ function renderMiembro(id, rol, requerido) {
       </div>
     </div>
   </div>`;
+}
+
+function toggleTripNA(id) {
+  const cb=document.getElementById(`trip_${id}_na`);
+  const input=document.getElementById(`trip_${id}_nombre`);
+  const epps=document.querySelectorAll(`.epp-check[data-rol="${id}"]`);
+  if (cb.checked) {
+    input.value='N/A'; input.disabled=true;
+    epps.forEach(e=>{ e.checked=false; e.disabled=true; });
+  } else {
+    input.value=''; input.disabled=false;
+    epps.forEach(e=>{ e.disabled=false; });
+  }
 }
 
 let auxCount = 0;
@@ -298,7 +313,10 @@ function obtenerTripulacion() {
   // Miembros fijos
   addMiembro('trip_conductor_nombre', 'conductor', 'conductor');
   addMiembro('trip_reparto_nombre',   'reparto',   'reparto');
-  addMiembro('trip_auxiliar_nombre',  'auxiliar',  'auxiliar');
+  const na1=document.getElementById('trip_auxiliar_na');
+  if (!na1?.checked) addMiembro('trip_auxiliar_nombre',  'auxiliar', 'auxiliar');
+  const na2=document.getElementById('trip_auxiliar2_na');
+  if (!na2?.checked) addMiembro('trip_auxiliar2_nombre', 'auxiliar', 'auxiliar2');
 
   // Auxiliares — recorridos dentro de #auxiliaresContainer en orden del DOM,
   // así garantizamos que cada input se lee SOLO UNA VEZ y por su id propio.
