@@ -1203,11 +1203,13 @@ function abrirEvalQr(formularioId, titulo, color) {
   _evalQrInstance = null;
 
   if (window.QRCode) {
+    // colorDark SIEMPRE oscuro de alto contraste: un QR con el color de
+    // marca (dorado/amarillo) sobre blanco no es legible por los escáneres.
     _evalQrInstance = new QRCode(qrDiv, {
       text: url,
-      width: 200,
-      height: 200,
-      colorDark:  color || '#1565C0',
+      width: 220,
+      height: 220,
+      colorDark:  '#111111',
       colorLight: '#ffffff',
       correctLevel: QRCode.CorrectLevel.M,
     });
