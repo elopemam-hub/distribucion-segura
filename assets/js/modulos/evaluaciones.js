@@ -831,6 +831,7 @@ function renderTablaEval({ rows, total, page, limit, totalPages }) {
         <button class="btn btn-outline btn-sm" onclick="verEvaluacion(${r.id})" title="Ver detalle">
           <i class="fas fa-eye"></i>
         </button>
+        ${(r.estado === 'pendiente_revision' && (USER_ROL === 'administrador' || USER_ROL === 'supervisor')) ? `<button class="btn btn-success btn-sm" onclick="aprobarEvalRapido(${r.id},\`${r.nombre}\`)" title="Aprobar"><i class="fas fa-check"></i></button>` : ''}
         ${USER_ROL === 'administrador' ? `<button class="btn btn-danger btn-sm" onclick="eliminarEvaluacion(${r.id},\`${r.nombre}\`)" title="Eliminar"><i class="fas fa-trash"></i></button>` : ''}
       </td>
     </tr>`;
@@ -1154,6 +1155,21 @@ async function eliminarEmpresa(id, nombre) {
   const d = await r.json();
   if (d.success) { toast('Empresa eliminada', 'success'); await renderListaEmpresas(); }
   else toast(d.message || 'Error', 'error');
+}
+
+// ── Aprobación rápida desde el listado (sin firma) ────────────
+async function aprobarEvalRapido(id, nombre) {
+  if (!confirm(`¿Aprobar la evaluación de "${nombre}"?`)) return;
+  const fd = new FormData();
+  fd.append('csrf_token', CSRF_TOKEN);
+  fd.append('id', id);
+  fd.append('accion', 'aprobar');
+  try {
+    const r = await fetch('api/aprobar_evaluacion.php', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (d.success) { toast(d.message || 'Evaluación aprobada', 'success'); cargarListadoEval(evalPageActual); }
+    else toast(d.message || 'Error al aprobar', 'error');
+  } catch { toast('Error de conexión', 'error'); }
 }
 
 // ── Eliminar evaluación ───────────────────────────────────────

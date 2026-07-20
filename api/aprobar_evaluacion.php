@@ -17,7 +17,10 @@ $aprobadorId = (int)getCurrentUser()['id'];
 
 if ($id <= 0)                                    jsonResponse(false, 'ID inválido.', null, 400);
 if (!in_array($accion, ['aprobar','rechazar']))  jsonResponse(false, 'Acción inválida.', null, 400);
-if (!$firma || strlen($firma) < 100)             jsonResponse(false, 'Se requiere la firma del aprobador.', null, 422);
+
+// Firma opcional: el modal la envía dibujada; la aprobación rápida
+// desde el listado no la incluye. Se registra igual quién y cuándo aprueba.
+$firma = ($firma && strlen($firma) > 100) ? $firma : null;
 
 // Verificar que existe y está pendiente
 $eval = db()->fetchOne(
