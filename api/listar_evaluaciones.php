@@ -38,7 +38,7 @@ $rows = db()->fetchAll(
     "SELECT e.id, e.tipo, e.fecha, e.empresa, e.nombre, e.dni, e.puesto,
             e.tipo_unidad, e.conductor_tipo,
             e.puntaje, e.puntaje_maximo, e.porcentaje, e.estado,
-            e.created_at,
+            e.origen, e.created_at,
             u.nombre AS evaluador_nombre,
             a.nombre AS aprobador_nombre,
             e.aprobado_en

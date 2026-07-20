@@ -810,10 +810,14 @@ function renderTablaEval({ rows, total, page, limit, totalPages }) {
       ? `<span class="badge ${tipoInfo.color}"><i class="fas ${tipoInfo.icon}"></i> ${tipoInfo.label}</span>`
       : `<span class="badge" style="${tipoInfo.style || ''}"><i class="fas ${tipoInfo.icon}"></i> ${tipoInfo.label}</span>`;
 
+    const origenBadge = r.origen === 'publico'
+      ? ` <span class="badge" style="background:rgba(21,101,192,0.15);color:var(--primary);font-size:10px" title="Enviada por link/QR público"><i class="fas fa-qrcode"></i> QR</span>`
+      : '';
+
     return `<tr>
       <td style="font-size:13px">${r.fecha}</td>
       <td>${tipoBadge}</td>
-      <td style="font-size:13px;font-weight:600">${r.nombre}</td>
+      <td style="font-size:13px;font-weight:600">${r.nombre}${origenBadge}</td>
       <td style="font-size:12px;font-family:monospace">${r.dni}</td>
       <td style="font-size:12px">${r.empresa || '—'}</td>
       <td style="text-align:center">
@@ -1173,8 +1177,9 @@ function abrirEvalQr(formularioId, titulo, color) {
   document.getElementById('modalEvalQrTitulo').innerHTML =
     `<i class="fas fa-qrcode"></i> ${titulo}`;
 
-  const base = window.location.origin + window.location.pathname;
-  const url  = `${base}?eval=${encodeURIComponent(formularioId)}`;
+  // Link a la página PÚBLICA (sin login) — cualquier persona puede abrirlo
+  const dir = window.location.pathname.replace(/[^/]*$/, '');   // .../distribucion-segura/
+  const url = `${window.location.origin}${dir}eval_publico.php?eval=${encodeURIComponent(formularioId)}`;
   document.getElementById('evalQrLink').value = url;
 
   const qrDiv = document.getElementById('evalQrCanvas');

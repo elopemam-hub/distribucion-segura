@@ -4,6 +4,7 @@
 // ============================================================
 
 require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/eval_scoring.php';
 requireLogin();
 requireCsrf();
 header('Content-Type: application/json; charset=utf-8');
@@ -36,70 +37,19 @@ if (empty($dni))                                         $errores[] = 'El DNI es
 if (!is_array($respuestas) || empty($respuestas))        $errores[] = 'No se recibieron respuestas.';
 if (!empty($errores)) jsonResponse(false, implode(' | ', $errores), null, 422);
 
-// ── Calcular puntaje desde BD ─────────────────────────────────
-$puntaje    = 0.0;
-$puntajeMax = 20.0;
-
-$secciones = db()->fetchAll(
-    "SELECT s.id, s.seccion_id, s.tipo, s.puntos,
-            p.pregunta_id, p.respuesta_correcta, p.puntos AS pts_pregunta
-     FROM eval_secciones s
-     LEFT JOIN eval_preguntas p ON p.seccion_id = s.id AND p.activo = 1
-     WHERE s.formulario = ? AND s.activo = 1
-     ORDER BY s.orden, p.orden",
-    [$tipo]
-);
-
-// Agrupar por sección
-$secMap = [];
-foreach ($secciones as $row) {
-    $sid = $row['seccion_id'];
-    if (!isset($secMap[$sid])) {
-        $secMap[$sid] = [
-            'tipo'   => $row['tipo'],
-            'puntos' => (float)$row['puntos'],
-            'items'  => [],
-        ];
-    }
-    if ($row['pregunta_id']) {
-        $secMap[$sid]['items'][] = [
-            'id'       => $row['pregunta_id'],
-            'correcta' => $row['respuesta_correcta'],
-            'puntos'   => (float)$row['pts_pregunta'],
-        ];
-    }
-}
-
-foreach ($secMap as $sid => $sec) {
-    if ($sec['tipo'] === 'aplica_grid') {
-        $secResp = $respuestas[$sid] ?? [];
-        $total   = count($sec['items']);
-        if ($total === 0) continue;
-        $aplica  = 0;
-        foreach ($sec['items'] as $item) {
-            if (($secResp[$item['id']] ?? '') === 'aplica') $aplica++;
-        }
-        $puntaje += ($aplica / $total) * $sec['puntos'];
-
-    } elseif ($sec['tipo'] === 'multiple_choice') {
-        foreach ($sec['items'] as $item) {
-            if ($item['correcta'] !== null && ($respuestas[$item['id']] ?? '') === $item['correcta']) {
-                $puntaje += $item['puntos'];
-            }
-        }
-    }
-}
-
-$puntaje    = round($puntaje, 2);
-$porcentaje = round(($puntaje / $puntajeMax) * 100, 2);
+// ── Calcular puntaje desde BD (helper compartido) ─────────────
+$score      = calcularPuntajeEvaluacion($tipo, $respuestas);
+$puntaje    = $score['puntaje'];
+$puntajeMax = $score['puntaje_maximo'];
+$porcentaje = $score['porcentaje'];
 
 // ── Guardar en BD ────────────────────────────────────────────
 try {
     db()->query(
         "INSERT INTO evaluaciones
          (tipo, fecha, empresa, nombre, dni, puesto, tipo_unidad, estado_unidad, conductor_tipo,
-          respuestas, puntaje, puntaje_maximo, porcentaje, observaciones, firma_evaluado, evaluador_id)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+          respuestas, puntaje, puntaje_maximo, porcentaje, observaciones, firma_evaluado, evaluador_id, origen)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
         [
             $tipo, $fecha, $empresa ?: null, $nombre, $dni,
             $puesto ?: null, $tipo_unidad ?: null, $estado_unidad ?: null, $conductor_tipo ?: null,
@@ -107,7 +57,7 @@ try {
             $puntaje, $puntajeMax, $porcentaje,
             $observaciones ?: null,
             ($firma && strlen($firma) > 100) ? $firma : null,
-            $evaluadorId,
+            $evaluadorId, 'interno',
         ]
     );
     $id = db()->lastInsertId();
