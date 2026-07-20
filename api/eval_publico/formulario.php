@@ -35,6 +35,15 @@ if (!$meta) {
     $meta = ['formulario_id' => $formulario, 'titulo' => 'Evaluación', 'icono' => 'fa-clipboard-check', 'color' => '#1565C0'];
 }
 
+// ── Empresas gestionadas (mismas que el formulario interno) ───
+$empresas = [];
+try {
+    $rows = db()->fetchAll("SELECT nombre FROM eval_empresas WHERE activo = 1 ORDER BY orden, nombre");
+    $empresas = array_column($rows, 'nombre');
+} catch (Exception $e) {
+    $empresas = [];   // el JS usa su lista estática como fallback
+}
+
 // ── Secciones + preguntas (sin respuesta_correcta) ────────────
 try {
     $secciones = db()->fetchAll(
@@ -97,5 +106,6 @@ foreach ($secciones as $sec) {
 
 jsonResponse(true, '', [
     'meta'      => $meta,
+    'empresas'  => $empresas,
     'secciones' => $result,
 ]);

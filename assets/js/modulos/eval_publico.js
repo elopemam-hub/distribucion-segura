@@ -47,6 +47,7 @@ const EVP_CAMPOS_DEFAULT = [
 const PUB = {
   id: window.EVAL_PUBLICO_ID || '',
   meta: null,
+  empresas: [],
   secciones: [],
 };
 
@@ -80,6 +81,7 @@ async function evpInit() {
     const d = await r.json();
     if (!d.success) throw new Error(d.message || 'Error');
     PUB.meta = d.data.meta;
+    PUB.empresas = d.data.empresas || [];
     PUB.secciones = d.data.secciones || [];
     evpRenderForm();
   } catch (e) {
@@ -135,9 +137,12 @@ function evpRenderCampos(campos) {
       html += `<input type="text" class="form-control evp-campo" data-campo="${c.id}"${c.required ? ' required' : ''}>`;
 
     } else if (c.tipo === 'select') {
+      // El campo empresa usa la lista gestionada en BD (misma que el form interno);
+      // si no hay, cae a las opciones estáticas del formulario.
+      const opciones = (c.id === 'empresa' && PUB.empresas.length) ? PUB.empresas : (c.opciones || []);
       html += `<select class="form-control evp-campo" data-campo="${c.id}"${c.required ? ' required' : ''}>
                  <option value="">— Selecciona —</option>`;
-      for (const op of (c.opciones || [])) html += `<option value="${esc(op)}">${esc(op)}</option>`;
+      for (const op of opciones) html += `<option value="${esc(op)}">${esc(op)}</option>`;
       html += `</select>`;
 
     } else if (c.tipo === 'radio') {

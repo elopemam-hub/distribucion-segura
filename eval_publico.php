@@ -64,6 +64,26 @@ if ($valido) {
   .evp-result .pts { font-size: 12px; color: var(--gris-400, #667); margin-top: 2px; }
   .evp-result h2 { font-family: var(--font-display, 'Barlow Condensed'); font-weight: 800; font-size: 22px; margin-bottom: 6px; }
   .evp-result p  { color: var(--gris-400, #667); font-size: 13px; }
+
+  /* ── Optimización para celular ── */
+  @media (max-width: 600px) {
+    .evp-wrap { padding: 0 8px 48px; }
+    .evp-topbar { padding: 12px 14px; }
+    .evp-topbar .t { font-size: 16px; }
+    .evp-intro { padding: 16px 4px 6px; }
+    .evp-intro h1 { font-size: 19px; }
+    .evp-wrap .card-body { padding: 14px 12px; }
+    .evp-wrap .card-header { padding: 12px 14px; }
+    .evp-wrap .card-header h3 { font-size: 14px; }
+    /* Tabla APLICA / NO APLICA más compacta y legible */
+    .evp-wrap table th { padding: 6px 6px !important; font-size: 11px !important; }
+    .evp-wrap table td { padding: 8px 6px !important; font-size: 12px !important; }
+    /* Opciones de respuesta con mayor área táctil */
+    .evp-opcion-label { padding: 12px !important; font-size: 14px !important; }
+    /* Botón enviar a todo el ancho para pulsar cómodo */
+    .evp-submit-bar { padding: 4px 0 0; }
+    .evp-submit-bar .btn { width: 100%; justify-content: center; padding: 14px; font-size: 15px; }
+  }
 </style>
 </head>
 <body>
