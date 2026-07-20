@@ -1203,15 +1203,20 @@ function abrirEvalQr(formularioId, titulo, color) {
   _evalQrInstance = null;
 
   if (window.QRCode) {
-    // colorDark SIEMPRE oscuro de alto contraste: un QR con el color de
-    // marca (dorado/amarillo) sobre blanco no es legible por los escáneres.
-    _evalQrInstance = new QRCode(qrDiv, {
+    // Marco blanco = "zona de silencio": los escáneres necesitan margen
+    // blanco alrededor del QR para capturarlo rápido.
+    const box = document.createElement('div');
+    box.style.cssText = 'background:#fff;padding:16px;border-radius:12px;display:inline-block;line-height:0;box-shadow:0 4px 14px rgba(0,0,0,.25)';
+    qrDiv.appendChild(box);
+    // colorDark SIEMPRE negro de alto contraste (nunca el color de marca);
+    // correctLevel L = menos módulos = módulos más grandes = lectura más rápida.
+    _evalQrInstance = new QRCode(box, {
       text: url,
-      width: 220,
-      height: 220,
-      colorDark:  '#111111',
+      width: 240,
+      height: 240,
+      colorDark:  '#000000',
       colorLight: '#ffffff',
-      correctLevel: QRCode.CorrectLevel.M,
+      correctLevel: QRCode.CorrectLevel.L,
     });
   } else {
     qrDiv.innerHTML = '<p style="color:var(--gris-400);font-size:13px">QR no disponible (sin conexión)</p>';
