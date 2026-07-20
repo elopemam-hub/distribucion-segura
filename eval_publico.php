@@ -24,7 +24,7 @@ if ($valido) {
 }
 ?>
 <!DOCTYPE html>
-<html lang="es" data-theme="light">
+<html lang="es" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -37,7 +37,10 @@ if ($valido) {
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <link rel="stylesheet" href="assets/css/main.css?v=<?= @filemtime(__DIR__.'/assets/css/main.css') ?>">
 <style>
-  body { background: var(--gris-900, #eef1f5); min-height: 100vh; }
+  /* main.css pone body{display:flex} para el layout del panel;
+     aquí es una página independiente → volver a flujo normal en bloque. */
+  html, body { display: block !important; width: 100%; max-width: 100%; overflow-x: hidden; }
+  body { background: var(--gris-900); min-height: 100vh; margin: 0; }
   .evp-wrap { max-width: 820px; margin: 0 auto; padding: 0 14px 60px; }
   .evp-topbar {
     background: <?= htmlspecialchars($color, ENT_QUOTES) ?>;
