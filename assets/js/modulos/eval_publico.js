@@ -23,13 +23,13 @@ const EVP_CAMPOS = {
     { id: 'empresa',        label: 'Empresa',            tipo: 'select', opciones: ['Dicorjes'], required: true },
     { id: 'conductor_tipo', label: 'Conductor',          tipo: 'radio',  opciones: ['Nuevo Inducción','Antiguo'], required: true },
     { id: 'dni',            label: 'D.N.I.',             tipo: 'text', required: true },
-    { id: 'nombre',         label: 'Nombre y Apellidos', tipo: 'text', required: true },
+    { id: 'nombre',         label: 'Nombre y Apellidos', tipo: 'text', required: true, mayus: true },
   ],
   induccion_t2: [
     { id: 'fecha',   label: 'Fecha',              tipo: 'fecha' },
     { id: 'hora',    label: 'Hora',               tipo: 'hora' },
     { id: 'dni',     label: 'D.N.I.',             tipo: 'text', required: true },
-    { id: 'nombre',  label: 'Nombre y Apellidos', tipo: 'text', required: true },
+    { id: 'nombre',  label: 'Nombre y Apellidos', tipo: 'text', required: true, mayus: true },
     { id: 'empresa', label: 'Empresa',            tipo: 'select', opciones: ['Amanecer','Dicorjes','Pajcha','T77','S.I.Venturo SAC'], required: true },
     { id: 'puesto',  label: 'Puesto',             tipo: 'select', opciones: ['Chofer','Auxiliar','Reparto','Asistente T2','Supervisor T2','Empresario'], required: true },
   ],
@@ -134,7 +134,9 @@ function evpRenderCampos(campos) {
                  style="background:var(--gris-700);color:var(--gris-400);cursor:not-allowed">`;
 
     } else if (c.tipo === 'text') {
-      html += `<input type="text" class="form-control evp-campo" data-campo="${c.id}"${c.required ? ' required' : ''}>`;
+      // mayus: visible en mayúsculas al escribir y guardado en mayúsculas.
+      const may = c.mayus ? ' data-mayus="1" style="text-transform:uppercase"' : '';
+      html += `<input type="text" class="form-control evp-campo" data-campo="${c.id}"${c.required ? ' required' : ''}${may}>`;
 
     } else if (c.tipo === 'select') {
       // El campo empresa usa la lista gestionada en BD (misma que el form interno);
@@ -271,7 +273,10 @@ document.addEventListener('change', function (e) {
 // ── Recolección ───────────────────────────────────────────────
 function evpCampos() {
   const data = {};
-  document.querySelectorAll('.evp-campo').forEach(el => { data[el.dataset.campo] = el.value.trim(); });
+  document.querySelectorAll('.evp-campo').forEach(el => {
+    const v = el.value.trim();
+    data[el.dataset.campo] = el.dataset.mayus ? v.toUpperCase() : v;
+  });
   document.querySelectorAll('.evp-campo-radio:checked').forEach(r => { data[r.dataset.campo] = r.value; });
   return data;
 }

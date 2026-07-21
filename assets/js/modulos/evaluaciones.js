@@ -95,7 +95,7 @@ const EVAL_CONFIG = {
       { id: 'empresa',        label: 'Empresa',            tipo: 'select', opciones: ['Dicorjes'], required: true },
       { id: 'conductor_tipo', label: 'Conductor',          tipo: 'radio',  opciones: ['Nuevo Inducción','Antiguo'], required: true },
       { id: 'dni',            label: 'D.N.I.',             tipo: 'dni_autocomplete', required: true },
-      { id: 'nombre',         label: 'Nombre y Apellidos', tipo: 'text',   required: true },
+      { id: 'nombre',         label: 'Nombre y Apellidos', tipo: 'text',   required: true, mayus: true },
     ],
     secciones: [
       {
@@ -124,7 +124,7 @@ const EVAL_CONFIG = {
     campos: [
       { id: 'fecha',   label: 'Fecha',             tipo: 'datetime_readonly', subtipo: 'date' },
       { id: 'hora',    label: 'Hora',              tipo: 'datetime_readonly', subtipo: 'time' },
-      { id: 'nombre',  label: 'Nombre y Apellidos', tipo: 'text',   required: true },
+      { id: 'nombre',  label: 'Nombre y Apellidos', tipo: 'text',   required: true, mayus: true },
       { id: 'dni',     label: 'D.N.I.',             tipo: 'text',   required: true },
       { id: 'empresa', label: 'Empresa',             tipo: 'select', required: true,
         opciones: ['LIDERMAN','ENGIE','A Y M VIRGEN DE CHAPI S.R.L.','M&F MULTIMOTRIZ E.I.R.L.',
@@ -142,7 +142,7 @@ const EVAL_CONFIG = {
       { id: 'fecha',   label: 'Fecha',              tipo: 'datetime_readonly', subtipo: 'date' },
       { id: 'hora',    label: 'Hora',               tipo: 'datetime_readonly', subtipo: 'time' },
       { id: 'dni',     label: 'D.N.I.',             tipo: 'dni_autocomplete',  required: true },
-      { id: 'nombre',  label: 'Nombre y Apellidos', tipo: 'text',   required: true },
+      { id: 'nombre',  label: 'Nombre y Apellidos', tipo: 'text',   required: true, mayus: true },
       { id: 'empresa', label: 'Empresa',             tipo: 'select', opciones: ['Amanecer','Dicorjes','Pajcha','T77','S.I.Venturo SAC'], required: true },
       { id: 'puesto',  label: 'Puesto',              tipo: 'select', opciones: ['Chofer','Auxiliar','Reparto','Asistente T2','Supervisor T2','Empresario'], required: true },
     ],
@@ -360,7 +360,11 @@ function renderCamposIdentificacion(cfg) {
       </div>`;
 
     } else if (campo.tipo === 'text') {
-      html += `<input type="text" class="form-control eval-campo" id="eval-campo-${campo.id}" data-campo="${campo.id}"${campo.required ? ' required' : ''}>`;
+      // mayus: se ve en mayúsculas al escribir (text-transform) y se guarda en
+      // mayúsculas (data-mayus, aplicado al recolectar) para que lo mostrado
+      // y lo almacenado no diverjan.
+      const may = campo.mayus ? ' data-mayus="1" style="text-transform:uppercase"' : '';
+      html += `<input type="text" class="form-control eval-campo" id="eval-campo-${campo.id}" data-campo="${campo.id}"${campo.required ? ' required' : ''}${may}>`;
 
     } else if (campo.tipo === 'select') {
       html += `<select class="form-control eval-campo" id="eval-campo-${campo.id}" data-campo="${campo.id}"${campo.required ? ' required' : ''}>`;
@@ -619,7 +623,8 @@ function obtenerCamposIdentificacion() {
   const data = {};
   // Inputs/selects
   document.querySelectorAll('.eval-campo').forEach(el => {
-    data[el.dataset.campo] = el.value.trim();
+    const v = el.value.trim();
+    data[el.dataset.campo] = el.dataset.mayus ? v.toUpperCase() : v;
   });
   // Radios (conductor_tipo, etc.)
   document.querySelectorAll('.eval-campo-radio:checked').forEach(r => {
