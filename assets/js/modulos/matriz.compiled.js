@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // MÓDULO MATRIZ DE CONSECUENCIAS — React/JSX (transpilado por Babel standalone)
 // ============================================================
 
@@ -498,58 +498,95 @@ const DEFAULT_DATA = [{
   v4: "",
   v5: ""
 }];
+
+// Paleta semántica tokenizada: los valores reales viven en main.css y cambian
+// con el tema (claro = texto oscuro saturado / oscuro = texto vivo translúcido).
+const SEM = k => ({
+  color: `var(--mtz-${k}-fg)`,
+  bg: `var(--mtz-${k}-bg)`,
+  border: `var(--mtz-${k}-bd)`
+});
 const TIPO_CFG = {
   "Seguridad Vial": {
-    color: "#6FB6F7",
-    bg: "rgba(61,153,245,0.15)",
+    ...SEM("info"),
+    k: "info",
     icon: "🛣️"
   },
   "Prevención Violencia": {
-    color: "#FF8A8A",
-    bg: "rgba(229,83,83,0.15)",
+    ...SEM("crit"),
+    k: "crit",
     icon: "🛡️"
   },
   "Seguridad": {
-    color: "#4FD3AE",
-    bg: "rgba(46,184,140,0.15)",
+    ...SEM("ok"),
+    k: "ok",
     icon: "⚠️"
   },
   "Políticas": {
-    color: "#B99CE0",
-    bg: "rgba(146,109,222,0.15)",
+    ...SEM("low"),
+    k: "low",
     icon: "📋"
   }
 };
 const CRIT_CFG = {
   "Bajo": {
-    color: "#B99CE0",
-    bg: "rgba(146,109,222,0.15)"
+    ...SEM("low"),
+    k: "low"
   },
   "Grave": {
-    color: "#F5C453",
-    bg: "rgba(249,177,21,0.15)"
+    ...SEM("warn"),
+    k: "warn"
   },
   "Muy Grave": {
-    color: "#F0A67E",
-    bg: "rgba(230,120,90,0.15)"
+    ...SEM("high"),
+    k: "high"
   },
   "Muy Crítico": {
-    color: "#FF8A8A",
-    bg: "rgba(229,83,83,0.18)"
+    ...SEM("crit"),
+    k: "crit"
   }
 };
 const VIG_CFG = {
   "6 meses": {
-    color: "#4FD3AE",
-    bg: "rgba(46,184,140,0.15)"
+    ...SEM("ok"),
+    k: "ok"
   },
   "No reingreso": {
-    color: "#FF8A8A",
-    bg: "rgba(229,83,83,0.16)"
+    ...SEM("crit"),
+    k: "crit"
   },
   "18 meses": {
-    color: "#F5C453",
-    bg: "rgba(249,177,21,0.15)"
+    ...SEM("warn"),
+    k: "warn"
+  }
+};
+
+// Equivalente impreso de la paleta semántica (el PDF siempre va sobre papel
+// blanco, así que usa los valores del tema claro en RGB).
+const PDF_PAL = {
+  info: {
+    fg: [23, 86, 143],
+    bg: [231, 240, 251]
+  },
+  ok: {
+    fg: [11, 107, 79],
+    bg: [226, 244, 237]
+  },
+  warn: {
+    fg: [133, 86, 10],
+    bg: [252, 242, 218]
+  },
+  high: {
+    fg: [160, 67, 30],
+    bg: [251, 235, 227]
+  },
+  crit: {
+    fg: [168, 31, 26],
+    bg: [251, 232, 231]
+  },
+  low: {
+    fg: [85, 52, 155],
+    bg: [239, 233, 250]
   }
 };
 const TIPOS_ALL = ["Seguridad Vial", "Prevención Violencia", "Seguridad", "Políticas"];
@@ -567,37 +604,23 @@ const BLANK_ROW = {
   v5: ""
 };
 const LS_KEY = "dist-segura-matriz-v2";
+
+// Clasificador único de severidad — lo consumen la tabla en pantalla y el PDF,
+// para que ambos rendericen exactamente la misma escala de color.
+function severityKey(text) {
+  if (!text) return null;
+  const t = String(text).toLowerCase();
+  if (t.includes("desvinculación")) return "crit";
+  if (t.includes("semana")) return "high";
+  if (t.includes("suspensión")) return "warn";
+  if (t.includes("amonestación")) return "ok";
+  if (t.includes("llamada") || t.includes("reinducción")) return "info";
+  return null;
+}
 function consecStyle(text) {
   if (!text) return null;
-  const t = text.toLowerCase();
-  // Tema oscuro: fondo translúcido + texto en color vivo + borde sutil.
-  // Escala de severidad: rojo (desvinculación) → azul (llamada/reinducción).
-  if (t.includes("desvinculación")) return {
-    bg: "rgba(229,83,83,0.16)",
-    color: "#FF8A8A",
-    border: "rgba(229,83,83,0.45)"
-  };
-  if (t.includes("semana")) return {
-    bg: "rgba(230,120,90,0.15)",
-    color: "#F0A67E",
-    border: "rgba(230,120,90,0.40)"
-  };
-  if (t.includes("suspensión")) return {
-    bg: "rgba(249,177,21,0.15)",
-    color: "#F5C453",
-    border: "rgba(249,177,21,0.40)"
-  };
-  if (t.includes("amonestación")) return {
-    bg: "rgba(46,184,140,0.15)",
-    color: "#4FD3AE",
-    border: "rgba(46,184,140,0.40)"
-  };
-  if (t.includes("llamada") || t.includes("reinducción")) return {
-    bg: "rgba(61,153,245,0.15)",
-    color: "#6FB6F7",
-    border: "rgba(61,153,245,0.42)"
-  };
-  return {
+  const k = severityKey(text);
+  return k ? SEM(k) : {
     bg: "var(--mtz-surface-2)",
     color: "var(--mtz-text-muted)",
     border: "var(--mtz-border-2)"
@@ -623,7 +646,7 @@ function MatrizToast({
     style: {
       background: t.type === "error" ? "#7f1d1d" : t.type === "warn" ? "#713f12" : "#14532d",
       border: `1px solid ${t.type === "error" ? "#ef4444" : t.type === "warn" ? "#eab308" : "#22c55e"}`,
-      color: "var(--mtz-surface)",
+      color: "#FFFFFF",
       padding: "10px 16px",
       borderRadius: 8,
       fontSize: 13,
@@ -830,9 +853,9 @@ function RowForm({
     style: {
       padding: "8px 18px",
       borderRadius: 4,
-      border: "1px solid var(--mtz-border-2)",
+      border: "1px solid #CDD3D8",
       background: "none",
-      color: "var(--mtz-text-3)",
+      color: "#73879C",
       cursor: "pointer",
       fontSize: 13,
       fontWeight: 600,
@@ -845,7 +868,7 @@ function RowForm({
       borderRadius: 4,
       border: "none",
       background: "#F5C800",
-      color: "var(--mtz-surface)",
+      color: "#fff",
       cursor: "pointer",
       fontSize: 13,
       fontWeight: 700,
@@ -865,19 +888,19 @@ function ImportPreview({
     style: {
       marginBottom: 14,
       padding: "12px 16px",
-      background: "var(--mtz-surface-2)",
+      background: "#F5F7FA",
       borderRadius: 4,
-      border: "1px solid var(--mtz-border)"
+      border: "1px solid #E6E9ED"
     }
   }, /*#__PURE__*/React.createElement("p", {
     style: {
       fontSize: 13,
-      color: "var(--mtz-text-3)",
+      color: "#73879C",
       marginBottom: 10
     }
   }, "Se encontraron ", /*#__PURE__*/React.createElement("strong", {
     style: {
-      color: "var(--mtz-text)"
+      color: "#2A3F54"
     }
   }, rows.length, " filas"), ". ¿Cómo deseas importar?"), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -893,16 +916,16 @@ function ImportPreview({
       fontSize: 12,
       fontWeight: 600,
       cursor: "pointer",
-      border: `1px solid ${mode === v ? "#F5C800" : "var(--mtz-border-2)"}`,
+      border: `1px solid ${mode === v ? "#F5C800" : "#CDD3D8"}`,
       background: mode === v ? "rgba(245,200,0,.08)" : "none",
-      color: mode === v ? "#F5C800" : "var(--mtz-text-3)",
+      color: mode === v ? "#F5C800" : "#73879C",
       fontFamily: "'Barlow',sans-serif"
     }
   }, l)))), /*#__PURE__*/React.createElement("div", {
     style: {
       maxHeight: 250,
       overflow: "auto",
-      border: "1px solid var(--mtz-border)",
+      border: "1px solid #E6E9ED",
       borderRadius: 4
     }
   }, /*#__PURE__*/React.createElement("table", {
@@ -913,42 +936,42 @@ function ImportPreview({
     }
   }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", {
     style: {
-      background: "var(--mtz-surface-2)"
+      background: "#F5F7FA"
     }
   }, ["Tipo", "Vigencia", "Criticidad", "Motivo (extracto)", "1ra Vez"].map(h => /*#__PURE__*/React.createElement("th", {
     key: h,
     style: {
       padding: "8px 10px",
-      color: "var(--mtz-text-muted)",
+      color: "#98A6AD",
       fontWeight: 700,
       textAlign: "left",
-      borderBottom: "1px solid var(--mtz-border)",
+      borderBottom: "1px solid #E6E9ED",
       whiteSpace: "nowrap"
     }
   }, h)))), /*#__PURE__*/React.createElement("tbody", null, rows.slice(0, 20).map((r, i) => /*#__PURE__*/React.createElement("tr", {
     key: i,
     style: {
-      borderBottom: "1px solid var(--mtz-surface-2)"
+      borderBottom: "1px solid #F5F7FA"
     }
   }, /*#__PURE__*/React.createElement("td", {
     style: {
       padding: "6px 10px",
-      color: "var(--mtz-text-2)"
+      color: "#555"
     }
   }, r.tipo), /*#__PURE__*/React.createElement("td", {
     style: {
       padding: "6px 10px",
-      color: "var(--mtz-text-muted)"
+      color: "#98A6AD"
     }
   }, r.vigencia), /*#__PURE__*/React.createElement("td", {
     style: {
       padding: "6px 10px",
-      color: "var(--mtz-text-2)"
+      color: "#555"
     }
   }, r.criticidad), /*#__PURE__*/React.createElement("td", {
     style: {
       padding: "6px 10px",
-      color: "var(--mtz-text)",
+      color: "#2A3F54",
       maxWidth: 200,
       overflow: "hidden",
       textOverflow: "ellipsis",
@@ -957,7 +980,7 @@ function ImportPreview({
   }, r.motivo), /*#__PURE__*/React.createElement("td", {
     style: {
       padding: "6px 10px",
-      color: "var(--mtz-text-muted)",
+      color: "#98A6AD",
       maxWidth: 120,
       overflow: "hidden",
       textOverflow: "ellipsis",
@@ -967,7 +990,7 @@ function ImportPreview({
     colSpan: 5,
     style: {
       padding: "8px 10px",
-      color: "var(--mtz-text-muted)",
+      color: "#98A6AD",
       textAlign: "center"
     }
   }, "...y ", rows.length - 20, " filas más"))))), /*#__PURE__*/React.createElement("div", {
@@ -982,9 +1005,9 @@ function ImportPreview({
     style: {
       padding: "8px 18px",
       borderRadius: 4,
-      border: "1px solid var(--mtz-border-2)",
+      border: "1px solid #CDD3D8",
       background: "none",
-      color: "var(--mtz-text-3)",
+      color: "#73879C",
       cursor: "pointer",
       fontSize: 13,
       fontWeight: 600,
@@ -997,7 +1020,7 @@ function ImportPreview({
       borderRadius: 4,
       border: "none",
       background: "#F5C800",
-      color: "var(--mtz-surface)",
+      color: "#fff",
       cursor: "pointer",
       fontSize: 13,
       fontWeight: 700,
@@ -1067,10 +1090,6 @@ function MatrizApp() {
     saveData(data.filter(r => r.id !== id));
     setDelId(null);
     addToast("Fila eliminada", "warn");
-  };
-  const handleReset = () => {
-    saveData(DEFAULT_DATA);
-    addToast("Datos restaurados a valores originales", "warn");
   };
   const handleImportConfirm = (rows, mode) => {
     let maxId = Math.max(0, ...data.map(d => d.id));
@@ -1165,6 +1184,192 @@ function MatrizApp() {
     XLSX.writeFile(wb, `matriz_${new Date().toISOString().slice(0, 10)}.xlsx`);
     addToast("Excel exportado");
   };
+
+  // Contexto de filtros aplicados — se imprime en el PDF para que el documento
+  // sea auditable (qué subconjunto de la matriz se exportó y cuándo).
+  const filtroTxt = () => {
+    const p = [];
+    if (tipoF !== "Todos") p.push(`Tipo: ${tipoF}`);
+    if (critF !== "Todas") p.push(`Criticidad: ${critF}`);
+    if (search.trim()) p.push(`Búsqueda: "${search.trim()}"`);
+    return p.length ? p.join(" · ") : "Sin filtros aplicados";
+  };
+  const exportPDF = rows => {
+    const JsPDF = window.jspdf?.jsPDF;
+    if (!JsPDF) {
+      addToast("Módulo PDF no disponible", "error");
+      return;
+    }
+    if (!rows.length) {
+      addToast("No hay filas que exportar", "warn");
+      return;
+    }
+    const doc = new JsPDF({
+      orientation: "landscape",
+      unit: "mm",
+      format: "a4"
+    });
+    const W = doc.internal.pageSize.getWidth();
+    const H = doc.internal.pageSize.getHeight();
+    const fecha = new Date().toLocaleDateString("es-PE", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric"
+    });
+    const drawHeader = () => {
+      doc.setFillColor(245, 200, 0);
+      doc.rect(0, 0, W, 3.2, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(14);
+      doc.setTextColor(31, 45, 61);
+      doc.text("MATRIZ DE CONSECUENCIAS", 8, 13);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7.5);
+      doc.setTextColor(110, 124, 143);
+      doc.text(`Tripulantes de Reparto · ${rows.length} infracciones · ${filtroTxt()}`, 8, 18.4);
+      doc.text(`Generado ${fecha}${USER_NAME ? " · " + USER_NAME : ""}`, W - 8, 18.4, {
+        align: "right"
+      });
+      doc.setDrawColor(228, 231, 237);
+      doc.setLineWidth(0.25);
+      doc.line(8, 21, W - 8, 21);
+    };
+    doc.autoTable({
+      startY: 25,
+      margin: {
+        left: 8,
+        right: 8,
+        top: 25,
+        bottom: 12
+      },
+      head: [["Tipo", "Vigencia", "Motivo / Infracción", "Criticidad", "1ra vez", "2da vez", "3ra vez", "4ta vez", "5ta vez"]],
+      body: rows.map(r => [r.tipo, r.vigencia, r.motivo, r.criticidad, r.v1 || "—", r.v2 || "—", r.v3 || "—", r.v4 || "—", r.v5 || "—"]),
+      theme: "grid",
+      styles: {
+        font: "helvetica",
+        fontSize: 6.5,
+        cellPadding: 1.7,
+        lineColor: [228, 231, 237],
+        lineWidth: 0.1,
+        valign: "middle",
+        overflow: "linebreak",
+        textColor: [31, 45, 61]
+      },
+      headStyles: {
+        fillColor: [42, 63, 84],
+        textColor: [255, 255, 255],
+        fontSize: 6.4,
+        fontStyle: "bold",
+        lineWidth: 0
+      },
+      alternateRowStyles: {
+        fillColor: [250, 251, 252]
+      },
+      columnStyles: {
+        0: {
+          cellWidth: 26,
+          fontStyle: "bold"
+        },
+        1: {
+          cellWidth: 17,
+          halign: "center",
+          fontSize: 6
+        },
+        2: {
+          cellWidth: 70
+        },
+        3: {
+          cellWidth: 20,
+          halign: "center",
+          fontStyle: "bold"
+        },
+        4: {
+          cellWidth: 30
+        },
+        5: {
+          cellWidth: 30
+        },
+        6: {
+          cellWidth: 30
+        },
+        7: {
+          cellWidth: 29
+        },
+        8: {
+          cellWidth: 29
+        }
+      },
+      didParseCell: d => {
+        if (d.section !== "body") return;
+        const i = d.column.index,
+          raw = d.cell.raw;
+        const key = i === 0 ? TIPO_CFG[raw]?.k : i === 1 ? VIG_CFG[raw]?.k : i === 3 ? CRIT_CFG[raw]?.k : i >= 4 ? severityKey(raw) : null;
+        if (key && PDF_PAL[key]) {
+          d.cell.styles.fillColor = PDF_PAL[key].bg;
+          d.cell.styles.textColor = PDF_PAL[key].fg;
+        }
+        if (raw === "—") {
+          d.cell.styles.textColor = [186, 194, 205];
+          d.cell.styles.halign = "center";
+        }
+      },
+      didDrawPage: drawHeader
+    });
+    const total = doc.internal.getNumberOfPages();
+    for (let p = 1; p <= total; p++) {
+      doc.setPage(p);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(6.5);
+      doc.setTextColor(150, 158, 170);
+      doc.text("Distribución Segura · Documento generado automáticamente", 8, H - 5);
+      doc.text(`Página ${p} de ${total}`, W - 8, H - 5, {
+        align: "right"
+      });
+    }
+    doc.save(`matriz_${new Date().toISOString().slice(0, 10)}.pdf`);
+    addToast(`PDF exportado (${rows.length} filas, ${total} pág.)`);
+  };
+  const exportPNG = async () => {
+    if (!window.html2canvas) {
+      addToast("Módulo de captura no disponible", "error");
+      return;
+    }
+    const el = document.getElementById("mtz-table-wrap");
+    if (!el) {
+      addToast("No se encontró la tabla", "error");
+      return;
+    }
+    addToast("Generando imagen PNG...");
+    // La tabla vive en un contenedor con scroll horizontal: hay que expandirla
+    // en el clon para que la captura incluya las columnas fuera de vista.
+    const fullW = el.scrollWidth;
+    const bg = getComputedStyle(document.documentElement).getPropertyValue("--mtz-surface").trim() || "#ffffff";
+    try {
+      const canvas = await html2canvas(el, {
+        scale: 2,
+        backgroundColor: bg,
+        logging: false,
+        useCORS: true,
+        width: fullW,
+        windowWidth: Math.max(fullW + 80, document.documentElement.clientWidth),
+        onclone: d => {
+          const c = d.getElementById("mtz-table-wrap");
+          if (c) {
+            c.style.overflow = "visible";
+            c.style.width = fullW + "px";
+            c.style.maxWidth = "none";
+          }
+        }
+      });
+      const a = document.createElement("a");
+      a.download = `matriz_${new Date().toISOString().slice(0, 10)}.png`;
+      a.href = canvas.toDataURL("image/png");
+      a.click();
+      addToast("PNG exportado");
+    } catch (err) {
+      addToast("No se pudo generar el PNG: " + err.message, "error");
+    }
+  };
   const exportTemplate = () => {
     const wsData = [["tipo", "vigencia", "motivo", "criticidad", "v1", "v2", "v3", "v4", "v5"], ["Seguridad Vial", "6 meses", "Descripción de la infracción", "Grave", "1ra consecuencia", "2da consecuencia", "3ra consecuencia", "", ""]];
     const ws = XLSX.utils.aoa_to_sheet(wsData);
@@ -1213,18 +1418,20 @@ function MatrizApp() {
   return /*#__PURE__*/React.createElement("div", {
     style: {
       fontFamily: "'Barlow',sans-serif",
-      color: "var(--mtz-text)"
+      color: "#2A3F54"
     }
   }, /*#__PURE__*/React.createElement("style", null, `
+        #page-matriz{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility}
+        .mtz-trow{transition:background .12s}
         .mtz-trow:hover{background:var(--mtz-row-hover)!important}
-        .mtz-fchip{border:1px solid var(--mtz-border-2);border-radius:4px;padding:4px 11px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;font-family:'Barlow',sans-serif;background:var(--mtz-surface-2);color:var(--mtz-text-3)}
+        .mtz-fchip{border:1px solid var(--mtz-border-2);border-radius:4px;padding:4px 11px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;font-family:'Barlow',sans-serif;background:none;color:var(--mtz-text-3)}
         .mtz-fchip:hover{border-color:#F5C800;color:#F5C800}
         .mtz-ibtn{background:none;border:1px solid var(--mtz-border-2);border-radius:4px;padding:4px 8px;color:var(--mtz-text-muted);cursor:pointer;font-size:12px;transition:all .15s}.mtz-ibtn:hover{border-color:var(--mtz-text-muted);color:var(--mtz-text-2)}
         .mtz-scinp{background:var(--mtz-surface-2);border:1px solid var(--mtz-border-2);color:var(--mtz-text);border-radius:4px;padding:7px 10px 7px 34px;font-size:13px;outline:none;font-family:'Barlow',sans-serif;width:100%}.mtz-scinp:focus{border-color:#F5C800;box-shadow:0 0 0 3px rgba(245,200,0,.12)}
         .mtz-th-srt{cursor:pointer;user-select:none}.mtz-th-srt:hover{color:#F5C800}
-        .mtz-cq{border-radius:4px;padding:3px 7px;font-size:11px;font-weight:500;text-align:center;line-height:1.3;border:1px solid;display:inline-block}
-        .mtz-bdg{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap}
-        .mtz-tg{display:inline-block;padding:2px 7px;border-radius:3px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+        .mtz-cq{border-radius:4px;padding:4px 8px;font-size:11.5px;font-weight:600;text-align:center;line-height:1.35;border:1px solid;display:inline-block}
+        .mtz-bdg{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:700;white-space:nowrap;border:1px solid}
+        .mtz-tg{display:inline-block;padding:3px 8px;border-radius:3px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;border:1px solid}
         .mtz-abtn{cursor:pointer;border:none;font-family:'Barlow',sans-serif;transition:opacity .15s}.mtz-abtn:hover{opacity:.82}
       `), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -1238,7 +1445,7 @@ function MatrizApp() {
   }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", {
     style: {
       fontFamily: "'Barlow Condensed',sans-serif",
-      fontSize: 22,
+      fontSize: 23,
       fontWeight: 800,
       color: "var(--mtz-text)",
       textTransform: "uppercase",
@@ -1254,8 +1461,8 @@ function MatrizApp() {
     }
   }), "Matriz de Consecuencias"), /*#__PURE__*/React.createElement("p", {
     style: {
-      fontSize: 12,
-      color: "var(--mtz-text-muted)",
+      fontSize: 12.5,
+      color: "var(--mtz-text-3)",
       margin: "3px 0 0"
     }
   }, "Tripulantes de Reparto · ", filtered.length, " de ", data.length, " infracciones")), /*#__PURE__*/React.createElement("div", {
@@ -1302,7 +1509,29 @@ function MatrizApp() {
     }
   }, /*#__PURE__*/React.createElement("i", {
     className: "fas fa-file-excel"
-  }), " Excel"), IS_ADMIN && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("input", {
+  }), " Excel"), /*#__PURE__*/React.createElement("button", {
+    className: "mtz-abtn",
+    onClick: () => exportPDF(filtered),
+    style: {
+      ...btnBase,
+      background: "var(--mtz-crit-bg)",
+      color: "var(--mtz-crit-fg)",
+      border: "1px solid var(--mtz-crit-bd)"
+    }
+  }, /*#__PURE__*/React.createElement("i", {
+    className: "fas fa-file-pdf"
+  }), " PDF"), /*#__PURE__*/React.createElement("button", {
+    className: "mtz-abtn",
+    onClick: exportPNG,
+    style: {
+      ...btnBase,
+      background: "var(--mtz-info-bg)",
+      color: "var(--mtz-info-fg)",
+      border: "1px solid var(--mtz-info-bd)"
+    }
+  }, /*#__PURE__*/React.createElement("i", {
+    className: "fas fa-image"
+  }), " PNG"), IS_ADMIN && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("input", {
     ref: fileRef,
     type: "file",
     accept: ".csv,.xlsx,.xls",
@@ -1327,7 +1556,7 @@ function MatrizApp() {
     style: {
       ...btnBase,
       background: "#F5C800",
-      color: "var(--mtz-surface)"
+      color: "#fff"
     }
   }, /*#__PURE__*/React.createElement("i", {
     className: "fas fa-plus"
@@ -1356,52 +1585,40 @@ function MatrizApp() {
       background: "var(--mtz-surface)",
       border: "1px solid var(--mtz-border)",
       borderRadius: 4,
-      padding: "8px 14px",
-      minWidth: 90,
+      padding: "9px 15px",
+      minWidth: 92,
       borderTop: `3px solid ${s.color}`
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 20,
+      fontSize: 21,
       fontWeight: 800,
       color: s.color,
-      lineHeight: 1
+      lineHeight: 1,
+      fontVariantNumeric: "tabular-nums"
     }
   }, s.val), /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 10,
-      color: "var(--mtz-text-muted)",
+      fontSize: 10.5,
+      color: "var(--mtz-text-3)",
       fontWeight: 600,
-      marginTop: 2
+      marginTop: 3
     }
   }, s.icon && s.icon + " ", s.label))), IS_ADMIN && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("button", {
     className: "mtz-abtn",
     onClick: exportTemplate,
     style: {
       ...btnBase,
-      background: "var(--mtz-surface-2)",
-      color: "var(--mtz-text-3)",
-      border: "1px solid var(--mtz-border-2)",
+      background: "#F5F7FA",
+      color: "#73879C",
+      border: "1px solid #CDD3D8",
       marginLeft: "auto",
       alignSelf: "center",
       fontSize: 11
     }
   }, /*#__PURE__*/React.createElement("i", {
     className: "fas fa-download"
-  }), " Plantilla"), /*#__PURE__*/React.createElement("button", {
-    className: "mtz-abtn",
-    onClick: handleReset,
-    style: {
-      ...btnBase,
-      background: "rgba(231,76,60,.06)",
-      color: "#E74C3C",
-      border: "1px solid rgba(231,76,60,.2)",
-      alignSelf: "center",
-      fontSize: 11
-    }
-  }, /*#__PURE__*/React.createElement("i", {
-    className: "fas fa-rotate-left"
-  }), " Restaurar original"))), /*#__PURE__*/React.createElement("div", {
+  }), " Plantilla"))), /*#__PURE__*/React.createElement("div", {
     style: {
       background: "var(--mtz-surface)",
       border: "1px solid var(--mtz-border)",
@@ -1426,7 +1643,7 @@ function MatrizApp() {
       left: 9,
       top: "50%",
       transform: "translateY(-50%)",
-      color: "var(--mtz-text-muted)",
+      color: "#98A6AD",
       fontSize: 12,
       pointerEvents: "none"
     }
@@ -1444,8 +1661,8 @@ function MatrizApp() {
     }
   }, /*#__PURE__*/React.createElement("span", {
     style: {
-      fontSize: 9,
-      color: "var(--mtz-text-muted)",
+      fontSize: 10,
+      color: "var(--mtz-text-3)",
       fontWeight: 700,
       textTransform: "uppercase",
       letterSpacing: ".1em",
@@ -1473,8 +1690,8 @@ function MatrizApp() {
     }
   }, /*#__PURE__*/React.createElement("span", {
     style: {
-      fontSize: 9,
-      color: "var(--mtz-text-muted)",
+      fontSize: 10,
+      color: "var(--mtz-text-3)",
       fontWeight: 700,
       textTransform: "uppercase",
       letterSpacing: ".1em",
@@ -1507,8 +1724,8 @@ function MatrizApp() {
     }
   }, /*#__PURE__*/React.createElement("span", {
     style: {
-      fontSize: 9,
-      color: "var(--mtz-text-muted)",
+      fontSize: 10,
+      color: "var(--mtz-text-3)",
       fontWeight: 700,
       textTransform: "uppercase",
       letterSpacing: ".1em",
@@ -1516,38 +1733,32 @@ function MatrizApp() {
     }
   }, "LEYENDA:"), [{
     l: "Llamada / Reinducción",
-    bg: "rgba(61,153,245,0.15)",
-    c: "#6FB6F7",
-    b: "rgba(61,153,245,0.42)"
+    k: "info"
   }, {
     l: "Amonestación Escrita",
-    bg: "rgba(46,184,140,0.15)",
-    c: "#4FD3AE",
-    b: "rgba(46,184,140,0.40)"
+    k: "ok"
   }, {
     l: "Suspensión",
-    bg: "rgba(249,177,21,0.15)",
-    c: "#F5C453",
-    b: "rgba(249,177,21,0.40)"
+    k: "warn"
   }, {
     l: "Susp. extendida",
-    bg: "rgba(230,120,90,0.15)",
-    c: "#F0A67E",
-    b: "rgba(230,120,90,0.40)"
+    k: "high"
   }, {
     l: "Desvinculación",
-    bg: "rgba(229,83,83,0.16)",
-    c: "#FF8A8A",
-    b: "rgba(229,83,83,0.45)"
-  }].map(x => /*#__PURE__*/React.createElement("div", {
-    key: x.l,
-    className: "mtz-cq",
-    style: {
-      background: x.bg,
-      color: x.c,
-      borderColor: x.b
-    }
-  }, x.l))), /*#__PURE__*/React.createElement("div", {
+    k: "crit"
+  }].map(x => {
+    const s = SEM(x.k);
+    return /*#__PURE__*/React.createElement("div", {
+      key: x.l,
+      className: "mtz-cq",
+      style: {
+        background: s.bg,
+        color: s.color,
+        borderColor: s.border
+      }
+    }, x.l);
+  })), /*#__PURE__*/React.createElement("div", {
+    id: "mtz-table-wrap",
     style: {
       background: "var(--mtz-surface)",
       border: "1px solid var(--mtz-border)",
@@ -1610,13 +1821,13 @@ function MatrizApp() {
     className: col.k ? "mtz-th-srt" : "",
     onClick: col.k ? () => handleSort(col.k) : undefined,
     style: {
-      padding: "10px 12px",
+      padding: "11px 12px",
       textAlign: "left",
-      fontSize: 9,
+      fontSize: 10.5,
       fontWeight: 700,
       textTransform: "uppercase",
-      letterSpacing: ".09em",
-      color: "var(--mtz-text-muted)",
+      letterSpacing: ".08em",
+      color: "var(--mtz-text-3)",
       borderBottom: "2px solid #F5C800",
       whiteSpace: "nowrap",
       width: col.w
@@ -1650,13 +1861,13 @@ function MatrizApp() {
       onClick: () => setExp(isExp ? null : row.id)
     }, /*#__PURE__*/React.createElement("td", {
       style: {
-        padding: "8px 12px"
+        padding: "11px 12px"
       }
     }, /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         alignItems: "center",
-        gap: 6
+        gap: 7
       }
     }, /*#__PURE__*/React.createElement("div", {
       style: {
@@ -1668,30 +1879,31 @@ function MatrizApp() {
       }
     }), /*#__PURE__*/React.createElement("span", {
       style: {
-        fontSize: 11,
+        fontSize: 12,
         fontWeight: 700,
         color: tc.color || "var(--mtz-text-muted)"
       }
     }, tc.icon, " ", row.tipo))), /*#__PURE__*/React.createElement("td", {
       style: {
-        padding: "8px 12px"
+        padding: "11px 12px"
       }
     }, /*#__PURE__*/React.createElement("span", {
       className: "mtz-tg",
       style: {
         background: vc.bg,
         color: vc.color,
-        border: `1px solid ${vc.color}40`
+        borderColor: vc.border
       }
     }, row.vigencia)), /*#__PURE__*/React.createElement("td", {
       style: {
-        padding: "8px 12px"
+        padding: "11px 12px"
       }
     }, /*#__PURE__*/React.createElement("div", {
       style: {
-        color: "var(--mtz-text-2)",
-        lineHeight: 1.4,
-        fontSize: 12
+        color: "var(--mtz-text)",
+        lineHeight: 1.45,
+        fontSize: 13,
+        fontWeight: 500
       }
     }, isExp ? row.motivo : row.motivo.length > 78 ? row.motivo.slice(0, 76) + "…" : row.motivo, !isExp && row.motivo.length > 78 && /*#__PURE__*/React.createElement("span", {
       style: {
@@ -1701,21 +1913,21 @@ function MatrizApp() {
       }
     }, "▾"))), /*#__PURE__*/React.createElement("td", {
       style: {
-        padding: "8px 12px"
+        padding: "11px 12px"
       }
     }, /*#__PURE__*/React.createElement("span", {
       className: "mtz-bdg",
       style: {
         background: cc.bg,
         color: cc.color,
-        border: `1px solid ${cc.color}30`
+        borderColor: cc.border
       }
     }, row.criticidad)), [row.v1, row.v2, row.v3, row.v4, row.v5].map((v, vi) => {
       const st = consecStyle(v);
       return /*#__PURE__*/React.createElement("td", {
         key: vi,
         style: {
-          padding: "8px 10px"
+          padding: "11px 10px"
         }
       }, v && st ? /*#__PURE__*/React.createElement("div", {
         className: "mtz-cq",
@@ -1850,15 +2062,11 @@ function MatrizApp() {
 // ── Montaje diferido ─────────────────────────────────────────────────────
 // Se monta la primera vez que el usuario abre la página "Matriz Consecuencias"
 // (cuando showPage('matriz') es llamado desde el SPA).
-// Esto evita montar en un contenedor con display:none y garantiza que
-// el contenedor tenga dimensiones reales al renderizar.
 let _mtzMounted = false;
 function initMatriz() {
   if (_mtzMounted) return;
   const container = document.getElementById('page-matriz');
   if (!container) return;
   _mtzMounted = true;
-  ReactDOM.createRoot(container).render(
-    /*#__PURE__*/React.createElement(MatrizApp, null)
-  );
+  ReactDOM.createRoot(container).render(/*#__PURE__*/React.createElement(MatrizApp, null));
 }

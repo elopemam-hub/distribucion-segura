@@ -1883,12 +1883,17 @@ $csrf = csrfToken();
 <?php if (tieneAccesoModulo('geocercas')): ?>
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+<?php endif; ?>
+<!-- Captura a imagen — compartido por Geocercas (mapa) y Matriz (tabla PNG) -->
+<?php if (tieneAccesoModulo('geocercas') || tieneAccesoModulo('matriz')): ?>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <?php endif; ?>
 <!-- React (para módulo Matriz) — JSX pre-compilado, sin Babel en el navegador -->
 <?php if (tieneAccesoModulo('matriz')): ?>
 <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <?php endif; ?>
 <!-- JS separado por módulo -->
 <script src="assets/js/core.js?v=<?= filemtime(__DIR__.'/assets/js/core.js') ?>&r=3"></script>

@@ -55,22 +55,37 @@ const DEFAULT_DATA = [
   { id:44, tipo:"Seguridad Vial",       vigencia:"6 meses",      criticidad:"Grave",       motivo:"No realizar inspección pre operacional checklist",                                                                                                          v1:"Reinducción, Amonestación escrita y acuerdo compromiso", v2:"Suspensión 2 días",   v3:"Desvinculación",      v4:"",               v5:"" },
 ];
 
+// Paleta semántica tokenizada: los valores reales viven en main.css y cambian
+// con el tema (claro = texto oscuro saturado / oscuro = texto vivo translúcido).
+const SEM = k => ({ color:`var(--mtz-${k}-fg)`, bg:`var(--mtz-${k}-bg)`, border:`var(--mtz-${k}-bd)` });
+
 const TIPO_CFG = {
-  "Seguridad Vial":       { color:"#6FB6F7", bg:"rgba(61,153,245,0.15)",   icon:"🛣️" },
-  "Prevención Violencia": { color:"#FF8A8A", bg:"rgba(229,83,83,0.15)",    icon:"🛡️" },
-  "Seguridad":            { color:"#4FD3AE", bg:"rgba(46,184,140,0.15)",   icon:"⚠️" },
-  "Políticas":            { color:"#B99CE0", bg:"rgba(146,109,222,0.15)",  icon:"📋" },
+  "Seguridad Vial":       { ...SEM("info"), k:"info", icon:"🛣️" },
+  "Prevención Violencia": { ...SEM("crit"), k:"crit", icon:"🛡️" },
+  "Seguridad":            { ...SEM("ok"),   k:"ok",   icon:"⚠️" },
+  "Políticas":            { ...SEM("low"),  k:"low",  icon:"📋" },
 };
 const CRIT_CFG = {
-  "Bajo":        { color:"#B99CE0", bg:"rgba(146,109,222,0.15)" },
-  "Grave":       { color:"#F5C453", bg:"rgba(249,177,21,0.15)"  },
-  "Muy Grave":   { color:"#F0A67E", bg:"rgba(230,120,90,0.15)"  },
-  "Muy Crítico": { color:"#FF8A8A", bg:"rgba(229,83,83,0.18)"   },
+  "Bajo":        { ...SEM("low"),  k:"low"  },
+  "Grave":       { ...SEM("warn"), k:"warn" },
+  "Muy Grave":   { ...SEM("high"), k:"high" },
+  "Muy Crítico": { ...SEM("crit"), k:"crit" },
 };
 const VIG_CFG = {
-  "6 meses":      { color:"#4FD3AE", bg:"rgba(46,184,140,0.15)"  },
-  "No reingreso": { color:"#FF8A8A", bg:"rgba(229,83,83,0.16)"   },
-  "18 meses":     { color:"#F5C453", bg:"rgba(249,177,21,0.15)"  },
+  "6 meses":      { ...SEM("ok"),   k:"ok"   },
+  "No reingreso": { ...SEM("crit"), k:"crit" },
+  "18 meses":     { ...SEM("warn"), k:"warn" },
+};
+
+// Equivalente impreso de la paleta semántica (el PDF siempre va sobre papel
+// blanco, así que usa los valores del tema claro en RGB).
+const PDF_PAL = {
+  info: { fg:[23,86,143],  bg:[231,240,251] },
+  ok:   { fg:[11,107,79],  bg:[226,244,237] },
+  warn: { fg:[133,86,10],  bg:[252,242,218] },
+  high: { fg:[160,67,30],  bg:[251,235,227] },
+  crit: { fg:[168,31,26],  bg:[251,232,231] },
+  low:  { fg:[85,52,155],  bg:[239,233,250] },
 };
 const TIPOS_ALL = ["Seguridad Vial","Prevención Violencia","Seguridad","Políticas"];
 const CRITS_ALL = ["Bajo","Grave","Muy Grave","Muy Crítico"];
@@ -78,16 +93,24 @@ const VIGS_ALL  = ["6 meses","No reingreso","18 meses"];
 const BLANK_ROW = { tipo:"Seguridad Vial", vigencia:"6 meses", motivo:"", criticidad:"Grave", v1:"", v2:"", v3:"", v4:"", v5:"" };
 const LS_KEY    = "dist-segura-matriz-v2";
 
+// Clasificador único de severidad — lo consumen la tabla en pantalla y el PDF,
+// para que ambos rendericen exactamente la misma escala de color.
+function severityKey(text) {
+  if (!text) return null;
+  const t = String(text).toLowerCase();
+  if (t.includes("desvinculación")) return "crit";
+  if (t.includes("semana"))         return "high";
+  if (t.includes("suspensión"))     return "warn";
+  if (t.includes("amonestación"))   return "ok";
+  if (t.includes("llamada") || t.includes("reinducción")) return "info";
+  return null;
+}
+
 function consecStyle(text) {
   if (!text) return null;
-  const t = text.toLowerCase();
-  // Tema oscuro: fondo translúcido + texto vivo + borde sutil.
-  if (t.includes("desvinculación")) return { bg:"rgba(229,83,83,0.16)",  color:"#FF8A8A", border:"rgba(229,83,83,0.45)"   };
-  if (t.includes("semana"))         return { bg:"rgba(230,120,90,0.15)", color:"#F0A67E", border:"rgba(230,120,90,0.40)"  };
-  if (t.includes("suspensión"))     return { bg:"rgba(249,177,21,0.15)", color:"#F5C453", border:"rgba(249,177,21,0.40)"  };
-  if (t.includes("amonestación"))   return { bg:"rgba(46,184,140,0.15)", color:"#4FD3AE", border:"rgba(46,184,140,0.40)"  };
-  if (t.includes("llamada") || t.includes("reinducción")) return { bg:"rgba(61,153,245,0.15)", color:"#6FB6F7", border:"rgba(61,153,245,0.42)" };
-  return { bg:"var(--mtz-surface-2)", color:"var(--mtz-text-muted)", border:"var(--mtz-border-2)" };
+  const k = severityKey(text);
+  return k ? SEM(k)
+           : { bg:"var(--mtz-surface-2)", color:"var(--mtz-text-muted)", border:"var(--mtz-border-2)" };
 }
 
 // ── Toast ──────────────────────────────────────────────────────────────────
@@ -260,7 +283,6 @@ function MatrizApp() {
   const handleAdd  = form => { const id=Math.max(0,...data.map(d=>d.id))+1; saveData([...data,{...form,id}]); setEditRow(null); addToast("Fila agregada"); };
   const handleEdit = form => { saveData(data.map(r=>r.id===form.id?form:r)); setEditRow(null); addToast("Fila actualizada"); };
   const handleDel  = id   => { saveData(data.filter(r=>r.id!==id)); setDelId(null); addToast("Fila eliminada","warn"); };
-  const handleReset= ()   => { saveData(DEFAULT_DATA); addToast("Datos restaurados a valores originales","warn"); };
 
   const handleImportConfirm = (rows, mode) => {
     let maxId = Math.max(0,...data.map(d=>d.id));
@@ -324,6 +346,106 @@ function MatrizApp() {
     addToast("Excel exportado");
   };
 
+  // Contexto de filtros aplicados — se imprime en el PDF para que el documento
+  // sea auditable (qué subconjunto de la matriz se exportó y cuándo).
+  const filtroTxt = () => {
+    const p = [];
+    if (tipoF !== "Todos") p.push(`Tipo: ${tipoF}`);
+    if (critF !== "Todas") p.push(`Criticidad: ${critF}`);
+    if (search.trim())     p.push(`Búsqueda: "${search.trim()}"`);
+    return p.length ? p.join(" · ") : "Sin filtros aplicados";
+  };
+
+  const exportPDF = rows => {
+    const JsPDF = window.jspdf?.jsPDF;
+    if (!JsPDF) { addToast("Módulo PDF no disponible","error"); return; }
+    if (!rows.length) { addToast("No hay filas que exportar","warn"); return; }
+
+    const doc = new JsPDF({ orientation:"landscape", unit:"mm", format:"a4" });
+    const W = doc.internal.pageSize.getWidth();
+    const H = doc.internal.pageSize.getHeight();
+    const fecha = new Date().toLocaleDateString("es-PE",{day:"2-digit",month:"2-digit",year:"numeric"});
+
+    const drawHeader = () => {
+      doc.setFillColor(245,200,0); doc.rect(0,0,W,3.2,"F");
+      doc.setFont("helvetica","bold"); doc.setFontSize(14); doc.setTextColor(31,45,61);
+      doc.text("MATRIZ DE CONSECUENCIAS", 8, 13);
+      doc.setFont("helvetica","normal"); doc.setFontSize(7.5); doc.setTextColor(110,124,143);
+      doc.text(`Tripulantes de Reparto · ${rows.length} infracciones · ${filtroTxt()}`, 8, 18.4);
+      doc.text(`Generado ${fecha}${USER_NAME ? " · " + USER_NAME : ""}`, W-8, 18.4, {align:"right"});
+      doc.setDrawColor(228,231,237); doc.setLineWidth(0.25); doc.line(8, 21, W-8, 21);
+    };
+
+    doc.autoTable({
+      startY: 25,
+      margin: { left:8, right:8, top:25, bottom:12 },
+      head: [["Tipo","Vigencia","Motivo / Infracción","Criticidad","1ra vez","2da vez","3ra vez","4ta vez","5ta vez"]],
+      body: rows.map(r=>[r.tipo,r.vigencia,r.motivo,r.criticidad,r.v1||"—",r.v2||"—",r.v3||"—",r.v4||"—",r.v5||"—"]),
+      theme: "grid",
+      styles: { font:"helvetica", fontSize:6.5, cellPadding:1.7, lineColor:[228,231,237], lineWidth:0.1,
+                valign:"middle", overflow:"linebreak", textColor:[31,45,61] },
+      headStyles: { fillColor:[42,63,84], textColor:[255,255,255], fontSize:6.4, fontStyle:"bold", lineWidth:0 },
+      alternateRowStyles: { fillColor:[250,251,252] },
+      columnStyles: {
+        0:{cellWidth:26, fontStyle:"bold"}, 1:{cellWidth:17, halign:"center", fontSize:6},
+        2:{cellWidth:70}, 3:{cellWidth:20, halign:"center", fontStyle:"bold"},
+        4:{cellWidth:30}, 5:{cellWidth:30}, 6:{cellWidth:30}, 7:{cellWidth:29}, 8:{cellWidth:29},
+      },
+      didParseCell: d => {
+        if (d.section !== "body") return;
+        const i = d.column.index, raw = d.cell.raw;
+        const key = i===0 ? TIPO_CFG[raw]?.k
+                  : i===1 ? VIG_CFG[raw]?.k
+                  : i===3 ? CRIT_CFG[raw]?.k
+                  : i>=4  ? severityKey(raw) : null;
+        if (key && PDF_PAL[key]) {
+          d.cell.styles.fillColor = PDF_PAL[key].bg;
+          d.cell.styles.textColor = PDF_PAL[key].fg;
+        }
+        if (raw === "—") { d.cell.styles.textColor = [186,194,205]; d.cell.styles.halign = "center"; }
+      },
+      didDrawPage: drawHeader,
+    });
+
+    const total = doc.internal.getNumberOfPages();
+    for (let p=1; p<=total; p++) {
+      doc.setPage(p);
+      doc.setFont("helvetica","normal"); doc.setFontSize(6.5); doc.setTextColor(150,158,170);
+      doc.text("Distribución Segura · Documento generado automáticamente", 8, H-5);
+      doc.text(`Página ${p} de ${total}`, W-8, H-5, {align:"right"});
+    }
+    doc.save(`matriz_${new Date().toISOString().slice(0,10)}.pdf`);
+    addToast(`PDF exportado (${rows.length} filas, ${total} pág.)`);
+  };
+
+  const exportPNG = async () => {
+    if (!window.html2canvas) { addToast("Módulo de captura no disponible","error"); return; }
+    const el = document.getElementById("mtz-table-wrap");
+    if (!el) { addToast("No se encontró la tabla","error"); return; }
+    addToast("Generando imagen PNG...");
+    // La tabla vive en un contenedor con scroll horizontal: hay que expandirla
+    // en el clon para que la captura incluya las columnas fuera de vista.
+    const fullW = el.scrollWidth;
+    const bg = getComputedStyle(document.documentElement).getPropertyValue("--mtz-surface").trim() || "#ffffff";
+    try {
+      const canvas = await html2canvas(el, {
+        scale: 2, backgroundColor: bg, logging: false, useCORS: true,
+        width: fullW, windowWidth: Math.max(fullW + 80, document.documentElement.clientWidth),
+        onclone: d => {
+          const c = d.getElementById("mtz-table-wrap");
+          if (c) { c.style.overflow = "visible"; c.style.width = fullW+"px"; c.style.maxWidth = "none"; }
+        },
+      });
+      const a = document.createElement("a");
+      a.download = `matriz_${new Date().toISOString().slice(0,10)}.png`;
+      a.href = canvas.toDataURL("image/png");
+      a.click();
+      addToast("PNG exportado");
+    } catch (err) {
+      addToast("No se pudo generar el PNG: "+err.message, "error");
+    }
+  };
+
   const exportTemplate = () => {
     const wsData = [
       ["tipo","vigencia","motivo","criticidad","v1","v2","v3","v4","v5"],
@@ -353,26 +475,28 @@ function MatrizApp() {
   return (
     <div style={{fontFamily:"'Barlow',sans-serif",color:"#2A3F54"}}>
       <style>{`
-        .mtz-trow:hover{background:#f0faf8!important}
+        #page-matriz{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility}
+        .mtz-trow{transition:background .12s}
+        .mtz-trow:hover{background:var(--mtz-row-hover)!important}
         .mtz-fchip{border:1px solid var(--mtz-border-2);border-radius:4px;padding:4px 11px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;font-family:'Barlow',sans-serif;background:none;color:var(--mtz-text-3)}
         .mtz-fchip:hover{border-color:#F5C800;color:#F5C800}
         .mtz-ibtn{background:none;border:1px solid var(--mtz-border-2);border-radius:4px;padding:4px 8px;color:var(--mtz-text-muted);cursor:pointer;font-size:12px;transition:all .15s}.mtz-ibtn:hover{border-color:var(--mtz-text-muted);color:var(--mtz-text-2)}
         .mtz-scinp{background:var(--mtz-surface-2);border:1px solid var(--mtz-border-2);color:var(--mtz-text);border-radius:4px;padding:7px 10px 7px 34px;font-size:13px;outline:none;font-family:'Barlow',sans-serif;width:100%}.mtz-scinp:focus{border-color:#F5C800;box-shadow:0 0 0 3px rgba(245,200,0,.12)}
         .mtz-th-srt{cursor:pointer;user-select:none}.mtz-th-srt:hover{color:#F5C800}
-        .mtz-cq{border-radius:4px;padding:3px 7px;font-size:11px;font-weight:500;text-align:center;line-height:1.3;border:1px solid;display:inline-block}
-        .mtz-bdg{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap}
-        .mtz-tg{display:inline-block;padding:2px 7px;border-radius:3px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+        .mtz-cq{border-radius:4px;padding:4px 8px;font-size:11.5px;font-weight:600;text-align:center;line-height:1.35;border:1px solid;display:inline-block}
+        .mtz-bdg{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:700;white-space:nowrap;border:1px solid}
+        .mtz-tg{display:inline-block;padding:3px 8px;border-radius:3px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;border:1px solid}
         .mtz-abtn{cursor:pointer;border:none;font-family:'Barlow',sans-serif;transition:opacity .15s}.mtz-abtn:hover{opacity:.82}
       `}</style>
 
       {/* ── CABECERA ── */}
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:10,marginBottom:14}}>
         <div>
-          <h2 style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:22,fontWeight:800,color:"#2A3F54",textTransform:"uppercase",letterSpacing:"0.5px",margin:0,lineHeight:1.2}}>
+          <h2 style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:23,fontWeight:800,color:"var(--mtz-text)",textTransform:"uppercase",letterSpacing:"0.5px",margin:0,lineHeight:1.2}}>
             <i className="fas fa-bolt" style={{color:"#F5C800",marginRight:8}}></i>
             Matriz de Consecuencias
           </h2>
-          <p style={{fontSize:12,color:"#98A6AD",margin:"3px 0 0"}}>Tripulantes de Reparto · {filtered.length} de {data.length} infracciones</p>
+          <p style={{fontSize:12.5,color:"var(--mtz-text-3)",margin:"3px 0 0"}}>Tripulantes de Reparto · {filtered.length} de {data.length} infracciones</p>
         </div>
 
         <div style={{display:"flex",gap:7,alignItems:"center",flexWrap:"wrap"}}>
@@ -381,15 +505,21 @@ function MatrizApp() {
               <i className="fas fa-crown" style={{marginRight:5}}></i>{USER_NAME} · Admin
             </span>
           )}
-          <button className="mtz-abtn" onClick={()=>exportCSV(filtered)} style={{...btnBase,background:"#F5F7FA",color:"#73879C",border:"1px solid #CDD3D8"}}>
+          <button className="mtz-abtn" onClick={()=>exportCSV(filtered)} style={{...btnBase,background:"var(--mtz-surface-2)",color:"var(--mtz-text-3)",border:"1px solid var(--mtz-border-2)"}}>
             <i className="fas fa-file-csv"></i> CSV
           </button>
           <button className="mtz-abtn" onClick={()=>exportXLSX(filtered)} style={{...btnBase,background:"rgba(245,200,0,.08)",color:"#F5C800",border:"1px solid rgba(245,200,0,.3)"}}>
             <i className="fas fa-file-excel"></i> Excel
           </button>
+          <button className="mtz-abtn" onClick={()=>exportPDF(filtered)} style={{...btnBase,background:"var(--mtz-crit-bg)",color:"var(--mtz-crit-fg)",border:"1px solid var(--mtz-crit-bd)"}}>
+            <i className="fas fa-file-pdf"></i> PDF
+          </button>
+          <button className="mtz-abtn" onClick={exportPNG} style={{...btnBase,background:"var(--mtz-info-bg)",color:"var(--mtz-info-fg)",border:"1px solid var(--mtz-info-bd)"}}>
+            <i className="fas fa-image"></i> PNG
+          </button>
           {IS_ADMIN && <>
             <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" style={{display:"none"}} onChange={handleFile}/>
-            <button className="mtz-abtn" onClick={()=>fileRef.current.click()} style={{...btnBase,background:"#F5F7FA",color:"#73879C",border:"1px solid #CDD3D8"}}>
+            <button className="mtz-abtn" onClick={()=>fileRef.current.click()} style={{...btnBase,background:"var(--mtz-surface-2)",color:"var(--mtz-text-3)",border:"1px solid var(--mtz-border-2)"}}>
               <i className="fas fa-file-import"></i> Importar
             </button>
             <button className="mtz-abtn" onClick={()=>setEditRow("new")} style={{...btnBase,background:"#F5C800",color:"#fff"}}>
@@ -401,18 +531,15 @@ function MatrizApp() {
 
       {/* ── STATS CARDS ── */}
       <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:12}}>
-        {[{label:"Total",val:data.length,color:"#2A3F54"},...byTipo.map(({t,n})=>({label:t,val:n,color:TIPO_CFG[t]?.color||"#555",icon:TIPO_CFG[t]?.icon}))].map(s=>(
-          <div key={s.label} style={{background:"#fff",border:"1px solid #E6E9ED",borderRadius:4,padding:"8px 14px",minWidth:90,borderTop:`3px solid ${s.color}`}}>
-            <div style={{fontSize:20,fontWeight:800,color:s.color,lineHeight:1}}>{s.val}</div>
-            <div style={{fontSize:10,color:"#98A6AD",fontWeight:600,marginTop:2}}>{s.icon&&s.icon+" "}{s.label}</div>
+        {[{label:"Total",val:data.length,color:"var(--mtz-text)"},...byTipo.map(({t,n})=>({label:t,val:n,color:TIPO_CFG[t]?.color||"var(--mtz-text-2)",icon:TIPO_CFG[t]?.icon}))].map(s=>(
+          <div key={s.label} style={{background:"var(--mtz-surface)",border:"1px solid var(--mtz-border)",borderRadius:4,padding:"9px 15px",minWidth:92,borderTop:`3px solid ${s.color}`}}>
+            <div style={{fontSize:21,fontWeight:800,color:s.color,lineHeight:1,fontVariantNumeric:"tabular-nums"}}>{s.val}</div>
+            <div style={{fontSize:10.5,color:"var(--mtz-text-3)",fontWeight:600,marginTop:3}}>{s.icon&&s.icon+" "}{s.label}</div>
           </div>
         ))}
         {IS_ADMIN && <>
           <button className="mtz-abtn" onClick={exportTemplate} style={{...btnBase,background:"#F5F7FA",color:"#73879C",border:"1px solid #CDD3D8",marginLeft:"auto",alignSelf:"center",fontSize:11}}>
             <i className="fas fa-download"></i> Plantilla
-          </button>
-          <button className="mtz-abtn" onClick={handleReset} style={{...btnBase,background:"rgba(231,76,60,.06)",color:"#E74C3C",border:"1px solid rgba(231,76,60,.2)",alignSelf:"center",fontSize:11}}>
-            <i className="fas fa-rotate-left"></i> Restaurar original
           </button>
         </>}
       </div>
@@ -424,7 +551,7 @@ function MatrizApp() {
           <input className="mtz-scinp" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar infracción..."/>
         </div>
         <div style={{display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}}>
-          <span style={{fontSize:9,color:"var(--mtz-text-muted)",fontWeight:700,textTransform:"uppercase",letterSpacing:".1em",marginRight:2}}>TIPO:</span>
+          <span style={{fontSize:10,color:"var(--mtz-text-3)",fontWeight:700,textTransform:"uppercase",letterSpacing:".1em",marginRight:2}}>TIPO:</span>
           {["Todos",...TIPOS_ALL].map(t=>{ const c=TIPO_CFG[t]; const a=tipoF===t; return(
             <button key={t} className="mtz-fchip" onClick={()=>setTipoF(t)} style={{background:a?(c?.bg||"rgba(245,200,0,.1)"):"none",color:a?(c?.color||"#F5C800"):"var(--mtz-text-3)",borderColor:a?(c?.color||"#F5C800"):"var(--mtz-border-2)"}}>
               {c?.icon&&c.icon+" "}{t}
@@ -432,7 +559,7 @@ function MatrizApp() {
           })}
         </div>
         <div style={{display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}}>
-          <span style={{fontSize:9,color:"#98A6AD",fontWeight:700,textTransform:"uppercase",letterSpacing:".1em",marginRight:2}}>CRITICIDAD:</span>
+          <span style={{fontSize:10,color:"var(--mtz-text-3)",fontWeight:700,textTransform:"uppercase",letterSpacing:".1em",marginRight:2}}>CRITICIDAD:</span>
           {["Todas",...CRITS_ALL].map(c=>{ const cfg=CRIT_CFG[c]; const a=critF===c; return(
             <button key={c} className="mtz-fchip" onClick={()=>setCritF(c)} style={{background:a?(cfg?.bg||"rgba(245,200,0,.1)"):"none",color:a?(cfg?.color||"#F5C800"):"var(--mtz-text-3)",borderColor:a?(cfg?.color||"#F5C800"):"var(--mtz-border-2)"}}>{c}</button>);
           })}
@@ -441,18 +568,18 @@ function MatrizApp() {
 
       {/* ── LEYENDA ── */}
       <div style={{background:"var(--mtz-surface)",border:"1px solid var(--mtz-border)",borderRadius:4,padding:"8px 14px",marginBottom:12,display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
-        <span style={{fontSize:9,color:"var(--mtz-text-muted)",fontWeight:700,textTransform:"uppercase",letterSpacing:".1em",marginRight:4}}>LEYENDA:</span>
+        <span style={{fontSize:10,color:"var(--mtz-text-3)",fontWeight:700,textTransform:"uppercase",letterSpacing:".1em",marginRight:4}}>LEYENDA:</span>
         {[
-          {l:"Llamada / Reinducción", bg:"rgba(61,153,245,0.15)",  c:"#6FB6F7", b:"rgba(61,153,245,0.42)"},
-          {l:"Amonestación Escrita",  bg:"rgba(46,184,140,0.15)",  c:"#4FD3AE", b:"rgba(46,184,140,0.40)"},
-          {l:"Suspensión",            bg:"rgba(249,177,21,0.15)",  c:"#F5C453", b:"rgba(249,177,21,0.40)"},
-          {l:"Susp. extendida",       bg:"rgba(230,120,90,0.15)",  c:"#F0A67E", b:"rgba(230,120,90,0.40)"},
-          {l:"Desvinculación",        bg:"rgba(229,83,83,0.16)",   c:"#FF8A8A", b:"rgba(229,83,83,0.45)"},
-        ].map(x=><div key={x.l} className="mtz-cq" style={{background:x.bg,color:x.c,borderColor:x.b}}>{x.l}</div>)}
+          {l:"Llamada / Reinducción", k:"info"},
+          {l:"Amonestación Escrita",  k:"ok"},
+          {l:"Suspensión",            k:"warn"},
+          {l:"Susp. extendida",       k:"high"},
+          {l:"Desvinculación",        k:"crit"},
+        ].map(x=>{ const s=SEM(x.k); return <div key={x.l} className="mtz-cq" style={{background:s.bg,color:s.color,borderColor:s.border}}>{x.l}</div>; })}
       </div>
 
       {/* ── TABLA ── */}
-      <div style={{background:"var(--mtz-surface)",border:"1px solid var(--mtz-border)",borderRadius:4,overflow:"auto",boxShadow:"0 1px 3px rgba(0,0,0,.05)"}}>
+      <div id="mtz-table-wrap" style={{background:"var(--mtz-surface)",border:"1px solid var(--mtz-border)",borderRadius:4,overflow:"auto",boxShadow:"0 1px 3px rgba(0,0,0,.05)"}}>
         <table style={{borderCollapse:"collapse",width:"100%",minWidth:IS_ADMIN?1160:1080}}>
           <thead>
             <tr style={{background:"var(--mtz-surface-2)"}}>
@@ -465,7 +592,7 @@ function MatrizApp() {
                 ...(IS_ADMIN?[{l:"",k:null,w:75}]:[]),
               ].map(col=>(
                 <th key={col.l} className={col.k?"mtz-th-srt":""} onClick={col.k?()=>handleSort(col.k):undefined}
-                    style={{padding:"10px 12px",textAlign:"left",fontSize:9,fontWeight:700,textTransform:"uppercase",letterSpacing:".09em",color:"var(--mtz-text-muted)",borderBottom:"2px solid #F5C800",whiteSpace:"nowrap",width:col.w}}>
+                    style={{padding:"11px 12px",textAlign:"left",fontSize:10.5,fontWeight:700,textTransform:"uppercase",letterSpacing:".08em",color:"var(--mtz-text-3)",borderBottom:"2px solid #F5C800",whiteSpace:"nowrap",width:col.w}}>
                   {col.l}{col.k&&<span style={{marginLeft:3,opacity:sortF===col.k?1:.3,fontSize:8}}>{sortF===col.k?(sortD==="asc"?"▲":"▼"):"↕"}</span>}
                 </th>
               ))}
@@ -478,22 +605,22 @@ function MatrizApp() {
               const isExp=expandedId===row.id;
               return (
                 <tr key={row.id} className="mtz-trow" style={{background:i%2===0?"var(--mtz-surface)":"var(--mtz-row-alt)",cursor:"pointer",borderBottom:"1px solid var(--mtz-border)"}} onClick={()=>setExp(isExp?null:row.id)}>
-                  <td style={{padding:"8px 12px"}}>
-                    <div style={{display:"flex",alignItems:"center",gap:6}}>
+                  <td style={{padding:"11px 12px"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:7}}>
                       <div style={{width:3,height:26,borderRadius:2,background:tc.color||"var(--mtz-border-2)",flexShrink:0}}/>
-                      <span style={{fontSize:11,fontWeight:700,color:tc.color||"var(--mtz-text-muted)"}}>{tc.icon} {row.tipo}</span>
+                      <span style={{fontSize:12,fontWeight:700,color:tc.color||"var(--mtz-text-muted)"}}>{tc.icon} {row.tipo}</span>
                     </div>
                   </td>
-                  <td style={{padding:"8px 12px"}}><span className="mtz-tg" style={{background:vc.bg,color:vc.color,border:`1px solid ${vc.color}40`}}>{row.vigencia}</span></td>
-                  <td style={{padding:"8px 12px"}}>
-                    <div style={{color:"var(--mtz-text-2)",lineHeight:1.4,fontSize:12}}>
+                  <td style={{padding:"11px 12px"}}><span className="mtz-tg" style={{background:vc.bg,color:vc.color,borderColor:vc.border}}>{row.vigencia}</span></td>
+                  <td style={{padding:"11px 12px"}}>
+                    <div style={{color:"var(--mtz-text)",lineHeight:1.45,fontSize:13,fontWeight:500}}>
                       {isExp ? row.motivo : row.motivo.length>78 ? row.motivo.slice(0,76)+"…" : row.motivo}
                       {!isExp && row.motivo.length>78 && <span style={{color:"#F5C800",fontSize:10,marginLeft:4}}>▾</span>}
                     </div>
                   </td>
-                  <td style={{padding:"8px 12px"}}><span className="mtz-bdg" style={{background:cc.bg,color:cc.color,border:`1px solid ${cc.color}30`}}>{row.criticidad}</span></td>
+                  <td style={{padding:"11px 12px"}}><span className="mtz-bdg" style={{background:cc.bg,color:cc.color,borderColor:cc.border}}>{row.criticidad}</span></td>
                   {[row.v1,row.v2,row.v3,row.v4,row.v5].map((v,vi)=>{ const st=consecStyle(v); return(
-                    <td key={vi} style={{padding:"8px 10px"}}>
+                    <td key={vi} style={{padding:"11px 10px"}}>
                       {v&&st?<div className="mtz-cq" style={{background:st.bg,color:st.color,borderColor:st.border}}>{v}</div>:<span style={{color:"var(--mtz-border-2)"}}>—</span>}
                     </td>);
                   })}

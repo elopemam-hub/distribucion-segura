@@ -592,6 +592,14 @@ select.form-control {
   --mtz-text-2:     #C4CCD8;
   --mtz-text-3:     #A9B2C0;
   --mtz-text-muted: #8A93A2;
+
+  /* Paleta semántica — tema oscuro: texto vivo sobre tinte translúcido */
+  --mtz-info-fg:  #6FB6F7;  --mtz-info-bg:  rgba(61,153,245,.15);  --mtz-info-bd:  rgba(61,153,245,.45);
+  --mtz-ok-fg:    #4FD3AE;  --mtz-ok-bg:    rgba(46,184,140,.15);  --mtz-ok-bd:    rgba(46,184,140,.45);
+  --mtz-warn-fg:  #F5C453;  --mtz-warn-bg:  rgba(249,177,21,.15);  --mtz-warn-bd:  rgba(249,177,21,.45);
+  --mtz-high-fg:  #F0A67E;  --mtz-high-bg:  rgba(230,120,90,.15);  --mtz-high-bd:  rgba(230,120,90,.45);
+  --mtz-crit-fg:  #FF8A8A;  --mtz-crit-bg:  rgba(229,83,83,.16);   --mtz-crit-bd:  rgba(229,83,83,.50);
+  --mtz-low-fg:   #B99CE0;  --mtz-low-bg:   rgba(146,109,222,.15); --mtz-low-bd:   rgba(146,109,222,.45);
 }
 [data-theme="light"] {
   --mtz-surface:    #FFFFFF;
@@ -600,10 +608,18 @@ select.form-control {
   --mtz-row-hover:  #F0FAF8;
   --mtz-border:     #E6E9ED;
   --mtz-border-2:   #CDD3D8;
-  --mtz-text:       #2A3F54;
-  --mtz-text-2:     #555555;
-  --mtz-text-3:     #73879C;
-  --mtz-text-muted: #98A6AD;
+  --mtz-text:       #1F2D3D;
+  --mtz-text-2:     #3C4858;
+  --mtz-text-3:     #63748A;
+  --mtz-text-muted: #7E8CA0;
+
+  /* Paleta semántica — tema claro: texto oscuro saturado sobre tinte sólido (AA+) */
+  --mtz-info-fg:  #17568F;  --mtz-info-bg:  #E7F0FB;  --mtz-info-bd:  #B3D2F0;
+  --mtz-ok-fg:    #0B6B4F;  --mtz-ok-bg:    #E2F4ED;  --mtz-ok-bd:    #A3DCC7;
+  --mtz-warn-fg:  #85560A;  --mtz-warn-bg:  #FCF2DA;  --mtz-warn-bd:  #EDD498;
+  --mtz-high-fg:  #A0431E;  --mtz-high-bg:  #FBEBE3;  --mtz-high-bd:  #F0C4AC;
+  --mtz-crit-fg:  #A81F1A;  --mtz-crit-bg:  #FBE8E7;  --mtz-crit-bd:  #EFB9B5;
+  --mtz-low-fg:   #55349B;  --mtz-low-bg:   #EFE9FA;  --mtz-low-bd:   #CFBEED;
 }
 /* ── KPI Widget Builder ── */
 @media (max-width: 860px) {
