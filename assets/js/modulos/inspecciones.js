@@ -32,8 +32,9 @@ document.addEventListener('DOMContentLoaded', () => {
     fd.append('provincia',    document.getElementById('f_provincia').value);
     fd.append('distrito',     document.getElementById('f_distrito').value);
     fd.append('direccion',    document.getElementById('f_direccion').value);
-    fd.append('conductor',    document.getElementById('trip_conductor_nombre')?.value||'');
-    fd.append('reparto',      document.getElementById('trip_reparto_nombre')?.value||'');
+    // Nombres de tripulación siempre en mayúsculas (igual que obtenerTripulacion).
+    fd.append('conductor',    (document.getElementById('trip_conductor_nombre')?.value||'').trim().toUpperCase());
+    fd.append('reparto',      (document.getElementById('trip_reparto_nombre')?.value||'').trim().toUpperCase());
     fd.append('observaciones',document.getElementById('f_observaciones').value);
     fd.append('latitud',      document.getElementById('f_latitud').value);
     fd.append('longitud',     document.getElementById('f_longitud').value);

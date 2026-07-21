@@ -307,7 +307,7 @@ function obtenerTripulacion() {
     const el = document.getElementById(inputId);
     if (!el || !el.value.trim()) return;
     const epps = [...document.querySelectorAll(`.epp-check[data-rol="${rolKey}"]:checked`)].map(c => c.value);
-    result.push({ nombre: el.value.trim(), rol, epp_completo: epps.length === EPP_ITEMS.length ? 1 : 0, epp_detalle: epps });
+    result.push({ nombre: el.value.trim().toUpperCase(), rol, epp_completo: epps.length === EPP_ITEMS.length ? 1 : 0, epp_detalle: epps });
   };
 
   // Miembros fijos
@@ -323,7 +323,7 @@ function obtenerTripulacion() {
   const cont = document.getElementById('auxiliaresContainer');
   if (cont) {
     cont.querySelectorAll('input.trip-aux-input').forEach(input => {
-      const nombre = (input.value || '').trim();
+      const nombre = (input.value || '').trim().toUpperCase();
       if (!nombre) return;
       // extraer rolKey del id (trip_aux1_nombre → aux1) o del data attribute
       const rolKey = input.dataset.auxInput || (input.id.match(/trip_(aux\d+)_nombre/)?.[1] ?? '');
