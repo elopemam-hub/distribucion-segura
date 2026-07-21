@@ -1421,7 +1421,6 @@ function MatrizApp() {
       color: "#2A3F54"
     }
   }, /*#__PURE__*/React.createElement("style", null, `
-        #page-matriz{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility}
         .mtz-trow{transition:background .12s}
         .mtz-trow:hover{background:var(--mtz-row-hover)!important}
         .mtz-fchip{border:1px solid var(--mtz-border-2);border-radius:4px;padding:4px 11px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;font-family:'Barlow',sans-serif;background:none;color:var(--mtz-text-3)}

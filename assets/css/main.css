@@ -108,6 +108,15 @@ body {
   line-height: 1.5;
   min-height: 100vh;
   display: flex;
+
+  /* Nitidez tipográfica. El suavizado de subpíxel de WebKit engrosa el texto;
+     en gris puro los trazos quedan limpios, sobre todo en las etiquetas
+     pequeñas en mayúsculas. font-synthesis:style permite la cursiva
+     sintética (.auto-empty la usa) pero prohíbe la negrita falsa: los
+     700/800 reales ya se cargan desde Google Fonts. */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-synthesis: style;
 }
 
 /* ======================== SIDEBAR ======================== */
