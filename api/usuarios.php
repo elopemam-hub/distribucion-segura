@@ -207,11 +207,11 @@ function permisosSave() {
         jsonResponse(true, 'Administrador tiene acceso completo, no requiere permisos.');
     }
 
-    // Validar módulos
-    $validos = ['dashboard', 'inspecciones', 'personal', 'reportes', 'matriz', 'amonestaciones', 'geocercas', 'evaluaciones', 'kpi_analytics'];
+    // Validar módulos contra la lista oficial (auth.php). Usar la constante
+    // evita listas duplicadas que se desincronizan al agregar un módulo nuevo.
     $modulosLimpios = array_filter(
         is_array($modulos) ? $modulos : [],
-        fn($m) => in_array($m, $validos, true)
+        fn($m) => in_array($m, MODULOS_VALIDOS, true)
     );
 
     db()->beginTransaction();
