@@ -129,9 +129,7 @@ function registrar() {
     if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha)) {
         jsonResponse(false, 'Fecha inválida.', null, 422);
     }
-    if ($firma === '' || strpos($firma, 'data:image/') !== 0) {
-        jsonResponse(false, 'Se requiere la firma del trabajador.', null, 422);
-    }
+    // La firma del trabajador ya no se captura digital (firma cada fila a mano).
     if (!is_array($items) || !count($items)) {
         jsonResponse(false, 'Agrega al menos un EPP a entregar.', null, 422);
     }
@@ -184,7 +182,7 @@ function registrar() {
                 fecha, firma_trabajador, firma_entrega, observacion, entregado_por, entregado_por_nombre)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [$p['id'], mb_strtoupper($p['nombre'], 'UTF-8'), $p['dni'], $p['cargo'], $motivo,
-             $fecha, $firma, ($firmaEnt !== '' && strpos($firmaEnt, 'data:image/') === 0) ? $firmaEnt : null,
+             $fecha, $firma ?: null, ($firmaEnt !== '' && strpos($firmaEnt, 'data:image/') === 0) ? $firmaEnt : null,
              $obs ?: null, $user['id'], $user['nombre'] ?? null]
         );
         $entregaId = db()->lastInsertId();

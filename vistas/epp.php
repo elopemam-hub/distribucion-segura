@@ -833,31 +833,17 @@
             <input type="text" class="form-control" id="epp_ent_obs" placeholder="Opcional">
           </div>
 
-          <!-- Firmas: trabajador que recibe + quien entrega -->
-          <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:6px">
-            <div class="form-group" style="margin:0">
-              <label class="form-label"><i class="fas fa-signature"></i> Firma del trabajador que recibe *</label>
-              <div style="border:1px solid var(--gris-600);border-radius:8px;padding:8px;background:#fff;display:inline-block">
-                <canvas id="eppEntFirmaCanvas" width="330" height="140"
-                        style="touch-action:none;display:block;cursor:crosshair;max-width:100%"></canvas>
-              </div>
-              <div style="margin-top:6px">
-                <button type="button" class="btn btn-secondary btn-sm" onclick="eppLimpiarFirma('eppEntFirmaCanvas')">
-                  <i class="fas fa-eraser"></i> Limpiar
-                </button>
-              </div>
+          <!-- Firma de quien entrega el EPP (el trabajador firma cada fila a mano en el registro). -->
+          <div class="form-group" style="margin-top:6px">
+            <label class="form-label"><i class="fas fa-signature"></i> Firma de quien entrega el EPP</label>
+            <div style="border:1px solid var(--gris-600);border-radius:8px;padding:8px;background:#fff;display:inline-block">
+              <canvas id="eppEntFirmaEntregaCanvas" width="440" height="150"
+                      style="touch-action:none;display:block;cursor:crosshair;max-width:100%"></canvas>
             </div>
-            <div class="form-group" style="margin:0">
-              <label class="form-label"><i class="fas fa-signature"></i> Firma de quien entrega el EPP</label>
-              <div style="border:1px solid var(--gris-600);border-radius:8px;padding:8px;background:#fff;display:inline-block">
-                <canvas id="eppEntFirmaEntregaCanvas" width="330" height="140"
-                        style="touch-action:none;display:block;cursor:crosshair;max-width:100%"></canvas>
-              </div>
-              <div style="margin-top:6px">
-                <button type="button" class="btn btn-secondary btn-sm" onclick="eppLimpiarFirma('eppEntFirmaEntregaCanvas')">
-                  <i class="fas fa-eraser"></i> Limpiar
-                </button>
-              </div>
+            <div style="margin-top:6px">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="eppLimpiarFirma('eppEntFirmaEntregaCanvas')">
+                <i class="fas fa-eraser"></i> Limpiar firma
+              </button>
             </div>
           </div>
 

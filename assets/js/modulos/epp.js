@@ -630,7 +630,7 @@ async function abrirModalEntrega() {
 
   eppEntAgregarFila();
   abrirModal('modalEppEntrega');
-  setTimeout(() => { eppInitFirma('eppEntFirmaCanvas'); eppInitFirma('eppEntFirmaEntregaCanvas'); }, 60);
+  setTimeout(() => { eppInitFirma('eppEntFirmaEntregaCanvas'); }, 60);
 }
 
 // Opciones de EPP para el select de una fila (solo activos con stock).
@@ -814,20 +814,18 @@ async function eppGuardarEntrega() {
   });
   if (!items.length) { toast('Agrega al menos un EPP con cantidad', 'error'); return; }
   if (excede) { toast('Una cantidad supera el stock disponible', 'error'); return; }
-  if (!eppFirmaTieneContenido('eppEntFirmaCanvas')) { toast('El trabajador debe firmar la recepción', 'error'); return; }
 
   const btn = document.getElementById('btnEppEntGuardar');
   btn.disabled = true;
   let j;
   try {
     j = await eppPost('api/epp/entregas.php?action=registrar', {
-      personal_id:      personalId,
-      motivo:           document.getElementById('epp_ent_motivo').value,
-      fecha:            document.getElementById('epp_ent_fecha').value,
-      observacion:      document.getElementById('epp_ent_obs').value,
-      firma_trabajador: eppFirmaDataURL('eppEntFirmaCanvas'),
-      firma_entrega:    eppFirmaDataURL('eppEntFirmaEntregaCanvas'),
-      items:            JSON.stringify(items),
+      personal_id:   personalId,
+      motivo:        document.getElementById('epp_ent_motivo').value,
+      fecha:         document.getElementById('epp_ent_fecha').value,
+      observacion:   document.getElementById('epp_ent_obs').value,
+      firma_entrega: eppFirmaDataURL('eppEntFirmaEntregaCanvas'),
+      items:         JSON.stringify(items),
     });
   } finally {
     btn.disabled = false;   // el botón nunca queda bloqueado, pase lo que pase
@@ -871,11 +869,22 @@ async function verEppEntrega(id) {
       <thead><tr><th>EPP</th><th>Norma</th><th style="text-align:right">Cant.</th><th>Renovación</th></tr></thead>
       <tbody>${itemsHtml || '<tr><td colspan="4" class="muted" style="text-align:center;padding:16px">Sin ítems.</td></tr>'}</tbody>
     </table>
-    ${e.firma_trabajador ? `
-      <div style="font-size:12px;color:var(--gris-400);margin-bottom:6px"><i class="fas fa-signature"></i> Firma del trabajador</div>
-      <div style="border:1px solid var(--gris-600);border-radius:8px;padding:6px;background:#fff;display:inline-block">
-        <img src="${e.firma_trabajador}" style="max-width:320px;height:auto;display:block">
+    <div style="display:flex;gap:18px;flex-wrap:wrap">
+      ${e.firma_entrega ? `
+      <div>
+        <div style="font-size:12px;color:var(--gris-400);margin-bottom:6px"><i class="fas fa-signature"></i> Firma de quien entrega</div>
+        <div style="border:1px solid var(--gris-600);border-radius:8px;padding:6px;background:#fff;display:inline-block">
+          <img src="${e.firma_entrega}" style="max-width:300px;height:auto;display:block">
+        </div>
       </div>` : ''}
+      ${e.firma_trabajador ? `
+      <div>
+        <div style="font-size:12px;color:var(--gris-400);margin-bottom:6px"><i class="fas fa-signature"></i> Firma del trabajador</div>
+        <div style="border:1px solid var(--gris-600);border-radius:8px;padding:6px;background:#fff;display:inline-block">
+          <img src="${e.firma_trabajador}" style="max-width:300px;height:auto;display:block">
+        </div>
+      </div>` : ''}
+    </div>
     <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px">
       <button class="btn btn-secondary" onclick="imprimirEppEntrega(${e.id})"><i class="fas fa-print"></i> Registro PDF</button>
     </div>`;
