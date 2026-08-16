@@ -177,6 +177,11 @@ $csrf = csrfToken();
     <?php if (tieneAccesoModulo('amonestaciones') || tieneAccesoModulo('matriz') || tieneAccesoModulo('epp')): ?>
     <div class="nav-section-title" style="margin-top:12px">Seguridad</div>
     <?php endif; ?>
+    <?php if (tieneAccesoModulo('epp')): ?>
+    <a class="nav-item" data-page="epp" onclick="showPage('epp')">
+      <i class="fas fa-helmet-safety"></i> EPP
+    </a>
+    <?php endif; ?>
     <?php if (tieneAccesoModulo('amonestaciones')): ?>
     <a class="nav-item" data-page="amonestaciones" onclick="showPage('amonestaciones')">
       <i class="fas fa-triangle-exclamation"></i> Matriz Amonestaciones
@@ -185,11 +190,6 @@ $csrf = csrfToken();
     <?php if (tieneAccesoModulo('matriz')): ?>
     <a class="nav-item" data-page="matriz" onclick="showPage('matriz')">
       <i class="fas fa-scale-balanced"></i> Matriz Consecuencias
-    </a>
-    <?php endif; ?>
-    <?php if (tieneAccesoModulo('epp')): ?>
-    <a class="nav-item" data-page="epp" onclick="showPage('epp')">
-      <i class="fas fa-helmet-safety"></i> EPP
     </a>
     <?php endif; ?>
 
