@@ -630,7 +630,7 @@ async function abrirModalEntrega() {
 
   eppEntAgregarFila();
   abrirModal('modalEppEntrega');
-  setTimeout(initEppFirma, 60);
+  setTimeout(() => { eppInitFirma('eppEntFirmaCanvas'); eppInitFirma('eppEntFirmaEntregaCanvas'); }, 60);
 }
 
 // Opciones de EPP para el select de una fila (solo activos con stock).
@@ -717,37 +717,47 @@ function eppEntFilaStock(sel) {
   }
 }
 
-// ── Firma (canvas) ──
-let eppFirmaCtx = null, eppFirmaDrawing = false, eppFirmaHasContent = false;
-function initEppFirma() {
-  const canvas = document.getElementById('eppEntFirmaCanvas');
+// ── Firmas (canvas) — soporta varias por id (trabajador y quien entrega) ──
+const eppFirmas = {};   // canvasId -> { ctx, drawing, hasContent }
+
+function eppInitFirma(canvasId) {
+  const canvas = document.getElementById(canvasId);
   if (!canvas) return;
-  eppFirmaCtx = canvas.getContext('2d');
-  eppFirmaCtx.fillStyle = '#FFFFFF';
-  eppFirmaCtx.fillRect(0, 0, canvas.width, canvas.height);
-  eppFirmaCtx.strokeStyle = '#1565C0';
-  eppFirmaCtx.lineWidth = 2;
-  eppFirmaCtx.lineCap = 'round';
-  eppFirmaHasContent = false;
+  const st = { ctx: canvas.getContext('2d'), drawing: false, hasContent: false };
+  eppFirmas[canvasId] = st;
+  st.ctx.fillStyle = '#FFFFFF';
+  st.ctx.fillRect(0, 0, canvas.width, canvas.height);
+  st.ctx.strokeStyle = '#1565C0';
+  st.ctx.lineWidth = 2;
+  st.ctx.lineCap = 'round';
 
   const pos = (e, r) => {
     const src = e.touches ? e.touches[0] : e;
     return { x: (src.clientX - r.left) * (canvas.width / r.width), y: (src.clientY - r.top) * (canvas.height / r.height) };
   };
-  canvas.onmousedown  = e => { eppFirmaDrawing = true; const r = canvas.getBoundingClientRect(), p = pos(e,r); eppFirmaCtx.beginPath(); eppFirmaCtx.moveTo(p.x,p.y); };
-  canvas.onmouseup    = () => eppFirmaDrawing = false;
-  canvas.onmouseleave = () => eppFirmaDrawing = false;
-  canvas.onmousemove  = e => { if (!eppFirmaDrawing) return; const r = canvas.getBoundingClientRect(), p = pos(e,r); eppFirmaCtx.lineTo(p.x,p.y); eppFirmaCtx.stroke(); eppFirmaHasContent = true; };
-  canvas.ontouchstart = e => { e.preventDefault(); eppFirmaDrawing = true; const r = canvas.getBoundingClientRect(), p = pos(e,r); eppFirmaCtx.beginPath(); eppFirmaCtx.moveTo(p.x,p.y); };
-  canvas.ontouchend   = () => eppFirmaDrawing = false;
-  canvas.ontouchmove  = e => { e.preventDefault(); if (!eppFirmaDrawing) return; const r = canvas.getBoundingClientRect(), p = pos(e,r); eppFirmaCtx.lineTo(p.x,p.y); eppFirmaCtx.stroke(); eppFirmaHasContent = true; };
+  canvas.onmousedown  = e => { st.drawing = true; const r = canvas.getBoundingClientRect(), p = pos(e,r); st.ctx.beginPath(); st.ctx.moveTo(p.x,p.y); };
+  canvas.onmouseup    = () => st.drawing = false;
+  canvas.onmouseleave = () => st.drawing = false;
+  canvas.onmousemove  = e => { if (!st.drawing) return; const r = canvas.getBoundingClientRect(), p = pos(e,r); st.ctx.lineTo(p.x,p.y); st.ctx.stroke(); st.hasContent = true; };
+  canvas.ontouchstart = e => { e.preventDefault(); st.drawing = true; const r = canvas.getBoundingClientRect(), p = pos(e,r); st.ctx.beginPath(); st.ctx.moveTo(p.x,p.y); };
+  canvas.ontouchend   = () => st.drawing = false;
+  canvas.ontouchmove  = e => { e.preventDefault(); if (!st.drawing) return; const r = canvas.getBoundingClientRect(), p = pos(e,r); st.ctx.lineTo(p.x,p.y); st.ctx.stroke(); st.hasContent = true; };
 }
-function eppEntLimpiarFirma() {
-  const canvas = document.getElementById('eppEntFirmaCanvas');
-  if (!eppFirmaCtx || !canvas) return;
-  eppFirmaCtx.fillStyle = '#FFFFFF';
-  eppFirmaCtx.fillRect(0, 0, canvas.width, canvas.height);
-  eppFirmaHasContent = false;
+
+function eppLimpiarFirma(canvasId) {
+  const canvas = document.getElementById(canvasId);
+  const st = eppFirmas[canvasId];
+  if (!canvas || !st) return;
+  st.ctx.fillStyle = '#FFFFFF';
+  st.ctx.fillRect(0, 0, canvas.width, canvas.height);
+  st.hasContent = false;
+}
+
+// ¿La firma dibujada tiene contenido? (para validar / decidir si se envía)
+function eppFirmaTieneContenido(canvasId) { return !!eppFirmas[canvasId]?.hasContent; }
+function eppFirmaDataURL(canvasId) {
+  const c = document.getElementById(canvasId);
+  return (c && eppFirmaTieneContenido(canvasId)) ? c.toDataURL('image/png') : '';
 }
 
 // ── Autocompletar trabajador (reusa api/personal.php?action=buscar) ──
@@ -804,9 +814,8 @@ async function eppGuardarEntrega() {
   });
   if (!items.length) { toast('Agrega al menos un EPP con cantidad', 'error'); return; }
   if (excede) { toast('Una cantidad supera el stock disponible', 'error'); return; }
-  if (!eppFirmaHasContent) { toast('El trabajador debe firmar la recepción', 'error'); return; }
+  if (!eppFirmaTieneContenido('eppEntFirmaCanvas')) { toast('El trabajador debe firmar la recepción', 'error'); return; }
 
-  const canvas = document.getElementById('eppEntFirmaCanvas');
   const btn = document.getElementById('btnEppEntGuardar');
   btn.disabled = true;
   let j;
@@ -816,7 +825,8 @@ async function eppGuardarEntrega() {
       motivo:           document.getElementById('epp_ent_motivo').value,
       fecha:            document.getElementById('epp_ent_fecha').value,
       observacion:      document.getElementById('epp_ent_obs').value,
-      firma_trabajador: canvas.toDataURL('image/png'),
+      firma_trabajador: eppFirmaDataURL('eppEntFirmaCanvas'),
+      firma_entrega:    eppFirmaDataURL('eppEntFirmaEntregaCanvas'),
       items:            JSON.stringify(items),
     });
   } finally {

@@ -91,6 +91,7 @@ CREATE TABLE IF NOT EXISTS `epp_entregas` (
   `motivo`               ENUM('nuevo','renovacion','reposicion','perdida') NOT NULL DEFAULT 'nuevo',
   `fecha`                DATE NOT NULL,
   `firma_trabajador`     MEDIUMTEXT NULL COMMENT 'PNG base64 (data URL)',
+  `firma_entrega`        MEDIUMTEXT NULL COMMENT 'Firma de quien entrega',
   `observacion`          VARCHAR(255) NULL,
   `entregado_por`        INT NULL,
   `entregado_por_nombre` VARCHAR(120) NULL,

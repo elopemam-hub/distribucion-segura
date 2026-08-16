@@ -237,9 +237,10 @@ $motivoTxt = $MOTIVOS[$ent['motivo']] ?? $ent['motivo'];
       <td class="k" style="width:34%">Nombre:&nbsp; <?= $h($cfg['emp_responsable']) ?></td>
       <td class="k" style="width:22%">Cargo:&nbsp; <span class="fill-line" contenteditable="true">&nbsp;</span></td>
       <td class="k" style="width:22%">Fecha:&nbsp; <span class="fill-line" contenteditable="true">&nbsp;</span></td>
+      <?php $firmaResp = $ent['firma_entrega'] ?? ''; ?>
       <td class="k" style="width:22%;text-align:center;vertical-align:middle">Firma:
-        <?php if (!empty($ent['firma_trabajador'])): ?>
-          <div class="firma-cell" style="border:0;padding:0"><img src="<?= $h($ent['firma_trabajador']) ?>" alt="Firma" style="max-height:52px;max-width:90%"></div>
+        <?php if (!empty($firmaResp)): ?>
+          <div class="firma-cell" style="border:0;padding:0"><img src="<?= $h($firmaResp) ?>" alt="Firma" style="max-height:52px;max-width:90%"></div>
         <?php endif; ?>
       </td>
     </tr>

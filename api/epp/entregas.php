@@ -119,6 +119,7 @@ function registrar() {
     $motivo     = trim($_POST['motivo'] ?? 'nuevo');
     $fecha      = trim($_POST['fecha'] ?? date('Y-m-d'));
     $firma      = trim($_POST['firma_trabajador'] ?? '');
+    $firmaEnt   = trim($_POST['firma_entrega'] ?? '');   // firma de quien entrega (opcional)
     $obs        = trim($_POST['observacion'] ?? '');
     $items      = json_decode($_POST['items'] ?? '[]', true);
 
@@ -180,10 +181,11 @@ function registrar() {
         db()->query(
             "INSERT INTO epp_entregas
                (personal_id, trabajador_nombre, trabajador_dni, trabajador_cargo, motivo,
-                fecha, firma_trabajador, observacion, entregado_por, entregado_por_nombre)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                fecha, firma_trabajador, firma_entrega, observacion, entregado_por, entregado_por_nombre)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [$p['id'], mb_strtoupper($p['nombre'], 'UTF-8'), $p['dni'], $p['cargo'], $motivo,
-             $fecha, $firma, $obs ?: null, $user['id'], $user['nombre'] ?? null]
+             $fecha, $firma, ($firmaEnt !== '' && strpos($firmaEnt, 'data:image/') === 0) ? $firmaEnt : null,
+             $obs ?: null, $user['id'], $user['nombre'] ?? null]
         );
         $entregaId = db()->lastInsertId();
 

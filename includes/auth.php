@@ -395,6 +395,13 @@ function setupEpp(): void {
               WHERE table_schema = DATABASE() AND table_name = 'epp_movimientos' AND column_name = 'ingreso_id'"
         );
         if (!$exists) db()->query("ALTER TABLE epp_movimientos ADD COLUMN ingreso_id INT NULL AFTER entrega_id", []);
+
+        // Firma de quien entrega el EPP (además de la del trabajador que recibe).
+        $exists = db()->fetchOne(
+            "SELECT 1 FROM information_schema.columns
+              WHERE table_schema = DATABASE() AND table_name = 'epp_entregas' AND column_name = 'firma_entrega'"
+        );
+        if (!$exists) db()->query("ALTER TABLE epp_entregas ADD COLUMN firma_entrega MEDIUMTEXT NULL AFTER firma_trabajador", []);
     } catch (Exception $e) {
         error_log('[setupEpp] ' . $e->getMessage());
     }
