@@ -37,7 +37,7 @@ $csrf = csrfToken();
 <link rel="icon" type="image/png" href="assets/img/logo-camion.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Inter+Tight:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <link rel="stylesheet" href="assets/css/main.css?v=<?= filemtime(__DIR__.'/assets/css/main.css') ?>">
 <?php if (tieneAccesoModulo('geocercas')): ?>
@@ -113,7 +113,7 @@ $csrf = csrfToken();
 .geo-icon-btn { width:34px;height:34px;border-radius:50%;border:2px solid transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .15s;color:#fff; }
 .geo-icon-btn:hover { transform:scale(1.15); }
 .geo-icon-btn.selected { outline:3px solid currentColor; outline-offset:2px; }
-.geo-share-opt { display:flex;align-items:center;gap:10px;width:100%;padding:9px 14px;background:none;border:none;cursor:pointer;font-size:13px;color:#2A3F54;font-family:'Barlow',sans-serif;transition:background .15s;text-align:left; }
+.geo-share-opt { display:flex;align-items:center;gap:10px;width:100%;padding:9px 14px;background:none;border:none;cursor:pointer;font-size:13px;color:#2A3F54;font-family:'Inter',sans-serif;transition:background .15s;text-align:left; }
 .geo-share-opt:hover { background:#F5F7FA; }
 .geo-share-opt i { width:16px;font-size:13px;color:var(--primary);flex-shrink:0; }
 @media print { body > *:not(#printMapWrap) { display:none!important; } #printMapWrap { display:block!important; } }
@@ -174,7 +174,7 @@ $csrf = csrfToken();
     </a>
     <?php endif; ?>
 
-    <?php if (tieneAccesoModulo('amonestaciones') || tieneAccesoModulo('matriz')): ?>
+    <?php if (tieneAccesoModulo('amonestaciones') || tieneAccesoModulo('matriz') || tieneAccesoModulo('epp')): ?>
     <div class="nav-section-title" style="margin-top:12px">Seguridad</div>
     <?php endif; ?>
     <?php if (tieneAccesoModulo('amonestaciones')): ?>
@@ -185,6 +185,11 @@ $csrf = csrfToken();
     <?php if (tieneAccesoModulo('matriz')): ?>
     <a class="nav-item" data-page="matriz" onclick="showPage('matriz')">
       <i class="fas fa-scale-balanced"></i> Matriz Consecuencias
+    </a>
+    <?php endif; ?>
+    <?php if (tieneAccesoModulo('epp')): ?>
+    <a class="nav-item" data-page="epp" onclick="showPage('epp')">
+      <i class="fas fa-helmet-safety"></i> EPP
     </a>
     <?php endif; ?>
 
@@ -1128,6 +1133,10 @@ $csrf = csrfToken();
   <?php require_once __DIR__ . '/vistas/evaluaciones.php'; ?>
   <?php endif; ?>
 
+  <?php if (tieneAccesoModulo('epp')): ?>
+  <?php require_once __DIR__ . '/vistas/epp.php'; ?>
+  <?php endif; ?>
+
   <?php require_once __DIR__ . '/vistas/kpi_analytics.php'; ?>
 </main>
 
@@ -1646,6 +1655,7 @@ $csrf = csrfToken();
             <label class="modulo-check"><input type="checkbox" value="geocercas" id="mod_geocercas"> <i class="fas fa-draw-polygon"></i> Geocercas</label>
             <label class="modulo-check"><input type="checkbox" value="evaluaciones" id="mod_evaluaciones"> <i class="fas fa-clipboard-check"></i> Evaluaciones</label>
             <label class="modulo-check"><input type="checkbox" value="kpi_analytics" id="mod_kpi_analytics"> <i class="fas fa-chart-line"></i> KPI Analytics</label>
+            <label class="modulo-check"><input type="checkbox" value="epp" id="mod_epp"> <i class="fas fa-helmet-safety"></i> EPP</label>
           </div>
           <p style="font-size:11px;color:var(--gris-400);margin-top:8px"><i class="fas fa-info-circle"></i> Dashboard siempre visible. Desmarca todo para usar defaults del rol.</p>
         </div>
@@ -1915,6 +1925,9 @@ $csrf = csrfToken();
 <?php endif; ?>
 <?php if (tieneAccesoModulo('matriz')): ?>
 <script src="assets/js/modulos/matriz.compiled.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/matriz.compiled.js') ?>"></script>
+<?php endif; ?>
+<?php if (tieneAccesoModulo('epp')): ?>
+<script src="assets/js/modulos/epp.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/epp.js') ?>"></script>
 <?php endif; ?>
 <?php if (tieneAccesoModulo('kpi_analytics')): ?>
 <script src="assets/js/modulos/kpi_datasets.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/kpi_datasets.js') ?>"></script>

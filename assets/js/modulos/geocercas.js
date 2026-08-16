@@ -285,7 +285,7 @@ function renderGeoEnMapa(rows) {
         popupCoords = `<p style="margin:6px 0 0;font-size:11px;color:#98A6AD"><i class="fas fa-location-dot" style="margin-right:4px"></i>${lat.toFixed(6)}, ${lng.toFixed(6)}</p>`;
       }
 
-      const popup = `<div style="font-family:'Barlow',sans-serif;min-width:200px;max-width:280px">
+      const popup = `<div style="font-family:'Inter',sans-serif;min-width:200px;max-width:280px">
         <strong style="color:#2A3F54;font-size:13px;display:block;margin-bottom:6px;border-bottom:1px solid #E6E9ED;padding-bottom:5px">${escapeHtml(r.nombre)}</strong>
         <table style="border-collapse:collapse;width:100%">
           ${fila('Código',              r.codigo)}

@@ -63,13 +63,13 @@ $csrf = csrfToken();
 <link rel="icon" type="image/png" href="assets/img/logo-camion.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Inter+Tight:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
-    font-family: 'Barlow', sans-serif;
+    font-family: 'Inter', sans-serif;
     min-height: 100vh;
     display: flex;
     background: #F5F7FA;
@@ -122,7 +122,7 @@ $csrf = csrfToken();
   }
 
   .brand h1 {
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: 'Inter Tight', sans-serif;
     font-size: 26px; font-weight: 800;
     color: #FFFFFF;
     text-transform: uppercase;
@@ -183,7 +183,7 @@ $csrf = csrfToken();
 
   .card-header { margin-bottom: 28px; }
   .card-header h2 {
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: 'Inter Tight', sans-serif;
     font-size: 22px; font-weight: 800;
     color: #2A3F54;
     text-transform: uppercase;
@@ -215,7 +215,7 @@ $csrf = csrfToken();
     border-radius: 4px;
     padding: 10px 12px 10px 38px;
     color: #2A3F54;
-    font-family: 'Barlow', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: 14px;
     transition: border-color .2s, box-shadow .2s;
     outline: none;
@@ -233,7 +233,7 @@ $csrf = csrfToken();
     border: none;
     border-radius: 4px;
     padding: 12px;
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: 'Inter Tight', sans-serif;
     font-size: 16px; font-weight: 800;
     text-transform: uppercase; letter-spacing: 2px;
     cursor: pointer;

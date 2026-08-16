@@ -98,6 +98,7 @@ function showPage(page) {
   if (page === 'kpi-amonestaciones') cargarKpiAmon();
   if (page === 'usuarios')           cargarUsuarios();
   if (page === 'matriz' && typeof initMatriz === 'function') initMatriz();
+  if (page === 'epp' && typeof initEpp === 'function') initEpp();
 }
 
 function switchInspeccionTab(tab) {

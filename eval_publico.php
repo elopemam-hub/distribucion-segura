@@ -34,7 +34,7 @@ if ($valido) {
 <link rel="icon" type="image/png" href="assets/img/logo-camion.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Inter+Tight:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <link rel="stylesheet" href="assets/css/main.css?v=<?= @filemtime(__DIR__.'/assets/css/main.css') ?>">
 <style>
@@ -49,10 +49,10 @@ if ($valido) {
     box-shadow: 0 2px 10px rgba(0,0,0,.15); position: sticky; top: 0; z-index: 50;
   }
   .evp-topbar img { width: 42px; height: 34px; object-fit: contain; }
-  .evp-topbar .t { font-family: var(--font-display, 'Barlow Condensed'); font-weight: 800; font-size: 18px; line-height: 1.1; }
+  .evp-topbar .t { font-family: var(--font-display, 'Inter Tight'); font-weight: 800; font-size: 18px; line-height: 1.1; }
   .evp-topbar .s { font-size: 11px; opacity: .85; letter-spacing: .5px; }
   .evp-intro { text-align: center; padding: 22px 6px 10px; }
-  .evp-intro h1 { font-family: var(--font-display, 'Barlow Condensed'); font-weight: 800; font-size: 22px; color: var(--gris-100, #223); }
+  .evp-intro h1 { font-family: var(--font-display, 'Inter Tight'); font-weight: 800; font-size: 22px; color: var(--gris-100, #223); }
   .evp-intro p { color: var(--gris-400, #667); font-size: 13px; margin-top: 4px; }
   .evp-loading, .evp-error { text-align: center; padding: 60px 20px; color: var(--gris-400, #667); }
   .evp-error i { font-size: 40px; color: var(--rojo, #dc3545); margin-bottom: 14px; display: block; }
@@ -64,9 +64,9 @@ if ($valido) {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     border: 8px solid var(--gris-600, #ccc);
   }
-  .evp-result .pct { font-family: var(--font-display, 'Barlow Condensed'); font-weight: 900; font-size: 38px; line-height: 1; }
+  .evp-result .pct { font-family: var(--font-display, 'Inter Tight'); font-weight: 900; font-size: 38px; line-height: 1; }
   .evp-result .pts { font-size: 12px; color: var(--gris-400, #667); margin-top: 2px; }
-  .evp-result h2 { font-family: var(--font-display, 'Barlow Condensed'); font-weight: 800; font-size: 22px; margin-bottom: 6px; }
+  .evp-result h2 { font-family: var(--font-display, 'Inter Tight'); font-weight: 800; font-size: 22px; margin-bottom: 6px; }
   .evp-result p  { color: var(--gris-400, #667); font-size: 13px; }
 
   /* ── Optimización para celular ── */

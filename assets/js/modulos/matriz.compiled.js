@@ -740,7 +740,7 @@ const ROW_FORM_INP = {
   padding: "7px 10px",
   fontSize: 13,
   width: "100%",
-  fontFamily: "'Barlow',sans-serif",
+  fontFamily: "'Inter',sans-serif",
   outline: "none",
   boxSizing: "border-box"
 };
@@ -859,7 +859,7 @@ function RowForm({
       cursor: "pointer",
       fontSize: 13,
       fontWeight: 600,
-      fontFamily: "'Barlow',sans-serif"
+      fontFamily: "'Inter',sans-serif"
     }
   }, "Cancelar"), /*#__PURE__*/React.createElement("button", {
     onClick: () => onSave(form),
@@ -872,7 +872,7 @@ function RowForm({
       cursor: "pointer",
       fontSize: 13,
       fontWeight: 700,
-      fontFamily: "'Barlow',sans-serif"
+      fontFamily: "'Inter',sans-serif"
     }
   }, row ? "Guardar cambios" : "Agregar fila")));
 }
@@ -919,7 +919,7 @@ function ImportPreview({
       border: `1px solid ${mode === v ? "#F5C800" : "#CDD3D8"}`,
       background: mode === v ? "rgba(245,200,0,.08)" : "none",
       color: mode === v ? "#F5C800" : "#73879C",
-      fontFamily: "'Barlow',sans-serif"
+      fontFamily: "'Inter',sans-serif"
     }
   }, l)))), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -1011,7 +1011,7 @@ function ImportPreview({
       cursor: "pointer",
       fontSize: 13,
       fontWeight: 600,
-      fontFamily: "'Barlow',sans-serif"
+      fontFamily: "'Inter',sans-serif"
     }
   }, "Cancelar"), /*#__PURE__*/React.createElement("button", {
     onClick: () => onConfirm(rows, mode),
@@ -1024,7 +1024,7 @@ function ImportPreview({
       cursor: "pointer",
       fontSize: 13,
       fontWeight: 700,
-      fontFamily: "'Barlow',sans-serif"
+      fontFamily: "'Inter',sans-serif"
     }
   }, /*#__PURE__*/React.createElement("i", {
     className: "fas fa-check",
@@ -1412,26 +1412,26 @@ function MatrizApp() {
     display: "flex",
     alignItems: "center",
     gap: 5,
-    fontFamily: "'Barlow',sans-serif",
+    fontFamily: "'Inter',sans-serif",
     transition: "opacity .15s"
   };
   return /*#__PURE__*/React.createElement("div", {
     style: {
-      fontFamily: "'Barlow',sans-serif",
+      fontFamily: "'Inter',sans-serif",
       color: "#2A3F54"
     }
   }, /*#__PURE__*/React.createElement("style", null, `
         .mtz-trow{transition:background .12s}
         .mtz-trow:hover{background:var(--mtz-row-hover)!important}
-        .mtz-fchip{border:1px solid var(--mtz-border-2);border-radius:4px;padding:4px 11px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;font-family:'Barlow',sans-serif;background:none;color:var(--mtz-text-3)}
+        .mtz-fchip{border:1px solid var(--mtz-border-2);border-radius:4px;padding:4px 11px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;font-family:'Inter',sans-serif;background:none;color:var(--mtz-text-3)}
         .mtz-fchip:hover{border-color:#F5C800;color:#F5C800}
         .mtz-ibtn{background:none;border:1px solid var(--mtz-border-2);border-radius:4px;padding:4px 8px;color:var(--mtz-text-muted);cursor:pointer;font-size:12px;transition:all .15s}.mtz-ibtn:hover{border-color:var(--mtz-text-muted);color:var(--mtz-text-2)}
-        .mtz-scinp{background:var(--mtz-surface-2);border:1px solid var(--mtz-border-2);color:var(--mtz-text);border-radius:4px;padding:7px 10px 7px 34px;font-size:13px;outline:none;font-family:'Barlow',sans-serif;width:100%}.mtz-scinp:focus{border-color:#F5C800;box-shadow:0 0 0 3px rgba(245,200,0,.12)}
+        .mtz-scinp{background:var(--mtz-surface-2);border:1px solid var(--mtz-border-2);color:var(--mtz-text);border-radius:4px;padding:7px 10px 7px 34px;font-size:13px;outline:none;font-family:'Inter',sans-serif;width:100%}.mtz-scinp:focus{border-color:#F5C800;box-shadow:0 0 0 3px rgba(245,200,0,.12)}
         .mtz-th-srt{cursor:pointer;user-select:none}.mtz-th-srt:hover{color:#F5C800}
         .mtz-cq{border-radius:4px;padding:4px 8px;font-size:11.5px;font-weight:600;text-align:center;line-height:1.35;border:1px solid;display:inline-block}
         .mtz-bdg{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:700;white-space:nowrap;border:1px solid}
         .mtz-tg{display:inline-block;padding:3px 8px;border-radius:3px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;border:1px solid}
-        .mtz-abtn{cursor:pointer;border:none;font-family:'Barlow',sans-serif;transition:opacity .15s}.mtz-abtn:hover{opacity:.82}
+        .mtz-abtn{cursor:pointer;border:none;font-family:'Inter',sans-serif;transition:opacity .15s}.mtz-abtn:hover{opacity:.82}
       `), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
@@ -1443,7 +1443,7 @@ function MatrizApp() {
     }
   }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", {
     style: {
-      fontFamily: "'Barlow Condensed',sans-serif",
+      fontFamily: "'Inter Tight',sans-serif",
       fontSize: 23,
       fontWeight: 800,
       color: "var(--mtz-text)",
@@ -2033,7 +2033,7 @@ function MatrizApp() {
       cursor: "pointer",
       fontSize: 13,
       fontWeight: 600,
-      fontFamily: "'Barlow',sans-serif"
+      fontFamily: "'Inter',sans-serif"
     }
   }, "Cancelar"), /*#__PURE__*/React.createElement("button", {
     onClick: () => handleDel(deleteId),
@@ -2046,7 +2046,7 @@ function MatrizApp() {
       cursor: "pointer",
       fontSize: 13,
       fontWeight: 700,
-      fontFamily: "'Barlow',sans-serif"
+      fontFamily: "'Inter',sans-serif"
     }
   }, /*#__PURE__*/React.createElement("i", {
     className: "fas fa-trash",

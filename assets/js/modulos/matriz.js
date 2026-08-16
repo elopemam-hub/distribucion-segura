@@ -151,7 +151,7 @@ function MatrizModal({ title, onClose, children, width=700 }) {
 }
 
 // ── RowForm ────────────────────────────────────────────────────────────────
-const ROW_FORM_INP = {background:"var(--mtz-surface-2)",border:"1px solid var(--mtz-border-2)",color:"var(--mtz-text)",borderRadius:4,padding:"7px 10px",fontSize:13,width:"100%",fontFamily:"'Barlow',sans-serif",outline:"none",boxSizing:"border-box"};
+const ROW_FORM_INP = {background:"var(--mtz-surface-2)",border:"1px solid var(--mtz-border-2)",color:"var(--mtz-text)",borderRadius:4,padding:"7px 10px",fontSize:13,width:"100%",fontFamily:"'Inter',sans-serif",outline:"none",boxSizing:"border-box"};
 const ROW_FORM_LBL = {fontSize:10,fontWeight:700,color:"var(--mtz-text-3)",textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:4,display:"block"};
 const ROW_FORM_GRP = {marginBottom:12};
 
@@ -193,8 +193,8 @@ function RowForm({ row, onSave, onCancel }) {
         ))}
       </div>
       <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:8}}>
-        <button onClick={onCancel} style={{padding:"8px 18px",borderRadius:4,border:"1px solid #CDD3D8",background:"none",color:"#73879C",cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:"'Barlow',sans-serif"}}>Cancelar</button>
-        <button onClick={()=>onSave(form)} style={{padding:"8px 20px",borderRadius:4,border:"none",background:"#F5C800",color:"#fff",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"'Barlow',sans-serif"}}>
+        <button onClick={onCancel} style={{padding:"8px 18px",borderRadius:4,border:"1px solid #CDD3D8",background:"none",color:"#73879C",cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:"'Inter',sans-serif"}}>Cancelar</button>
+        <button onClick={()=>onSave(form)} style={{padding:"8px 20px",borderRadius:4,border:"none",background:"#F5C800",color:"#fff",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"'Inter',sans-serif"}}>
           {row ? "Guardar cambios" : "Agregar fila"}
         </button>
       </div>
@@ -213,7 +213,7 @@ function ImportPreview({ rows, onConfirm, onCancel }) {
         </p>
         <div style={{display:"flex",gap:10}}>
           {[["replace","Reemplazar todo"],["append","Agregar al final"]].map(([v,l])=>(
-            <button key={v} onClick={()=>setMode(v)} style={{padding:"6px 14px",borderRadius:4,fontSize:12,fontWeight:600,cursor:"pointer",border:`1px solid ${mode===v?"#F5C800":"#CDD3D8"}`,background:mode===v?"rgba(245,200,0,.08)":"none",color:mode===v?"#F5C800":"#73879C",fontFamily:"'Barlow',sans-serif"}}>{l}</button>
+            <button key={v} onClick={()=>setMode(v)} style={{padding:"6px 14px",borderRadius:4,fontSize:12,fontWeight:600,cursor:"pointer",border:`1px solid ${mode===v?"#F5C800":"#CDD3D8"}`,background:mode===v?"rgba(245,200,0,.08)":"none",color:mode===v?"#F5C800":"#73879C",fontFamily:"'Inter',sans-serif"}}>{l}</button>
           ))}
         </div>
       </div>
@@ -241,8 +241,8 @@ function ImportPreview({ rows, onConfirm, onCancel }) {
         </table>
       </div>
       <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:14}}>
-        <button onClick={onCancel} style={{padding:"8px 18px",borderRadius:4,border:"1px solid #CDD3D8",background:"none",color:"#73879C",cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:"'Barlow',sans-serif"}}>Cancelar</button>
-        <button onClick={()=>onConfirm(rows,mode)} style={{padding:"8px 20px",borderRadius:4,border:"none",background:"#F5C800",color:"#fff",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"'Barlow',sans-serif"}}>
+        <button onClick={onCancel} style={{padding:"8px 18px",borderRadius:4,border:"1px solid #CDD3D8",background:"none",color:"#73879C",cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:"'Inter',sans-serif"}}>Cancelar</button>
+        <button onClick={()=>onConfirm(rows,mode)} style={{padding:"8px 20px",borderRadius:4,border:"none",background:"#F5C800",color:"#fff",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"'Inter',sans-serif"}}>
           <i className="fas fa-check" style={{marginRight:6}}></i>Confirmar importación
         </button>
       </div>
@@ -470,28 +470,28 @@ function MatrizApp() {
   const handleSort = f => { if(sortF===f) setSortD(d=>d==="asc"?"desc":"asc"); else { setSortF(f); setSortD("asc"); } };
   const byTipo = TIPOS_ALL.map(t=>({t,n:data.filter(r=>r.tipo===t).length}));
 
-  const btnBase = {border:"none",borderRadius:4,padding:"7px 13px",fontSize:12,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:5,fontFamily:"'Barlow',sans-serif",transition:"opacity .15s"};
+  const btnBase = {border:"none",borderRadius:4,padding:"7px 13px",fontSize:12,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:5,fontFamily:"'Inter',sans-serif",transition:"opacity .15s"};
 
   return (
-    <div style={{fontFamily:"'Barlow',sans-serif",color:"#2A3F54"}}>
+    <div style={{fontFamily:"'Inter',sans-serif",color:"#2A3F54"}}>
       <style>{`
         .mtz-trow{transition:background .12s}
         .mtz-trow:hover{background:var(--mtz-row-hover)!important}
-        .mtz-fchip{border:1px solid var(--mtz-border-2);border-radius:4px;padding:4px 11px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;font-family:'Barlow',sans-serif;background:none;color:var(--mtz-text-3)}
+        .mtz-fchip{border:1px solid var(--mtz-border-2);border-radius:4px;padding:4px 11px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;font-family:'Inter',sans-serif;background:none;color:var(--mtz-text-3)}
         .mtz-fchip:hover{border-color:#F5C800;color:#F5C800}
         .mtz-ibtn{background:none;border:1px solid var(--mtz-border-2);border-radius:4px;padding:4px 8px;color:var(--mtz-text-muted);cursor:pointer;font-size:12px;transition:all .15s}.mtz-ibtn:hover{border-color:var(--mtz-text-muted);color:var(--mtz-text-2)}
-        .mtz-scinp{background:var(--mtz-surface-2);border:1px solid var(--mtz-border-2);color:var(--mtz-text);border-radius:4px;padding:7px 10px 7px 34px;font-size:13px;outline:none;font-family:'Barlow',sans-serif;width:100%}.mtz-scinp:focus{border-color:#F5C800;box-shadow:0 0 0 3px rgba(245,200,0,.12)}
+        .mtz-scinp{background:var(--mtz-surface-2);border:1px solid var(--mtz-border-2);color:var(--mtz-text);border-radius:4px;padding:7px 10px 7px 34px;font-size:13px;outline:none;font-family:'Inter',sans-serif;width:100%}.mtz-scinp:focus{border-color:#F5C800;box-shadow:0 0 0 3px rgba(245,200,0,.12)}
         .mtz-th-srt{cursor:pointer;user-select:none}.mtz-th-srt:hover{color:#F5C800}
         .mtz-cq{border-radius:4px;padding:4px 8px;font-size:11.5px;font-weight:600;text-align:center;line-height:1.35;border:1px solid;display:inline-block}
         .mtz-bdg{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:700;white-space:nowrap;border:1px solid}
         .mtz-tg{display:inline-block;padding:3px 8px;border-radius:3px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;border:1px solid}
-        .mtz-abtn{cursor:pointer;border:none;font-family:'Barlow',sans-serif;transition:opacity .15s}.mtz-abtn:hover{opacity:.82}
+        .mtz-abtn{cursor:pointer;border:none;font-family:'Inter',sans-serif;transition:opacity .15s}.mtz-abtn:hover{opacity:.82}
       `}</style>
 
       {/* ── CABECERA ── */}
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:10,marginBottom:14}}>
         <div>
-          <h2 style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:23,fontWeight:800,color:"var(--mtz-text)",textTransform:"uppercase",letterSpacing:"0.5px",margin:0,lineHeight:1.2}}>
+          <h2 style={{fontFamily:"'Inter Tight',sans-serif",fontSize:23,fontWeight:800,color:"var(--mtz-text)",textTransform:"uppercase",letterSpacing:"0.5px",margin:0,lineHeight:1.2}}>
             <i className="fas fa-bolt" style={{color:"#F5C800",marginRight:8}}></i>
             Matriz de Consecuencias
           </h2>
@@ -657,8 +657,8 @@ function MatrizApp() {
         <MatrizModal title="Confirmar eliminación" onClose={()=>setDelId(null)} width={380}>
           <p style={{color:"var(--mtz-text-3)",fontSize:14,marginBottom:20,lineHeight:1.6}}>¿Eliminar esta infracción? Esta acción no se puede deshacer.</p>
           <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
-            <button onClick={()=>setDelId(null)} style={{padding:"8px 18px",borderRadius:4,border:"1px solid var(--mtz-border-2)",background:"none",color:"var(--mtz-text-3)",cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:"'Barlow',sans-serif"}}>Cancelar</button>
-            <button onClick={()=>handleDel(deleteId)} style={{padding:"8px 18px",borderRadius:4,border:"none",background:"#E74C3C",color:"#fff",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"'Barlow',sans-serif"}}>
+            <button onClick={()=>setDelId(null)} style={{padding:"8px 18px",borderRadius:4,border:"1px solid var(--mtz-border-2)",background:"none",color:"var(--mtz-text-3)",cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:"'Inter',sans-serif"}}>Cancelar</button>
+            <button onClick={()=>handleDel(deleteId)} style={{padding:"8px 18px",borderRadius:4,border:"none",background:"#E74C3C",color:"#fff",cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"'Inter',sans-serif"}}>
               <i className="fas fa-trash" style={{marginRight:6}}></i>Eliminar
             </button>
           </div>

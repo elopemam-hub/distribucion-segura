@@ -18,6 +18,9 @@ uploads/telemetria/*
 !uploads/inspecciones/
 uploads/inspecciones/*
 !uploads/inspecciones/.gitkeep
+!uploads/epp/
+uploads/epp/*
+!uploads/epp/.gitkeep
 
 # Sistema operativo
 .DS_Store
