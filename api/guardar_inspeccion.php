@@ -36,6 +36,8 @@ if (empty($fecha))     $errores[] = 'La fecha es requerida.';
 if (empty($hora))      $errores[] = 'La hora es requerida.';
 if (empty($conductor)) $errores[] = 'El conductor es requerido.';
 if (empty($direccion)) $errores[] = 'La dirección es requerida.';
+if ($latitud === null || $latitud === '' || $longitud === null || $longitud === '')
+    $errores[] = 'La ubicación GPS es requerida.';
 
 if (!empty($errores)) {
     jsonResponse(false, implode(' | ', $errores), null, 422);

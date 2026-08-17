@@ -71,6 +71,12 @@ document.addEventListener('DOMContentLoaded', () => {
       toast(`No se puede guardar: "${duplicado}" está repetido en la tripulación. Cada miembro debe ser una persona distinta.`,'error',6000);
       btn.disabled=false; btn.innerHTML='<i class="fas fa-save"></i> Guardar Inspección'; return;
     }
+    // Geolocalización GPS obligatoria
+    const _lat=document.getElementById('f_latitud').value, _lng=document.getElementById('f_longitud').value;
+    if (!_lat || !_lng) {
+      toast('Captura la ubicación GPS antes de guardar (botón "Capturar Ubicación").','error',6000);
+      btn.disabled=false; btn.innerHTML='<i class="fas fa-save"></i> Guardar Inspección'; return;
+    }
     const fd=new FormData();
     fd.append('csrf_token', CSRF_TOKEN);
     fd.append('unidad',       document.getElementById('f_unidad').value.toUpperCase());

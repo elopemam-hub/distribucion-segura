@@ -415,9 +415,9 @@ $csrf = csrfToken();
               <div>
                 <div style="font-weight:700;color:var(--blanco);font-size:14px;margin-bottom:2px">
                   <i class="fas fa-satellite-dish" style="color:var(--amarillo)"></i>
-                  Geolocalización GPS
+                  Geolocalización GPS <span style="color:var(--rojo)">*</span>
                 </div>
-                <div style="font-size:12px;color:var(--gris-400)">Registra las coordenadas exactas del punto de inspección</div>
+                <div style="font-size:12px;color:var(--gris-400)">Obligatorio: captura las coordenadas exactas del punto de inspección</div>
               </div>
               <button type="button" id="btnGeolocalizacion" class="btn btn-primary"
                       onclick="capturarGeolocalizacion()"
