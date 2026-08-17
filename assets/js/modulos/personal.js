@@ -34,7 +34,9 @@ function actualizarResumenPersonal(todos) {
 
 async function cargarPersonal() {
   const q=document.getElementById('filtroPersonalQ')?.value.trim()||'', cargo=document.getElementById('filtroPersonalCargo')?.value||'', activo=document.getElementById('filtroPersonalActivo')?.value??'1';
+  const empG = (typeof getEmpresaGlobal === 'function') ? getEmpresaGlobal() : '';
   const params=new URLSearchParams({action:'list',q,cargo,activo,limit:200});
+  if (empG) params.set('empresa_id', empG);
   try {
     const r=await fetch('api/personal.php?'+params);
     const data=await r.json();
@@ -522,10 +524,13 @@ function _llenarSelectEmpresasResumen() {
   });
 }
 
-// Carga TODOS los activos (independiente del filtro del listado).
+// Carga TODOS los activos (respeta el selector global de empresa si hay uno).
 async function cargarResumenPersonal(cb) {
+  const empG = (typeof getEmpresaGlobal === 'function') ? getEmpresaGlobal() : '';
+  const params = new URLSearchParams({ action: 'list', activo: '1', limit: '500' });
+  if (empG) params.set('empresa_id', empG);
   try {
-    const r = await fetch('api/personal.php?action=list&activo=1&limit=500');
+    const r = await fetch('api/personal.php?' + params);
     const d = await r.json();
     _resumenData = (d && d.success && d.data && d.data.personal) ? d.data.personal : [];
   } catch (e) { _resumenData = []; }

@@ -26,6 +26,8 @@ async function cargarEmpresas() {
     _empresasCache = (d && d.success && d.data && d.data.empresas) ? d.data.empresas : [];
   } catch (e) { _empresasCache = []; }
   renderEmpresas();
+  // Mantiene el selector global del topbar en sync con altas/bajas.
+  if (typeof initEmpresaGlobal === 'function') initEmpresaGlobal();
 }
 
 function renderEmpresas() {

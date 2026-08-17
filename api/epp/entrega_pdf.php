@@ -10,6 +10,7 @@
 require_once __DIR__ . '/../../includes/auth.php';
 requireLogin();
 setupEpp();
+setupEmpresas();
 
 $id = (int)($_GET['id'] ?? 0);
 if ($id <= 0) { http_response_code(400); die('ID inválido'); }
@@ -30,6 +31,35 @@ $items = db()->fetchAll(
 $cfg = [];
 foreach (db()->fetchAll("SELECT clave, valor FROM epp_config") as $r) $cfg[$r['clave']] = $r['valor'] ?? '';
 
+// Empleador del registro: la EMPRESA del trabajador (snapshot en la entrega).
+// Si la entrega no tiene empresa asignada, se usa la config global (compatibilidad).
+$emp = [
+    'razon_social' => $cfg['emp_razon_social'] ?? '',
+    'ruc'          => $cfg['emp_ruc'] ?? '',
+    'domicilio'    => $cfg['emp_domicilio'] ?? '',
+    'actividad'    => $cfg['emp_actividad'] ?? '',
+    'num_trab'     => $cfg['emp_num_trab'] ?? '',
+    'responsable'  => $cfg['emp_responsable'] ?? '',
+    'logo'         => $cfg['emp_logo'] ?? '',
+];
+if (!empty($ent['empresa_id'])) {
+    $e = db()->fetchOne("SELECT * FROM empresas WHERE id = ?", [(int)$ent['empresa_id']]);
+    if ($e) {
+        $nTrab = (int)(db()->fetchOne(
+            "SELECT COUNT(*) c FROM personal WHERE empresa_id = ? AND activo = 1", [(int)$ent['empresa_id']]
+        )['c'] ?? 0);
+        $emp = [
+            'razon_social' => $e['razon_social'] ?? '',
+            'ruc'          => $e['ruc'] ?? '',
+            'domicilio'    => $e['domicilio'] ?? '',
+            'actividad'    => $e['actividad'] ?? '',
+            'num_trab'     => $nTrab ?: ($cfg['emp_num_trab'] ?? ''),
+            'responsable'  => $e['responsable'] ?: ($cfg['emp_responsable'] ?? ''),
+            'logo'         => $e['logo'] ?? '',
+        ];
+    }
+}
+
 $MOTIVOS = [
     'nuevo'      => 'Entrega',
     'renovacion' => 'Renovación',
@@ -47,7 +77,7 @@ $fmtFecha = function ($f) {
 // Logo: el de la empresa configurado en EPP → Configuración (uploads/epp/),
 // y si no hay, el logo por defecto de la app.
 $logo = '';
-$logoEmp = $cfg['emp_logo'] ?? '';
+$logoEmp = $emp['logo'] ?? '';
 if ($logoEmp) {
     $p = __DIR__ . '/../../uploads/' . $logoEmp;
     if (is_file($p)) {
@@ -146,7 +176,7 @@ $motivoTxt = $MOTIVOS[$ent['motivo']] ?? $ent['motivo'];
   <!-- Cabecera: logo | título | control de documento -->
   <table class="head">
     <tr>
-      <td class="logo"><?php if ($logo): ?><img src="<?= $logo ?>" alt="Logo"><?php else: ?><strong><?= $h($cfg['emp_razon_social'] ?: 'EMPRESA') ?></strong><?php endif; ?></td>
+      <td class="logo"><?php if ($logo): ?><img src="<?= $logo ?>" alt="Logo"><?php else: ?><strong><?= $h($emp['razon_social'] ?: 'EMPRESA') ?></strong><?php endif; ?></td>
       <td class="title">Registro de Entrega de Equipos de Protección Personal</td>
       <td class="ctrl">
         <table>
@@ -167,11 +197,11 @@ $motivoTxt = $MOTIVOS[$ent['motivo']] ?? $ent['motivo'];
       <td style="width:12%">N° Trabajadores</td>
     </tr>
     <tr class="val c" style="height:34px">
-      <td class="fill" contenteditable="true"><?= $h($cfg['emp_razon_social']) ?></td>
-      <td class="fill" contenteditable="true"><?= $h($cfg['emp_ruc']) ?></td>
-      <td class="fill" contenteditable="true"><?= $h($cfg['emp_domicilio']) ?></td>
-      <td class="fill" contenteditable="true"><?= $h($cfg['emp_actividad']) ?></td>
-      <td class="fill" contenteditable="true"><?= $h($cfg['emp_num_trab']) ?></td>
+      <td class="fill" contenteditable="true"><?= $h($emp['razon_social']) ?></td>
+      <td class="fill" contenteditable="true"><?= $h($emp['ruc']) ?></td>
+      <td class="fill" contenteditable="true"><?= $h($emp['domicilio']) ?></td>
+      <td class="fill" contenteditable="true"><?= $h($emp['actividad']) ?></td>
+      <td class="fill" contenteditable="true"><?= $h($emp['num_trab']) ?></td>
     </tr>
   </table>
 
@@ -247,7 +277,7 @@ $motivoTxt = $MOTIVOS[$ent['motivo']] ?? $ent['motivo'];
   <table class="foot">
     <tr class="sec"><td colspan="4">Responsable de Registro:</td></tr>
     <tr>
-      <td class="k" style="width:34%">Nombre:&nbsp; <?= $h($cfg['emp_responsable']) ?></td>
+      <td class="k" style="width:34%">Nombre:&nbsp; <?= $h($emp['responsable']) ?></td>
       <td class="k" style="width:22%">Cargo:&nbsp; <span class="fill-line" contenteditable="true">&nbsp;</span></td>
       <td class="k" style="width:22%">Fecha:&nbsp; <span class="fill-line" contenteditable="true">&nbsp;</span></td>
       <?php $firmaResp = $ent['firma_entrega'] ?? ''; ?>

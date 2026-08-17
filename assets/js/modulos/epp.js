@@ -583,6 +583,8 @@ async function cargarEppEntregas() {
   const params = new URLSearchParams({ action: 'list' });
   if (q) params.set('q', q);
   if (motivo) params.set('motivo', motivo);
+  const empG = (typeof getEmpresaGlobal === 'function') ? getEmpresaGlobal() : '';
+  if (empG) params.set('empresa_id', empG);
 
   const j = await eppGet('api/epp/entregas.php?' + params.toString());
   if (!j.success) { toast('No se pudieron cargar las entregas', 'error'); return; }

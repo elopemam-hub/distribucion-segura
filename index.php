@@ -244,6 +244,12 @@ $csrf = csrfToken();
       <div class="topbar-title"><span>DISTRIBUCIÓN SEGURA</span> — JULIACA</div>
     </div>
     <div class="topbar-actions">
+      <?php if (tieneAccesoModulo('empresas') || tieneAccesoModulo('personal')): ?>
+      <select id="empresaGlobal" class="form-control" style="width:auto;max-width:210px;font-size:12px;padding:6px 10px;display:none"
+              onchange="onEmpresaGlobalChange()" title="Filtrar todo el sistema por empresa">
+        <option value="">Todas las empresas</option>
+      </select>
+      <?php endif; ?>
       <div class="theme-switch" role="group" aria-label="Tema de la interfaz">
         <button type="button" class="theme-opt" data-theme-choice="light" onclick="setTheme('light')" title="Tema claro" aria-label="Tema claro"><i class="fas fa-sun"></i></button>
         <button type="button" class="theme-opt" data-theme-choice="dark" onclick="setTheme('dark')" title="Tema oscuro" aria-label="Tema oscuro"><i class="fas fa-moon"></i></button>

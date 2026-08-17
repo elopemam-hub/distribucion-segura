@@ -505,5 +505,45 @@ function onEvidenciaError(img) {
   img.parentElement.appendChild(el);
 }
 
+// ============ SELECTOR GLOBAL DE EMPRESA (multi-empresa, Fase 2) ============
+// Filtra todo el sistema por empresa. La selección persiste en localStorage.
+function getEmpresaGlobal() {
+  try { return localStorage.getItem('empresaGlobal') || ''; } catch (e) { return ''; }
+}
+
+async function initEmpresaGlobal() {
+  const sel = document.getElementById('empresaGlobal');
+  if (!sel) return;
+  let empresas = [];
+  try {
+    const r = await fetch('api/empresas.php?action=list&activas=1');
+    const d = await r.json();
+    empresas = (d && d.success && d.data && d.data.empresas) ? d.data.empresas.filter(e => +e.activo === 1) : [];
+  } catch (e) { empresas = []; }
+  if (!empresas.length) { sel.style.display = 'none'; return; }
+  const guardada = getEmpresaGlobal();
+  sel.innerHTML = '<option value="">Todas las empresas</option>' +
+    empresas.map(e => `<option value="${e.id}">${(e.razon_social||'').replace(/</g,'&lt;')}</option>`).join('');
+  // Si la empresa guardada ya no existe, se limpia.
+  if (guardada && !empresas.some(e => String(e.id) === guardada)) { try { localStorage.removeItem('empresaGlobal'); } catch (e) {} }
+  sel.value = getEmpresaGlobal();
+  sel.style.display = '';
+}
+
+function onEmpresaGlobalChange() {
+  const sel = document.getElementById('empresaGlobal');
+  try { if (sel.value) localStorage.setItem('empresaGlobal', sel.value); else localStorage.removeItem('empresaGlobal'); } catch (e) {}
+  // Refresca el módulo visible que reacciona al filtro.
+  const page = document.querySelector('.nav-item.active')?.dataset.page || '';
+  if (page === 'personal') {
+    if (typeof cargarPersonal === 'function') cargarPersonal();
+    const tabActiva = document.querySelector('.personal-tab-btn.active')?.id || '';
+    if (tabActiva.includes('cumplimiento') && typeof cargarResumenPersonal === 'function') cargarResumenPersonal(() => { _llenarSelectEmpresasResumen && _llenarSelectEmpresasResumen(); renderCumplimiento && renderCumplimiento(); });
+    if (tabActiva.includes('cumpleanos') && typeof cargarResumenPersonal === 'function') cargarResumenPersonal(() => { _llenarSelectEmpresasResumen && _llenarSelectEmpresasResumen(); renderCumpleanos && renderCumpleanos(); });
+  } else if (page === 'epp' && typeof initEpp === 'function') {
+    initEpp();
+  }
+}
+
 // ============ INIT ============
-document.addEventListener('DOMContentLoaded', () => { showPage('dashboard'); });
+document.addEventListener('DOMContentLoaded', () => { showPage('dashboard'); initEmpresaGlobal(); });

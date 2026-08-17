@@ -402,6 +402,15 @@ function setupEpp(): void {
               WHERE table_schema = DATABASE() AND table_name = 'epp_entregas' AND column_name = 'firma_entrega'"
         );
         if (!$exists) db()->query("ALTER TABLE epp_entregas ADD COLUMN firma_entrega MEDIUMTEXT NULL AFTER firma_trabajador", []);
+
+        // Snapshot de la empresa del trabajador al momento de la entrega, para que
+        // el registro oficial (R.M. 050-2013-TR) salga con el empleador correcto
+        // aunque luego cambie la asignación del trabajador (multi-empresa Fase 2).
+        $exists = db()->fetchOne(
+            "SELECT 1 FROM information_schema.columns
+              WHERE table_schema = DATABASE() AND table_name = 'epp_entregas' AND column_name = 'empresa_id'"
+        );
+        if (!$exists) db()->query("ALTER TABLE epp_entregas ADD COLUMN empresa_id INT NULL AFTER personal_id", []);
     } catch (Exception $e) {
         error_log('[setupEpp] ' . $e->getMessage());
     }

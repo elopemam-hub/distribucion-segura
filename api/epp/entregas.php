@@ -59,9 +59,11 @@ function listar() {
     $estado = trim($_GET['estado'] ?? '');
     $desde  = trim($_GET['desde'] ?? '');
     $hasta  = trim($_GET['hasta'] ?? '');
+    $empresaId = trim($_GET['empresa_id'] ?? '');
     $limit  = min(500, max(10, (int)($_GET['limit'] ?? 100)));
 
     $where = ['1=1']; $params = [];
+    if ($empresaId !== '') { $where[] = 'e.empresa_id = ?'; $params[] = (int)$empresaId; }
     if ($q !== '') {
         $where[] = '(e.trabajador_nombre LIKE ? OR e.trabajador_dni LIKE ?)';
         $params[] = "%$q%"; $params[] = "%$q%";
@@ -134,8 +136,8 @@ function registrar() {
         jsonResponse(false, 'Agrega al menos un EPP a entregar.', null, 422);
     }
 
-    // Trabajador: snapshot desde la tabla personal.
-    $p = db()->fetchOne("SELECT id, dni, nombre, cargo FROM personal WHERE id = ?", [$personalId]);
+    // Trabajador: snapshot desde la tabla personal (incluye su empresa).
+    $p = db()->fetchOne("SELECT id, dni, nombre, cargo, empresa_id FROM personal WHERE id = ?", [$personalId]);
     if (!$p) jsonResponse(false, 'Trabajador no encontrado.', null, 422);
 
     // Consolida cantidades por tipo (evita duplicar renglones del mismo EPP).
@@ -178,10 +180,10 @@ function registrar() {
 
         db()->query(
             "INSERT INTO epp_entregas
-               (personal_id, trabajador_nombre, trabajador_dni, trabajador_cargo, motivo,
+               (personal_id, empresa_id, trabajador_nombre, trabajador_dni, trabajador_cargo, motivo,
                 fecha, firma_trabajador, firma_entrega, observacion, entregado_por, entregado_por_nombre)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            [$p['id'], mb_strtoupper($p['nombre'], 'UTF-8'), $p['dni'], $p['cargo'], $motivo,
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [$p['id'], $p['empresa_id'] ?: null, mb_strtoupper($p['nombre'], 'UTF-8'), $p['dni'], $p['cargo'], $motivo,
              $fecha, $firma ?: null, ($firmaEnt !== '' && strpos($firmaEnt, 'data:image/') === 0) ? $firmaEnt : null,
              $obs ?: null, $user['id'], $user['nombre'] ?? null]
         );
