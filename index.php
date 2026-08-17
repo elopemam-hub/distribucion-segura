@@ -1567,15 +1567,15 @@ $csrf = csrfToken();
         <p style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--gris-400);letter-spacing:.08em;margin:18px 0 10px">Documentos</p>
         <div class="form-grid">
           <div class="form-group">
-            <label class="form-label">DNI (archivo) <a id="personal_doc_dni_link" href="#" target="_blank" style="display:none;font-weight:400;font-size:11px;color:var(--primary);margin-left:6px"><i class="fas fa-up-right-from-square"></i> ver actual</a></label>
+            <label class="form-label">DNI (archivo) <a id="personal_doc_dni_link" href="#" onclick="verDocumento(this.href);return false;" style="display:none;font-weight:400;font-size:11px;color:var(--primary);margin-left:6px"><i class="fas fa-eye"></i> ver actual</a></label>
             <input type="file" class="form-control" id="personal_doc_dni" accept="image/*,application/pdf">
           </div>
           <div class="form-group">
-            <label class="form-label">Licencia (archivo) <a id="personal_doc_licencia_link" href="#" target="_blank" style="display:none;font-weight:400;font-size:11px;color:var(--primary);margin-left:6px"><i class="fas fa-up-right-from-square"></i> ver actual</a></label>
+            <label class="form-label">Licencia (archivo) <a id="personal_doc_licencia_link" href="#" onclick="verDocumento(this.href);return false;" style="display:none;font-weight:400;font-size:11px;color:var(--primary);margin-left:6px"><i class="fas fa-eye"></i> ver actual</a></label>
             <input type="file" class="form-control" id="personal_doc_licencia" accept="image/*,application/pdf">
           </div>
           <div class="form-group">
-            <label class="form-label">Certijoven (archivo) <a id="personal_doc_certijoven_link" href="#" target="_blank" style="display:none;font-weight:400;font-size:11px;color:var(--primary);margin-left:6px"><i class="fas fa-up-right-from-square"></i> ver actual</a></label>
+            <label class="form-label">Certijoven (archivo) <a id="personal_doc_certijoven_link" href="#" onclick="verDocumento(this.href);return false;" style="display:none;font-weight:400;font-size:11px;color:var(--primary);margin-left:6px"><i class="fas fa-eye"></i> ver actual</a></label>
             <input type="file" class="form-control" id="personal_doc_certijoven" accept="image/*,application/pdf">
           </div>
         </div>
@@ -1586,6 +1586,24 @@ $csrf = csrfToken();
           <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar</button>
         </div>
       </form>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL VISOR DE DOCUMENTO (imagen o PDF, en la misma pantalla) ===== -->
+<div class="modal-overlay" id="modalVisorDoc">
+  <div class="modal-box" style="max-width:960px;width:96%">
+    <div class="modal-header">
+      <h3><i class="fas fa-file-lines" style="color:var(--primary)"></i> Documento</h3>
+      <div style="display:flex;gap:8px;align-items:center">
+        <a id="visorDocAbrir" href="#" target="_blank" rel="noopener" class="btn btn-secondary btn-sm" title="Abrir en pestaña nueva">
+          <i class="fas fa-up-right-from-square"></i> Abrir aparte
+        </a>
+        <button class="modal-close" onclick="cerrarModal('modalVisorDoc')"><i class="fas fa-times"></i></button>
+      </div>
+    </div>
+    <div class="modal-body" id="visorDocBody"
+         style="padding:0;background:#525659;min-height:72vh;display:flex;align-items:center;justify-content:center;overflow:hidden">
     </div>
   </div>
 </div>

@@ -114,6 +114,19 @@ function renderPersonalTabla() {
   }).join('');
 }
 
+// Visor de documento en la misma pantalla (imagen o PDF), sin abrir otra página.
+function verDocumento(url) {
+  const body = document.getElementById('visorDocBody');
+  const abrir = document.getElementById('visorDocAbrir');
+  if (!body) { window.open(url, '_blank'); return; }
+  if (abrir) abrir.href = url;
+  const esPdf = /\.pdf(\?|#|$)/i.test(url);
+  body.innerHTML = esPdf
+    ? `<iframe src="${url}" title="Documento" style="width:100%;height:78vh;border:0;background:#fff"></iframe>`
+    : `<img src="${url}" alt="Documento" style="max-width:100%;max-height:78vh;object-fit:contain;display:block">`;
+  abrirModal('modalVisorDoc');
+}
+
 function abrirModalPersonal() {
   document.getElementById('formPersonal').reset();
   document.getElementById('personal_id').value='';
