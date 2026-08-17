@@ -1475,7 +1475,7 @@ $csrf = csrfToken();
           </div>
           <div class="form-group">
             <label class="form-label">Cargo *</label>
-            <select class="form-control" id="personal_cargo" required>
+            <select class="form-control" id="personal_cargo" required onchange="togglePersonalLicencia()">
               <option value="conductor">Conductor</option>
               <option value="reparto">Reparto</option>
               <option value="auxiliar">Auxiliar</option>
@@ -1523,31 +1523,33 @@ $csrf = csrfToken();
           </div>
         </div>
 
-        <p style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--gris-400);letter-spacing:.08em;margin:18px 0 10px">Licencia / Brevete</p>
-        <div class="form-grid">
-          <div class="form-group">
-            <label class="form-label">N° Licencia</label>
-            <input type="text" class="form-control" id="personal_num_licencia" maxlength="30">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Categoría</label>
-            <select class="form-control" id="personal_categoria_licencia">
-              <option value="">— Sin licencia —</option>
-              <option value="A-I">A-I</option>
-              <option value="A-IIa">A-IIa</option>
-              <option value="A-IIb">A-IIb</option>
-              <option value="A-IIIa">A-IIIa</option>
-              <option value="A-IIIb">A-IIIb</option>
-              <option value="A-IIIc">A-IIIc</option>
-              <option value="B-I">B-I</option>
-              <option value="B-IIa">B-IIa</option>
-              <option value="B-IIb">B-IIb</option>
-              <option value="B-IIc">B-IIc</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Vencimiento Brevete</label>
-            <input type="date" class="form-control" id="personal_vencimiento_brevete">
+        <div id="personalLicenciaSec">
+          <p style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--gris-400);letter-spacing:.08em;margin:18px 0 10px">Licencia / Brevete <span style="color:var(--gris-500);font-weight:400">· solo conductor</span></p>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">N° Licencia</label>
+              <input type="text" class="form-control" id="personal_num_licencia" maxlength="30">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Categoría</label>
+              <select class="form-control" id="personal_categoria_licencia">
+                <option value="">— Sin licencia —</option>
+                <option value="A-I">A-I</option>
+                <option value="A-IIa">A-IIa</option>
+                <option value="A-IIb">A-IIb</option>
+                <option value="A-IIIa">A-IIIa</option>
+                <option value="A-IIIb">A-IIIb</option>
+                <option value="A-IIIc">A-IIIc</option>
+                <option value="B-I">B-I</option>
+                <option value="B-IIa">B-IIa</option>
+                <option value="B-IIb">B-IIb</option>
+                <option value="B-IIc">B-IIc</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Vencimiento Brevete</label>
+              <input type="date" class="form-control" id="personal_vencimiento_brevete">
+            </div>
           </div>
         </div>
 
@@ -1570,13 +1572,21 @@ $csrf = csrfToken();
             <label class="form-label">DNI (archivo) <a id="personal_doc_dni_link" href="#" onclick="verDocumento(this.href);return false;" style="display:none;font-weight:400;font-size:11px;color:var(--primary);margin-left:6px"><i class="fas fa-eye"></i> ver actual</a></label>
             <input type="file" class="form-control" id="personal_doc_dni" accept="image/*,application/pdf">
           </div>
-          <div class="form-group">
+          <div class="form-group" id="personalDocLicenciaWrap">
             <label class="form-label">Licencia (archivo) <a id="personal_doc_licencia_link" href="#" onclick="verDocumento(this.href);return false;" style="display:none;font-weight:400;font-size:11px;color:var(--primary);margin-left:6px"><i class="fas fa-eye"></i> ver actual</a></label>
             <input type="file" class="form-control" id="personal_doc_licencia" accept="image/*,application/pdf">
           </div>
           <div class="form-group">
             <label class="form-label">Certijoven (archivo) <a id="personal_doc_certijoven_link" href="#" onclick="verDocumento(this.href);return false;" style="display:none;font-weight:400;font-size:11px;color:var(--primary);margin-left:6px"><i class="fas fa-eye"></i> ver actual</a></label>
             <input type="file" class="form-control" id="personal_doc_certijoven" accept="image/*,application/pdf">
+          </div>
+          <div class="form-group">
+            <label class="form-label">SCTR (archivo) <a id="personal_doc_sctr_link" href="#" onclick="verDocumento(this.href);return false;" style="display:none;font-weight:400;font-size:11px;color:var(--primary);margin-left:6px"><i class="fas fa-eye"></i> ver actual</a></label>
+            <input type="file" class="form-control" id="personal_doc_sctr" accept="image/*,application/pdf">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Verificación de referencias <a id="personal_doc_verif_ref_link" href="#" onclick="verDocumento(this.href);return false;" style="display:none;font-weight:400;font-size:11px;color:var(--primary);margin-left:6px"><i class="fas fa-eye"></i> ver actual</a></label>
+            <input type="file" class="form-control" id="personal_doc_verif_ref" accept="image/*,application/pdf">
           </div>
         </div>
         <small style="color:var(--gris-400);display:block;margin-top:4px">Imagen o PDF · Máx 5MB por archivo</small>

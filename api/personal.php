@@ -11,7 +11,10 @@ require_once __DIR__ . '/../includes/auth.php';
 requireLogin();
 header('Content-Type: application/json; charset=utf-8');
 
-// Auto-provisión de columnas de documentos (DNI, Licencia, Certijoven).
+// Columnas de documentos adjuntos del personal (una fuente de verdad).
+const PERSONAL_DOC_COLS = ['doc_dni', 'doc_licencia', 'doc_certijoven', 'doc_sctr', 'doc_verif_ref'];
+
+// Auto-provisión de columnas de documentos.
 setupPersonalDocs();
 
 $action = $_GET['action'] ?? $_POST['action'] ?? 'list';
@@ -150,9 +153,9 @@ function guardar() {
         $fotoNombre = guardarFoto($_FILES['foto'], $dni);
     }
 
-    // Subir documentos si vienen (imagen o PDF): DNI, Licencia, Certijoven.
+    // Subir documentos si vienen (imagen o PDF): DNI, Licencia, Certijoven, SCTR, Verif. referencias.
     $docs = [];
-    foreach (['doc_dni', 'doc_licencia', 'doc_certijoven'] as $campo) {
+    foreach (PERSONAL_DOC_COLS as $campo) {
         if (!empty($_FILES[$campo]['tmp_name'])) {
             $ruta = guardarArchivo($_FILES[$campo], $dni, $campo);
             if ($ruta) $docs[$campo] = $ruta;
@@ -161,26 +164,24 @@ function guardar() {
 
     if ($id > 0) {
         // UPDATE — foto y documentos solo se tocan si se subió uno nuevo.
+        $sqlDocs = ''; $paramDocs = [];
+        foreach (PERSONAL_DOC_COLS as $campo) {
+            if (isset($docs[$campo])) { $sqlDocs .= ", `$campo`=?"; $paramDocs[] = $docs[$campo]; }
+        }
         $sql = "UPDATE personal SET
                     dni=?, nombre=?, cargo=?, empresa=?, telefono=?,
                     fecha_nacimiento=?, fecha_ingreso=?, dni_vencimiento=?,
                     num_licencia=?, categoria_licencia=?, vencimiento_brevete=?,
                     observaciones=?, activo=?, tipo_contrato=?"
-             . ($fotoNombre ? ", foto=?" : "")
-             . (isset($docs['doc_dni'])        ? ", doc_dni=?"        : "")
-             . (isset($docs['doc_licencia'])   ? ", doc_licencia=?"   : "")
-             . (isset($docs['doc_certijoven']) ? ", doc_certijoven=?" : "")
-             . " WHERE id=?";
+             . ($fotoNombre ? ", foto=?" : "") . $sqlDocs . " WHERE id=?";
         $params = [
             $dni, $nombre, $cargo, $empresa ?: null, $tel ?: null,
             $fechaNac ?: null, $fechaIng ?: null, $dniVenc ?: null,
             $numLicencia ?: null, $catLicencia ?: null, $vencBrevete ?: null,
             $obs ?: null, $activo, $tipoContrato ?: null
         ];
-        if ($fotoNombre)                    $params[] = $fotoNombre;
-        if (isset($docs['doc_dni']))        $params[] = $docs['doc_dni'];
-        if (isset($docs['doc_licencia']))   $params[] = $docs['doc_licencia'];
-        if (isset($docs['doc_certijoven'])) $params[] = $docs['doc_certijoven'];
+        if ($fotoNombre) $params[] = $fotoNombre;
+        $params = array_merge($params, $paramDocs);
         $params[] = $id;
         db()->query($sql, $params);
         jsonResponse(true, 'Personal actualizado.', ['id' => $id]);
@@ -191,14 +192,15 @@ function guardar() {
                 (dni, nombre, cargo, empresa, telefono, fecha_nacimiento,
                  fecha_ingreso, dni_vencimiento, num_licencia, categoria_licencia,
                  vencimiento_brevete, foto, observaciones, activo, tipo_contrato,
-                 doc_dni, doc_licencia, doc_certijoven)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                 doc_dni, doc_licencia, doc_certijoven, doc_sctr, doc_verif_ref)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 $dni, $nombre, $cargo, $empresa ?: null, $tel ?: null,
                 $fechaNac ?: null, $fechaIng ?: null, $dniVenc ?: null,
                 $numLicencia ?: null, $catLicencia ?: null, $vencBrevete ?: null,
                 $fotoNombre, $obs ?: null, $activo, $tipoContrato ?: null,
-                $docs['doc_dni'] ?? null, $docs['doc_licencia'] ?? null, $docs['doc_certijoven'] ?? null
+                $docs['doc_dni'] ?? null, $docs['doc_licencia'] ?? null, $docs['doc_certijoven'] ?? null,
+                $docs['doc_sctr'] ?? null, $docs['doc_verif_ref'] ?? null
             ]
         );
         jsonResponse(true, 'Personal creado.', ['id' => db()->lastInsertId()]);
@@ -223,7 +225,7 @@ function setupPersonalDocs(): void {
     static $done = false;
     if ($done) return;
     $done = true;
-    foreach (['doc_dni', 'doc_licencia', 'doc_certijoven'] as $col) {
+    foreach (PERSONAL_DOC_COLS as $col) {
         try {
             $exists = db()->fetchOne(
                 "SELECT 1 FROM information_schema.columns
