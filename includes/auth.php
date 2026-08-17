@@ -411,6 +411,16 @@ function setupEpp(): void {
               WHERE table_schema = DATABASE() AND table_name = 'epp_entregas' AND column_name = 'empresa_id'"
         );
         if (!$exists) db()->query("ALTER TABLE epp_entregas ADD COLUMN empresa_id INT NULL AFTER personal_id", []);
+
+        // Backfill: entregas registradas antes de la Fase 2 quedaron con empresa_id
+        // NULL. Se rellena con la empresa actual del trabajador (personal.empresa_id)
+        // para que aparezcan al filtrar por empresa. Solo toca filas NULL → idempotente.
+        db()->query(
+            "UPDATE epp_entregas e
+                JOIN personal p ON p.id = e.personal_id
+                SET e.empresa_id = p.empresa_id
+              WHERE e.empresa_id IS NULL AND p.empresa_id IS NOT NULL", []
+        );
     } catch (Exception $e) {
         error_log('[setupEpp] ' . $e->getMessage());
     }

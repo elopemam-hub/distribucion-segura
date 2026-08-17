@@ -540,8 +540,12 @@ function onEmpresaGlobalChange() {
     const tabActiva = document.querySelector('.personal-tab-btn.active')?.id || '';
     if (tabActiva.includes('cumplimiento') && typeof cargarResumenPersonal === 'function') cargarResumenPersonal(() => { _llenarSelectEmpresasResumen && _llenarSelectEmpresasResumen(); renderCumplimiento && renderCumplimiento(); });
     if (tabActiva.includes('cumpleanos') && typeof cargarResumenPersonal === 'function') cargarResumenPersonal(() => { _llenarSelectEmpresasResumen && _llenarSelectEmpresasResumen(); renderCumpleanos && renderCumpleanos(); });
-  } else if (page === 'epp' && typeof initEpp === 'function') {
-    initEpp();
+  } else if (page === 'epp') {
+    // Recarga la sub-pestaña EPP visible (entregas/reportes filtran por empresa),
+    // no initEpp() que solo recarga inventario.
+    const t = document.querySelector('.epp-tab-btn.active')?.id?.replace('epp-btn-', '');
+    if (t && typeof switchEppTab === 'function') switchEppTab(t);
+    else if (typeof initEpp === 'function') initEpp();
   }
 }
 
