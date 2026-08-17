@@ -124,6 +124,9 @@ function buscar() {
     $where = ['activo = 1', '(nombre LIKE ? OR dni LIKE ?)'];
     $params = ["%$q%", "%$q%"];
     if ($cargo !== '') { $where[] = 'cargo = ?'; $params[] = $cargo; }
+    // Filtro por empresa activa (p.ej. entrega de EPP en modo silo).
+    $empSel = (int)($_GET['empresa_id'] ?? 0);
+    if ($empSel > 0) { $where[] = 'empresa_id = ?'; $params[] = $empSel; }
     $whereSQL = implode(' AND ', $where);
     // Restricción por empresa del usuario (Fase 3).
     [$empRestr, $empRestrP] = empresaWhere('empresa_id');

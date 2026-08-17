@@ -14,12 +14,19 @@ let _eppInit = false;
 function eppEsc(s) {
   return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+// Empresa activa (selector global). Todas las llamadas EPP la propagan, así el
+// backend segmenta cada empresa como un silo independiente.
+function _eppEmp() { return (typeof getEmpresaGlobal === 'function') ? getEmpresaGlobal() : ''; }
 async function eppGet(url) {
+  const e = _eppEmp();
+  if (e) url += (url.includes('?') ? '&' : '?') + 'empresa_id=' + encodeURIComponent(e);
   return eppFetchJson(url, {});
 }
 async function eppPost(url, campos) {
   const fd = new FormData();
   fd.append('csrf_token', CSRF_TOKEN);
+  const e = _eppEmp();
+  if (e && !('empresa_id' in campos)) fd.append('empresa_id', e);
   for (const [k, v] of Object.entries(campos)) fd.append(k, v);
   return eppFetchJson(url, { method: 'POST', body: fd });
 }
@@ -468,6 +475,7 @@ async function eppGuardarTipo() {
   fd.append('norma_tecnica',  document.getElementById('epp_tipo_norma').value);
   fd.append('vida_util_dias', document.getElementById('epp_tipo_vida').value);
   fd.append('unidad',         document.getElementById('epp_tipo_unidad').value);
+  fd.append('empresa_id',     _eppEmp());   // silo: EPP de la empresa activa
   const img = document.getElementById('epp_tipo_imagen').files[0];
   if (img) fd.append('imagen', img);
 

@@ -11,6 +11,8 @@ require_once __DIR__ . '/../../includes/auth.php';
 
 requireLogin();
 setupEpp();
+setupEmpresas();
+setupUsuarioEmpresas();
 header('Content-Type: application/json; charset=utf-8');
 
 $action = $_GET['action'] ?? $_POST['action'] ?? 'list';
@@ -48,18 +50,26 @@ function eppStockPct(): array {
 }
 
 function listar() {
+    // Al entrar a una empresa, siembra su catálogo estándar la primera vez.
+    $emp = eppEmpresaSel();
+    if ($emp > 0 && empresaEsPermitida($emp)) eppSeedEmpresa($emp);
+
     $incluirInactivos = ($_GET['todos'] ?? '') === '1';
     $where = $incluirInactivos ? '1=1' : 'activo = 1';
+    [$eSql, $eP] = eppEmpresaFiltro('empresa_id');
+    $where .= $eSql;
     $rows = db()->fetchAll(
         "SELECT id, codigo, nombre, marca, categoria, talla, consumo_anual,
                 norma_tecnica, vida_util_dias, stock_minimo, stock_maximo, unidad, imagen, activo
            FROM epp_tipos WHERE $where
-          ORDER BY nombre ASC, talla ASC"
+          ORDER BY nombre ASC, talla ASC",
+        $eP
     );
     jsonResponse(true, '', $rows);
 }
 
 function guardar() {
+    $emp           = eppRequireEmpresa();
     $id            = (int)($_POST['id'] ?? 0);
     $codigo        = trim($_POST['codigo'] ?? '');
     $nombre        = trim($_POST['nombre'] ?? '');
@@ -76,8 +86,8 @@ function guardar() {
     // Dedup por (nombre, talla) case-insensitive: el mismo EPP puede repetirse
     // en distintas tallas, pero no dos veces en la misma talla.
     $dup = db()->fetchOne(
-        "SELECT id FROM epp_tipos WHERE nombre = ? AND IFNULL(talla,'') = ? AND id <> ?",
-        [$nombre, $talla, $id]
+        "SELECT id FROM epp_tipos WHERE empresa_id = ? AND nombre = ? AND IFNULL(talla,'') = ? AND id <> ?",
+        [$emp, $nombre, $talla, $id]
     );
     if ($dup) jsonResponse(false, 'Ya existe ese EPP en la misma talla.', null, 422);
 
@@ -90,6 +100,9 @@ function guardar() {
     $imagen = guardarImagenEpp();
 
     if ($id > 0) {
+        // El EPP debe pertenecer a la empresa activa (silo).
+        $own = db()->fetchOne("SELECT empresa_id FROM epp_tipos WHERE id = ?", [$id]);
+        if (!$own || (int)$own['empresa_id'] !== $emp) jsonResponse(false, 'Sin acceso a este EPP.', null, 403);
         $sql = "UPDATE epp_tipos SET codigo=?, nombre=?, marca=?, categoria=?, talla=?, consumo_anual=?,
                        norma_tecnica=?, vida_util_dias=?, stock_minimo=?, stock_maximo=?, unidad=?"
              . ($imagen ? ", imagen=?" : "") . " WHERE id=?";
@@ -102,10 +115,10 @@ function guardar() {
     } else {
         db()->query(
             "INSERT INTO epp_tipos
-               (codigo, nombre, marca, categoria, talla, consumo_anual, norma_tecnica, vida_util_dias,
+               (empresa_id, codigo, nombre, marca, categoria, talla, consumo_anual, norma_tecnica, vida_util_dias,
                 stock_minimo, stock_maximo, unidad, imagen)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            [$codigo ?: null, $nombre, $marca ?: null, $categoria, $talla ?: null, $consumo,
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [$emp, $codigo ?: null, $nombre, $marca ?: null, $categoria, $talla ?: null, $consumo,
              $norma ?: null, $vidaUtil, $stockMin, $stockMax, $unidad, $imagen]
         );
         jsonResponse(true, 'EPP creado.', ['id' => db()->lastInsertId()]);
@@ -141,6 +154,8 @@ function guardarImagenEpp(): ?string {
 function toggle() {
     $id = (int)($_POST['id'] ?? 0);
     if ($id <= 0) jsonResponse(false, 'ID inválido.', null, 422);
+    $own = db()->fetchOne("SELECT empresa_id FROM epp_tipos WHERE id = ?", [$id]);
+    if (!$own || !empresaEsPermitida($own['empresa_id'] ?? 0)) jsonResponse(false, 'Sin acceso a este EPP.', null, 403);
     db()->query("UPDATE epp_tipos SET activo = 1 - activo WHERE id = ?", [$id]);
     $row = db()->fetchOne("SELECT activo FROM epp_tipos WHERE id = ?", [$id]);
     jsonResponse(true, 'Estado actualizado.', ['activo' => (int)($row['activo'] ?? 0)]);

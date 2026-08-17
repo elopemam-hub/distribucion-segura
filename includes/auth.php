@@ -421,8 +421,92 @@ function setupEpp(): void {
                 SET e.empresa_id = p.empresa_id
               WHERE e.empresa_id IS NULL AND p.empresa_id IS NOT NULL", []
         );
+
+        // ── SILOS POR EMPRESA (multi-empresa): cada empresa tiene su propio
+        // catálogo de tipos, tallas, proveedores, ingresos y matriz de puesto.
+        // El stock/kardex se derivan del tipo (que ya pertenece a una empresa),
+        // así que epp_movimientos NO necesita empresa_id. ALTER idempotente. ──
+        $eppAddEmp = function (string $tabla) {
+            $ex = db()->fetchOne(
+                "SELECT 1 FROM information_schema.columns
+                  WHERE table_schema = DATABASE() AND table_name = ? AND column_name = 'empresa_id'",
+                [$tabla]
+            );
+            if (!$ex) db()->query("ALTER TABLE `$tabla` ADD COLUMN empresa_id INT NULL AFTER id", []);
+        };
+        foreach (['epp_tipos', 'epp_tallas', 'epp_proveedores', 'epp_ingresos', 'epp_puesto_matriz'] as $t) {
+            $eppAddEmp($t);
+        }
+        // La talla ya no es única global (se repite por empresa): se quita el UNIQUE.
+        $hasUkTalla = db()->fetchOne(
+            "SELECT 1 FROM information_schema.statistics
+              WHERE table_schema = DATABASE() AND table_name = 'epp_tallas' AND index_name = 'uk_epp_talla'"
+        );
+        if ($hasUkTalla) db()->query("ALTER TABLE epp_tallas DROP INDEX uk_epp_talla", []);
+        // Igual con el UNIQUE (cargo, tipo_epp) de la matriz: ahora es por empresa.
+        $hasUkMatriz = db()->fetchOne(
+            "SELECT 1 FROM information_schema.statistics
+              WHERE table_schema = DATABASE() AND table_name = 'epp_puesto_matriz' AND index_name = 'uk_epp_matriz'"
+        );
+        if ($hasUkMatriz) db()->query("ALTER TABLE epp_puesto_matriz DROP INDEX uk_epp_matriz", []);
     } catch (Exception $e) {
         error_log('[setupEpp] ' . $e->getMessage());
+    }
+}
+
+// Empresa activa para operaciones EPP (viene del selector global vía empresa_id).
+function eppEmpresaSel(): int {
+    return (int)($_GET['empresa_id'] ?? $_POST['empresa_id'] ?? 0);
+}
+
+// Escrituras EPP: exige una empresa seleccionada y permitida. Devuelve su id
+// o corta con jsonResponse. (Cada empresa es un silo independiente.)
+function eppRequireEmpresa(): int {
+    $e = eppEmpresaSel();
+    if ($e <= 0) jsonResponse(false, 'Selecciona una empresa en la barra superior para gestionar su EPP.', null, 422);
+    if (!empresaEsPermitida($e)) jsonResponse(false, 'Sin acceso a esa empresa.', null, 403);
+    return $e;
+}
+
+// Lecturas EPP: fragmento WHERE según la empresa seleccionada + restricción del
+// usuario (Fase 3). $col = columna de empresa (ej. 't.empresa_id'). Si no hay
+// empresa seleccionada ("Todas"), solo aplica la restricción del usuario.
+function eppEmpresaFiltro(string $col): array {
+    $e = eppEmpresaSel();
+    if ($e > 0) {
+        if (!empresaEsPermitida($e)) return [' AND 1=0', []];
+        return [" AND $col = ?", [$e]];
+    }
+    return empresaWhere($col);
+}
+
+// Siembra el catálogo estándar (5 EPP + tallas) para una empresa que aún no lo
+// tiene. Se llama al crear la empresa y de forma perezosa al listar por empresa.
+function eppSeedEmpresa(int $empresaId): void {
+    if ($empresaId <= 0) return;
+    try {
+        $nT = (int)(db()->fetchOne("SELECT COUNT(*) c FROM epp_tipos WHERE empresa_id = ?", [$empresaId])['c'] ?? 0);
+        if ($nT === 0) {
+            db()->query(
+                "INSERT INTO epp_tipos (empresa_id, nombre, categoria, norma_tecnica, vida_util_dias, stock_minimo, unidad) VALUES
+                 (?, 'Casco', 'Cabeza', 'ANSI Z89.1', 365, 5, 'unidad'),
+                 (?, 'Chaleco reflectivo', 'Alta visibilidad', 'EN ISO 20471', 180, 5, 'unidad'),
+                 (?, 'Zapatos de seguridad', 'Pies', 'ISO 20345', 365, 5, 'par'),
+                 (?, 'Lentes', 'Ojos', 'ANSI Z87.1', 90, 10, 'unidad'),
+                 (?, 'Guantes', 'Manos', 'EN 388', 60, 10, 'par')",
+                [$empresaId, $empresaId, $empresaId, $empresaId, $empresaId]
+            );
+        }
+        $nS = (int)(db()->fetchOne("SELECT COUNT(*) c FROM epp_tallas WHERE empresa_id = ?", [$empresaId])['c'] ?? 0);
+        if ($nS === 0) {
+            db()->query(
+                "INSERT INTO epp_tallas (empresa_id, nombre, orden) VALUES
+                 (?, 'Única', 1), (?, 'XS', 2), (?, 'S', 3), (?, 'M', 4), (?, 'L', 5), (?, 'XL', 6), (?, 'XXL', 7)",
+                [$empresaId, $empresaId, $empresaId, $empresaId, $empresaId, $empresaId, $empresaId]
+            );
+        }
+    } catch (Exception $e) {
+        error_log('[eppSeedEmpresa] ' . $e->getMessage());
     }
 }
 

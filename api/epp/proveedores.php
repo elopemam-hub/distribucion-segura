@@ -9,6 +9,8 @@ require_once __DIR__ . '/../../includes/auth.php';
 
 requireLogin();
 setupEpp();
+setupEmpresas();
+setupUsuarioEmpresas();
 header('Content-Type: application/json; charset=utf-8');
 
 $action = $_GET['action'] ?? $_POST['action'] ?? 'list';
@@ -38,14 +40,18 @@ try {
 function listar() {
     $incluirInactivos = ($_GET['todos'] ?? '') === '1';
     $where = $incluirInactivos ? '1=1' : 'activo = 1';
+    [$eSql, $eP] = eppEmpresaFiltro('empresa_id');
+    $where .= $eSql;
     $rows = db()->fetchAll(
         "SELECT id, razon_social, ruc, contacto, telefono, email, direccion, certificaciones, activo
-           FROM epp_proveedores WHERE $where ORDER BY razon_social ASC"
+           FROM epp_proveedores WHERE $where ORDER BY razon_social ASC",
+        $eP
     );
     jsonResponse(true, '', $rows);
 }
 
 function guardar() {
+    $emp     = eppRequireEmpresa();
     $id      = (int)($_POST['id'] ?? 0);
     $razon   = trim($_POST['razon_social'] ?? '');
     $ruc     = trim($_POST['ruc'] ?? '');
@@ -68,6 +74,8 @@ function guardar() {
                $email ?: null, $direccion ?: null, $certif ?: null];
 
     if ($id > 0) {
+        $own = db()->fetchOne("SELECT empresa_id FROM epp_proveedores WHERE id = ?", [$id]);
+        if (!$own || (int)$own['empresa_id'] !== $emp) jsonResponse(false, 'Sin acceso a este proveedor.', null, 403);
         db()->query(
             "UPDATE epp_proveedores SET razon_social=?, ruc=?, contacto=?, telefono=?, email=?, direccion=?, certificaciones=?
               WHERE id=?",
@@ -76,9 +84,9 @@ function guardar() {
         jsonResponse(true, 'Proveedor actualizado.', ['id' => $id]);
     } else {
         db()->query(
-            "INSERT INTO epp_proveedores (razon_social, ruc, contacto, telefono, email, direccion, certificaciones)
-             VALUES (?, ?, ?, ?, ?, ?, ?)",
-            $params
+            "INSERT INTO epp_proveedores (empresa_id, razon_social, ruc, contacto, telefono, email, direccion, certificaciones)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            [$emp, ...$params]
         );
         jsonResponse(true, 'Proveedor creado.', ['id' => db()->lastInsertId()]);
     }
@@ -87,6 +95,8 @@ function guardar() {
 function toggle() {
     $id = (int)($_POST['id'] ?? 0);
     if ($id <= 0) jsonResponse(false, 'ID inválido.', null, 422);
+    $own = db()->fetchOne("SELECT empresa_id FROM epp_proveedores WHERE id = ?", [$id]);
+    if (!$own || !empresaEsPermitida($own['empresa_id'] ?? 0)) jsonResponse(false, 'Sin acceso a este proveedor.', null, 403);
     db()->query("UPDATE epp_proveedores SET activo = 1 - activo WHERE id = ?", [$id]);
     $row = db()->fetchOne("SELECT activo FROM epp_proveedores WHERE id = ?", [$id]);
     jsonResponse(true, 'Estado actualizado.', ['activo' => (int)($row['activo'] ?? 0)]);

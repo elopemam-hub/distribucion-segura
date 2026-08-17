@@ -11,6 +11,8 @@ require_once __DIR__ . '/../../includes/auth.php';
 
 requireLogin();
 setupEpp();
+setupEmpresas();
+setupUsuarioEmpresas();
 header('Content-Type: application/json; charset=utf-8');
 
 $action = $_GET['action'] ?? $_POST['action'] ?? 'list';
@@ -51,11 +53,13 @@ function listar() {
         $params[] = $cargo;
     }
     // Solo EPP activos (un tipo desactivado no debe sugerirse).
+    [$eSql, $eP] = eppEmpresaFiltro('m.empresa_id');   // matriz por empresa (silo)
+    $params = array_merge($params, $eP);
     $rows = db()->fetchAll(
         "SELECT m.cargo, m.tipo_epp_id, m.cantidad, m.obligatorio, t.nombre AS tipo_nombre, t.unidad
            FROM epp_puesto_matriz m
            JOIN epp_tipos t ON t.id = m.tipo_epp_id AND t.activo = 1
-          WHERE 1=1 $whereCargo
+          WHERE 1=1 $whereCargo" . $eSql . "
           ORDER BY m.cargo, t.nombre",
         $params
     );
@@ -71,6 +75,7 @@ function listar() {
 // Reemplaza el conjunto de EPP de un cargo: borra las filas del cargo e inserta
 // las nuevas. Todo en una transacción para no dejar el kit a medias.
 function guardarCargo() {
+    $emp   = eppRequireEmpresa();
     $cargo = trim($_POST['cargo'] ?? '');
     if (!in_array($cargo, EPP_CARGOS, true)) jsonResponse(false, 'Cargo inválido.', null, 422);
 
@@ -90,23 +95,23 @@ function guardarCargo() {
     // Verifica que los tipos existan y estén activos.
     if (count($limpio)) {
         $ids = implode(',', array_map('intval', array_keys($limpio)));
-        $validos = db()->fetchAll("SELECT id FROM epp_tipos WHERE id IN ($ids) AND activo = 1");
+        $validos = db()->fetchAll("SELECT id FROM epp_tipos WHERE id IN ($ids) AND activo = 1 AND empresa_id = ?", [$emp]);
         $setValidos = array_column($validos, 'id');
         foreach (array_keys($limpio) as $tid) {
             if (!in_array($tid, $setValidos)) {
-                jsonResponse(false, 'La lista incluye un EPP inexistente o inactivo.', null, 422);
+                jsonResponse(false, 'La lista incluye un EPP que no es de esta empresa.', null, 422);
             }
         }
     }
 
     try {
         db()->beginTransaction();
-        db()->query("DELETE FROM epp_puesto_matriz WHERE cargo = ?", [$cargo]);
+        db()->query("DELETE FROM epp_puesto_matriz WHERE cargo = ? AND empresa_id = ?", [$cargo, $emp]);
         foreach ($limpio as $tid => $d) {
             db()->query(
-                "INSERT INTO epp_puesto_matriz (cargo, tipo_epp_id, cantidad, obligatorio)
-                 VALUES (?, ?, ?, ?)",
-                [$cargo, $tid, $d['cantidad'], $d['obligatorio']]
+                "INSERT INTO epp_puesto_matriz (empresa_id, cargo, tipo_epp_id, cantidad, obligatorio)
+                 VALUES (?, ?, ?, ?, ?)",
+                [$emp, $cargo, $tid, $d['cantidad'], $d['obligatorio']]
             );
         }
         db()->commit();
@@ -121,18 +126,19 @@ function guardarCargo() {
 // Reemplaza TODA la matriz (todos los cargos) en una sola transacción.
 // Recibe: matriz = { cargo: [{tipo_epp_id, cantidad, obligatorio}], ... }
 function guardarTodo() {
+    $emp    = eppRequireEmpresa();
     $matriz = json_decode($_POST['matriz'] ?? '{}', true);
     if (!is_array($matriz)) jsonResponse(false, 'Datos inválidos.', null, 422);
 
-    // Tipos activos válidos (para no insertar EPP inexistentes/inactivos).
-    $validos = array_column(db()->fetchAll("SELECT id FROM epp_tipos WHERE activo = 1"), 'id');
+    // Tipos activos válidos de ESTA empresa (silo).
+    $validos = array_column(db()->fetchAll("SELECT id FROM epp_tipos WHERE activo = 1 AND empresa_id = ?", [$emp]), 'id');
     $validos = array_map('intval', $validos);
 
     $total = 0;
     try {
         db()->beginTransaction();
         foreach (EPP_CARGOS as $cargo) {
-            db()->query("DELETE FROM epp_puesto_matriz WHERE cargo = ?", [$cargo]);
+            db()->query("DELETE FROM epp_puesto_matriz WHERE cargo = ? AND empresa_id = ?", [$cargo, $emp]);
             $lineas = $matriz[$cargo] ?? [];
             if (!is_array($lineas)) continue;
             $vistos = [];
@@ -143,8 +149,8 @@ function guardarTodo() {
                 if ($tid <= 0 || !in_array($tid, $validos, true) || isset($vistos[$tid])) continue;
                 $vistos[$tid] = true;
                 db()->query(
-                    "INSERT INTO epp_puesto_matriz (cargo, tipo_epp_id, cantidad, obligatorio) VALUES (?, ?, ?, ?)",
-                    [$cargo, $tid, $cant, $obl]
+                    "INSERT INTO epp_puesto_matriz (empresa_id, cargo, tipo_epp_id, cantidad, obligatorio) VALUES (?, ?, ?, ?, ?)",
+                    [$emp, $cargo, $tid, $cant, $obl]
                 );
                 $total++;
             }

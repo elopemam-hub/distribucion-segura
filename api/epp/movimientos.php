@@ -13,6 +13,8 @@ require_once __DIR__ . '/../../includes/auth.php';
 
 requireLogin();
 setupEpp();
+setupEmpresas();
+setupUsuarioEmpresas();
 header('Content-Type: application/json; charset=utf-8');
 
 $action = $_GET['action'] ?? $_POST['action'] ?? 'stock';
@@ -43,16 +45,18 @@ try {
 // Stock actual = SUM(cantidad) del kardex, por tipo. LEFT JOIN para incluir
 // tipos sin movimientos (stock 0). Marca bajo_minimo cuando aplica.
 function stock() {
+    [$eSql, $eP] = eppEmpresaFiltro('t.empresa_id');   // stock por empresa (silo)
     $rows = db()->fetchAll(
         "SELECT t.id, t.codigo, t.nombre, t.marca, t.categoria, t.talla, t.consumo_anual,
                 t.norma_tecnica, t.unidad, t.imagen, t.stock_minimo, t.stock_maximo,
                 COALESCE(SUM(m.cantidad), 0) AS stock
            FROM epp_tipos t
            LEFT JOIN epp_movimientos m ON m.tipo_epp_id = t.id
-          WHERE t.activo = 1
+          WHERE t.activo = 1" . $eSql . "
           GROUP BY t.id, t.codigo, t.nombre, t.marca, t.categoria, t.talla, t.consumo_anual,
                    t.norma_tecnica, t.unidad, t.imagen, t.stock_minimo, t.stock_maximo
-          ORDER BY t.nombre ASC, t.talla ASC"
+          ORDER BY t.nombre ASC, t.talla ASC",
+        $eP
     );
     foreach ($rows as &$r) {
         $r['stock']         = (int)$r['stock'];
@@ -93,6 +97,8 @@ function listar() {
     if ($desde !== '') { $where[] = 'm.fecha >= ?'; $params[] = $desde; }
     if ($hasta !== '') { $where[] = 'm.fecha <= ?'; $params[] = $hasta; }
     $whereSql = implode(' AND ', $where);
+    [$eSql, $eP] = eppEmpresaFiltro('t.empresa_id');   // kardex por empresa
+    $whereSql .= $eSql; $params = array_merge($params, $eP);
 
     $rows = db()->fetchAll(
         "SELECT m.id, m.tipo_epp_id, t.nombre AS tipo_nombre, t.unidad, m.tipo_mov, m.cantidad,
@@ -112,6 +118,7 @@ function listar() {
 // Registra un movimiento: inicial | entrada | ajuste.
 // Las salidas NO se registran aquí — se generan desde la entrega a trabajador (Fase 2).
 function registrar() {
+    $emp      = eppRequireEmpresa();
     $tipoEpp  = (int)($_POST['tipo_epp_id'] ?? 0);
     $tipoMov  = trim($_POST['tipo_mov'] ?? 'entrada');
     $cantidad = (int)($_POST['cantidad'] ?? 0);
@@ -124,9 +131,9 @@ function registrar() {
     if (!in_array($tipoMov, ['inicial', 'entrada', 'ajuste'], true)) {
         jsonResponse(false, 'Tipo de movimiento no permitido aquí.', null, 422);
     }
-    // Existe el tipo y está activo
-    $tipo = db()->fetchOne("SELECT id FROM epp_tipos WHERE id = ? AND activo = 1", [$tipoEpp]);
-    if (!$tipo) jsonResponse(false, 'Tipo de EPP inválido.', null, 422);
+    // Existe el tipo, está activo y pertenece a la empresa activa (silo)
+    $tipo = db()->fetchOne("SELECT id FROM epp_tipos WHERE id = ? AND activo = 1 AND empresa_id = ?", [$tipoEpp, $emp]);
+    if (!$tipo) jsonResponse(false, 'Tipo de EPP inválido para esta empresa.', null, 422);
 
     // Sanea la cantidad según el tipo de movimiento
     if ($tipoMov === 'ajuste') {
@@ -164,16 +171,18 @@ function registrar() {
 // Carga masiva de inventario inicial. Filas: [{nombre|tipo_epp_id, cantidad, costo_unitario?}]
 // Resuelve el tipo por nombre (case-insensitive) o por id. Todo en una transacción.
 function importarInicial() {
+    $emp = eppRequireEmpresa();
     $filas = json_decode($_POST['filas'] ?? '[]', true);
     if (!is_array($filas) || !count($filas)) {
         jsonResponse(false, 'No se recibieron filas.', null, 422);
     }
     $fecha = trim($_POST['fecha'] ?? date('Y-m-d'));
 
-    // Índice nombre → id para resolver por nombre
-    $tipos = db()->fetchAll("SELECT id, nombre FROM epp_tipos WHERE activo = 1");
+    // Índice nombre → id, SOLO de los tipos de esta empresa (silo).
+    $tipos = db()->fetchAll("SELECT id, nombre FROM epp_tipos WHERE activo = 1 AND empresa_id = ?", [$emp]);
     $porNombre = [];
-    foreach ($tipos as $t) $porNombre[mb_strtolower(trim($t['nombre']), 'UTF-8')] = (int)$t['id'];
+    $idsValidos = [];
+    foreach ($tipos as $t) { $porNombre[mb_strtolower(trim($t['nombre']), 'UTF-8')] = (int)$t['id']; $idsValidos[(int)$t['id']] = true; }
 
     $ok = 0; $errores = [];
     try {
@@ -186,6 +195,7 @@ function importarInicial() {
                 $tipoId = $porNombre[$clave] ?? 0;
             }
             $fila = $i + 1;
+            if ($tipoId > 0 && !isset($idsValidos[$tipoId])) { $errores[] = "Fila $fila: el EPP no pertenece a esta empresa."; continue; }
             if ($tipoId <= 0)      { $errores[] = "Fila $fila: tipo de EPP no encontrado."; continue; }
             if ($cantidad <= 0)    { $errores[] = "Fila $fila: cantidad inválida.";        continue; }
 

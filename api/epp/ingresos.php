@@ -12,6 +12,8 @@ require_once __DIR__ . '/../../includes/auth.php';
 
 requireLogin();
 setupEpp();
+setupEmpresas();
+setupUsuarioEmpresas();
 header('Content-Type: application/json; charset=utf-8');
 
 $action = $_GET['action'] ?? $_POST['action'] ?? 'list';
@@ -49,6 +51,8 @@ function listar() {
     if ($desde !== '') { $where[] = 'g.fecha >= ?'; $params[] = $desde; }
     if ($hasta !== '') { $where[] = 'g.fecha <= ?'; $params[] = $hasta; }
     $whereSql = implode(' AND ', $where);
+    [$eSql, $eP] = eppEmpresaFiltro('g.empresa_id');   // ingresos por empresa (silo)
+    $whereSql .= $eSql; $params = array_merge($params, $eP);
 
     $rows = db()->fetchAll(
         "SELECT g.id, g.fecha, g.documento_ref, g.observacion, g.estado, g.usuario_nombre,
@@ -82,6 +86,7 @@ function obtener() {
            FROM epp_ingresos g LEFT JOIN epp_proveedores p ON p.id = g.proveedor_id
           WHERE g.id = ?", [$id]);
     if (!$g) jsonResponse(false, 'Ingreso no encontrado.', null, 404);
+    if (!empresaEsPermitida($g['empresa_id'] ?? 0)) jsonResponse(false, 'Sin acceso a este ingreso.', null, 403);
     $g['items'] = db()->fetchAll(
         "SELECT m.tipo_epp_id, t.nombre AS tipo_nombre, t.talla, m.cantidad, m.costo_unitario
            FROM epp_movimientos m JOIN epp_tipos t ON t.id = m.tipo_epp_id
@@ -91,6 +96,7 @@ function obtener() {
 
 // Registra un ingreso: cabecera + una entrada de stock por línea.
 function registrar() {
+    $emp    = eppRequireEmpresa();
     $provId = (int)($_POST['proveedor_id'] ?? 0);
     $docRef = trim($_POST['documento_ref'] ?? '');
     $fecha  = trim($_POST['fecha'] ?? date('Y-m-d'));
@@ -112,20 +118,20 @@ function registrar() {
     }
     if (!count($pedido)) jsonResponse(false, 'No hay cantidades válidas.', null, 422);
 
-    // Verifica que los tipos existan y estén activos.
+    // Verifica que los tipos existan, estén activos y sean de esta empresa (silo).
     $ids = implode(',', array_map('intval', array_keys($pedido)));
-    $validos = array_column(db()->fetchAll("SELECT id FROM epp_tipos WHERE id IN ($ids) AND activo = 1"), 'id');
+    $validos = array_column(db()->fetchAll("SELECT id FROM epp_tipos WHERE id IN ($ids) AND activo = 1 AND empresa_id = ?", [$emp]), 'id');
     foreach (array_keys($pedido) as $tid) {
-        if (!in_array($tid, $validos)) jsonResponse(false, 'La lista incluye un EPP inexistente o inactivo.', null, 422);
+        if (!in_array($tid, $validos)) jsonResponse(false, 'La lista incluye un EPP que no es de esta empresa.', null, 422);
     }
 
     $user = getCurrentUser();
     try {
         db()->beginTransaction();
         db()->query(
-            "INSERT INTO epp_ingresos (proveedor_id, documento_ref, fecha, observacion, usuario_id, usuario_nombre)
-             VALUES (?, ?, ?, ?, ?, ?)",
-            [$provId > 0 ? $provId : null, $docRef ?: null, $fecha, $obs ?: null, $user['id'], $user['nombre'] ?? null]
+            "INSERT INTO epp_ingresos (empresa_id, proveedor_id, documento_ref, fecha, observacion, usuario_id, usuario_nombre)
+             VALUES (?, ?, ?, ?, ?, ?, ?)",
+            [$emp, $provId > 0 ? $provId : null, $docRef ?: null, $fecha, $obs ?: null, $user['id'], $user['nombre'] ?? null]
         );
         $ingresoId = db()->lastInsertId();
 

@@ -141,12 +141,15 @@ function registrar() {
         jsonResponse(false, 'Agrega al menos un EPP a entregar.', null, 422);
     }
 
+    // La entrega se registra dentro de la empresa activa (silo).
+    $emp = eppRequireEmpresa();
+
     // Trabajador: snapshot desde la tabla personal (incluye su empresa).
     $p = db()->fetchOne("SELECT id, dni, nombre, cargo, empresa_id FROM personal WHERE id = ?", [$personalId]);
     if (!$p) jsonResponse(false, 'Trabajador no encontrado.', null, 422);
-    // Restricción por empresa del usuario (Fase 3).
-    if (!empresaEsPermitida($p['empresa_id'] ?? 0)) {
-        jsonResponse(false, 'No puedes registrar entregas para trabajadores fuera de tus empresas.', null, 403);
+    // El trabajador debe pertenecer a la empresa activa.
+    if ((int)($p['empresa_id'] ?? 0) !== $emp) {
+        jsonResponse(false, 'El trabajador no pertenece a la empresa seleccionada.', null, 422);
     }
 
     // Consolida cantidades por tipo (evita duplicar renglones del mismo EPP).
@@ -168,7 +171,8 @@ function registrar() {
     $tipos = db()->fetchAll(
         "SELECT t.id, t.nombre, t.norma_tecnica, t.vida_util_dias, t.activo,
                 COALESCE((SELECT SUM(m.cantidad) FROM epp_movimientos m WHERE m.tipo_epp_id = t.id), 0) AS stock
-           FROM epp_tipos t WHERE t.id IN ($ids)"
+           FROM epp_tipos t WHERE t.id IN ($ids) AND t.empresa_id = ?",
+        [$emp]
     );
     $mapTipo = [];
     foreach ($tipos as $t) $mapTipo[(int)$t['id']] = $t;
