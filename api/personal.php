@@ -11,6 +11,9 @@ require_once __DIR__ . '/../includes/auth.php';
 requireLogin();
 header('Content-Type: application/json; charset=utf-8');
 
+// Auto-provisión de columnas de documentos (DNI, Licencia, Certijoven).
+setupPersonalDocs();
+
 $action = $_GET['action'] ?? $_POST['action'] ?? 'list';
 
 // Acciones que modifican datos requieren CSRF
@@ -147,14 +150,26 @@ function guardar() {
         $fotoNombre = guardarFoto($_FILES['foto'], $dni);
     }
 
+    // Subir documentos si vienen (imagen o PDF): DNI, Licencia, Certijoven.
+    $docs = [];
+    foreach (['doc_dni', 'doc_licencia', 'doc_certijoven'] as $campo) {
+        if (!empty($_FILES[$campo]['tmp_name'])) {
+            $ruta = guardarArchivo($_FILES[$campo], $dni, $campo);
+            if ($ruta) $docs[$campo] = $ruta;
+        }
+    }
+
     if ($id > 0) {
-        // UPDATE
+        // UPDATE — foto y documentos solo se tocan si se subió uno nuevo.
         $sql = "UPDATE personal SET
                     dni=?, nombre=?, cargo=?, empresa=?, telefono=?,
                     fecha_nacimiento=?, fecha_ingreso=?, dni_vencimiento=?,
                     num_licencia=?, categoria_licencia=?, vencimiento_brevete=?,
                     observaciones=?, activo=?, tipo_contrato=?"
              . ($fotoNombre ? ", foto=?" : "")
+             . (isset($docs['doc_dni'])        ? ", doc_dni=?"        : "")
+             . (isset($docs['doc_licencia'])   ? ", doc_licencia=?"   : "")
+             . (isset($docs['doc_certijoven']) ? ", doc_certijoven=?" : "")
              . " WHERE id=?";
         $params = [
             $dni, $nombre, $cargo, $empresa ?: null, $tel ?: null,
@@ -162,7 +177,10 @@ function guardar() {
             $numLicencia ?: null, $catLicencia ?: null, $vencBrevete ?: null,
             $obs ?: null, $activo, $tipoContrato ?: null
         ];
-        if ($fotoNombre) $params[] = $fotoNombre;
+        if ($fotoNombre)                    $params[] = $fotoNombre;
+        if (isset($docs['doc_dni']))        $params[] = $docs['doc_dni'];
+        if (isset($docs['doc_licencia']))   $params[] = $docs['doc_licencia'];
+        if (isset($docs['doc_certijoven'])) $params[] = $docs['doc_certijoven'];
         $params[] = $id;
         db()->query($sql, $params);
         jsonResponse(true, 'Personal actualizado.', ['id' => $id]);
@@ -172,13 +190,15 @@ function guardar() {
             "INSERT INTO personal
                 (dni, nombre, cargo, empresa, telefono, fecha_nacimiento,
                  fecha_ingreso, dni_vencimiento, num_licencia, categoria_licencia,
-                 vencimiento_brevete, foto, observaciones, activo, tipo_contrato)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                 vencimiento_brevete, foto, observaciones, activo, tipo_contrato,
+                 doc_dni, doc_licencia, doc_certijoven)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 $dni, $nombre, $cargo, $empresa ?: null, $tel ?: null,
                 $fechaNac ?: null, $fechaIng ?: null, $dniVenc ?: null,
                 $numLicencia ?: null, $catLicencia ?: null, $vencBrevete ?: null,
-                $fotoNombre, $obs ?: null, $activo, $tipoContrato ?: null
+                $fotoNombre, $obs ?: null, $activo, $tipoContrato ?: null,
+                $docs['doc_dni'] ?? null, $docs['doc_licencia'] ?? null, $docs['doc_certijoven'] ?? null
             ]
         );
         jsonResponse(true, 'Personal creado.', ['id' => db()->lastInsertId()]);
@@ -194,6 +214,50 @@ function eliminar() {
     $aff = db()->query("UPDATE personal SET activo = 0 WHERE id = ?", [$id])->rowCount();
     if ($aff === 0) jsonResponse(false, 'No encontrado.', null, 404);
     jsonResponse(true, 'Personal desactivado.');
+}
+
+// ------------------------------------------------------------
+// Agrega las columnas de documentos si no existen (ALTER idempotente),
+// para no depender de correr SQL manual por SSH.
+function setupPersonalDocs(): void {
+    static $done = false;
+    if ($done) return;
+    $done = true;
+    foreach (['doc_dni', 'doc_licencia', 'doc_certijoven'] as $col) {
+        try {
+            $exists = db()->fetchOne(
+                "SELECT 1 FROM information_schema.columns
+                  WHERE table_schema = DATABASE() AND table_name = 'personal' AND column_name = ?",
+                [$col]
+            );
+            if (!$exists) db()->query("ALTER TABLE personal ADD COLUMN `$col` VARCHAR(255) NULL", []);
+        } catch (Throwable $e) {
+            error_log('[setupPersonalDocs] ' . $e->getMessage());
+        }
+    }
+}
+
+// Sube un documento (imagen o PDF) a uploads/personal/. Devuelve ruta relativa o null.
+function guardarArchivo(array $file, string $dni, string $prefijo): ?string {
+    if ($file['error'] !== UPLOAD_ERR_OK) return null;
+    if ($file['size'] <= 0 || $file['size'] > MAX_FILE_SIZE) return null;
+
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mime  = $finfo->file($file['tmp_name']);
+    $map   = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp', 'application/pdf' => 'pdf'];
+    if (!isset($map[$mime])) return null;
+    // Si es imagen, debe ser decodificable; el PDF se acepta por MIME real.
+    if ($mime !== 'application/pdf' && @getimagesize($file['tmp_name']) === false) return null;
+
+    $dir = __DIR__ . '/../uploads/personal/';
+    if (!is_dir($dir)) mkdir($dir, 0755, true);
+
+    $filename = $prefijo . '_' . preg_replace('/[^0-9]/', '', $dni) . '_' . bin2hex(random_bytes(4)) . '.' . $map[$mime];
+    if (move_uploaded_file($file['tmp_name'], $dir . $filename)) {
+        @chmod($dir . $filename, 0644);
+        return 'personal/' . $filename;
+    }
+    return null;
 }
 
 // ------------------------------------------------------------

@@ -118,6 +118,10 @@ function abrirModalPersonal() {
   document.getElementById('formPersonal').reset();
   document.getElementById('personal_id').value='';
   document.getElementById('modalPersonalTitulo').textContent='Nuevo Personal';
+  ['doc_dni','doc_licencia','doc_certijoven'].forEach(c=>{
+    const link=document.getElementById('personal_'+c+'_link');
+    if (link) { link.style.display='none'; link.removeAttribute('href'); }
+  });
   abrirModal('modalPersonal');
 }
 
@@ -141,6 +145,13 @@ async function editarPersonal(id) {
   document.getElementById('personal_observaciones').value=p.observaciones||'';
   document.getElementById('personal_activo').value=p.activo;
   document.getElementById('personal_tipo_contrato').value=p.tipo_contrato||'';
+  // Enlaces "ver actual" de los documentos ya cargados
+  ['doc_dni','doc_licencia','doc_certijoven'].forEach(c=>{
+    const link=document.getElementById('personal_'+c+'_link');
+    if (!link) return;
+    if (p[c]) { link.href=UPLOAD_URL+p[c]; link.style.display='inline'; }
+    else { link.style.display='none'; link.removeAttribute('href'); }
+  });
   document.getElementById('modalPersonalTitulo').textContent='Editar Personal';
   abrirModal('modalPersonal');
 }
@@ -177,6 +188,10 @@ document.addEventListener('DOMContentLoaded', () => {
     fd.append('tipo_contrato',        document.getElementById('personal_tipo_contrato').value);
     const foto=document.getElementById('personal_foto').files[0];
     if (foto) fd.append('foto',foto);
+    ['doc_dni','doc_licencia','doc_certijoven'].forEach(c=>{
+      const f=document.getElementById('personal_'+c).files[0];
+      if (f) fd.append(c,f);
+    });
     try {
       const r=await fetch('api/personal.php',{method:'POST',body:fd});
       const data=await r.json();

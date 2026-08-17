@@ -1554,7 +1554,7 @@ $csrf = csrfToken();
         <p style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--gris-400);letter-spacing:.08em;margin:18px 0 10px">Otros</p>
         <div class="form-grid">
           <div class="form-group" style="grid-column:1/-1">
-            <label class="form-label">Foto</label>
+            <label class="form-label">Foto perfil</label>
             <input type="file" class="form-control" id="personal_foto" accept="image/*">
             <small style="color:var(--gris-400)">JPG, PNG, WEBP · Máx 5MB</small>
           </div>
@@ -1563,6 +1563,23 @@ $csrf = csrfToken();
             <textarea class="form-control" id="personal_observaciones" rows="2"></textarea>
           </div>
         </div>
+
+        <p style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--gris-400);letter-spacing:.08em;margin:18px 0 10px">Documentos</p>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">DNI (archivo) <a id="personal_doc_dni_link" href="#" target="_blank" style="display:none;font-weight:400;font-size:11px;color:var(--primary);margin-left:6px"><i class="fas fa-up-right-from-square"></i> ver actual</a></label>
+            <input type="file" class="form-control" id="personal_doc_dni" accept="image/*,application/pdf">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Licencia (archivo) <a id="personal_doc_licencia_link" href="#" target="_blank" style="display:none;font-weight:400;font-size:11px;color:var(--primary);margin-left:6px"><i class="fas fa-up-right-from-square"></i> ver actual</a></label>
+            <input type="file" class="form-control" id="personal_doc_licencia" accept="image/*,application/pdf">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Certijoven (archivo) <a id="personal_doc_certijoven_link" href="#" target="_blank" style="display:none;font-weight:400;font-size:11px;color:var(--primary);margin-left:6px"><i class="fas fa-up-right-from-square"></i> ver actual</a></label>
+            <input type="file" class="form-control" id="personal_doc_certijoven" accept="image/*,application/pdf">
+          </div>
+        </div>
+        <small style="color:var(--gris-400);display:block;margin-top:4px">Imagen o PDF · Máx 5MB por archivo</small>
 
         <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px">
           <button type="button" class="btn btn-secondary" onclick="cerrarModal('modalPersonal')">Cancelar</button>
