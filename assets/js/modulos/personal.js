@@ -467,8 +467,9 @@ async function importarExcelPersonal(input) {
 let _resumenData = [];
 
 // Campos que se evalúan. cond=true → solo aplica al cargo conductor.
+// file:true → el valor es un archivo subido; el ✓ enlaza al visor.
 const CUMP_CAMPOS = [
-  { k:'foto',                label:'Foto',          cond:false },
+  { k:'foto',                label:'Foto',          cond:false, file:true },
   { k:'telefono',            label:'Teléfono',      cond:false },
   { k:'fecha_nacimiento',    label:'F. Nac.',       cond:false },
   { k:'fecha_ingreso',       label:'F. Ingreso',    cond:false },
@@ -476,11 +477,11 @@ const CUMP_CAMPOS = [
   { k:'num_licencia',        label:'N° Licencia',   cond:true  },
   { k:'categoria_licencia',  label:'Cat. Lic.',     cond:true  },
   { k:'vencimiento_brevete', label:'Venc. Brevete', cond:true  },
-  { k:'doc_dni',             label:'Doc. DNI',      cond:false },
-  { k:'doc_licencia',        label:'Doc. Licencia', cond:true  },
-  { k:'doc_certijoven',      label:'Certijoven',    cond:false },
-  { k:'doc_sctr',            label:'SCTR',          cond:false },
-  { k:'doc_verif_ref',       label:'Verif. Ref.',   cond:false },
+  { k:'doc_dni',             label:'Doc. DNI',      cond:false, file:true },
+  { k:'doc_licencia',        label:'Doc. Licencia', cond:true,  file:true },
+  { k:'doc_certijoven',      label:'Certijoven',    cond:false, file:true },
+  { k:'doc_sctr',            label:'SCTR',          cond:false, file:true },
+  { k:'doc_verif_ref',       label:'Verif. Ref.',   cond:false, file:true },
 ];
 
 // Evalúa una persona: celdas (ok/falta/na) + % de cumplimiento sobre lo aplicable.
@@ -542,9 +543,17 @@ function renderCumplimiento() {
 
   if (!filas.length) { wrap.innerHTML = '<p class="muted" style="text-align:center;padding:28px">Sin resultados.</p>'; return; }
 
-  const icono = e => e === 'ok' ? '<i class="fas fa-check" style="color:var(--verde)"></i>'
-                   : e === 'falta' ? '<i class="fas fa-xmark" style="color:var(--rojo)"></i>'
-                   : '<span style="color:var(--gris-500)">—</span>';
+  // Celda: si es archivo presente, el ✓ enlaza al visor; si no, ícono simple.
+  const celda = (estado, campo, p) => {
+    if (estado === 'ok' && campo.file && p[campo.k]) {
+      const url = (typeof UPLOAD_URL !== 'undefined' ? UPLOAD_URL : 'uploads/') + p[campo.k];
+      return '<a href="#" title="Ver ' + campo.label + '" onclick="verDocumento(\'' + encodeURI(url) + '\');return false;" ' +
+             'style="color:var(--verde)"><i class="fas fa-check"></i></a>';
+    }
+    if (estado === 'ok')    return '<i class="fas fa-check" style="color:var(--verde)"></i>';
+    if (estado === 'falta') return '<i class="fas fa-xmark" style="color:var(--rojo)"></i>';
+    return '<span style="color:var(--gris-500)">—</span>';
+  };
   const head = '<th style="position:sticky;left:0;background:var(--gris-800);z-index:2">Trabajador</th>' +
     CUMP_CAMPOS.map(c => '<th style="text-align:center;font-size:9.5px;white-space:nowrap">' + c.label + '</th>').join('') +
     '<th style="text-align:right">%</th>';
@@ -556,7 +565,7 @@ function renderCumplimiento() {
         '<div style="font-weight:600;color:var(--gris-100)">' + escapeHtml(p.nombre) + '</div>' +
         '<div class="muted" style="font-size:11px">' + escapeHtml(p.dni) + ' · ' + escapeHtml(p.cargo) + '</div>' +
       '</td>' +
-      ev.celdas.map(c => '<td style="text-align:center">' + icono(c.estado) + '</td>').join('') +
+      ev.celdas.map((c, i) => '<td style="text-align:center">' + celda(c.estado, CUMP_CAMPOS[i], p) + '</td>').join('') +
       '<td style="text-align:right;font-weight:700;color:' + col + ';font-variant-numeric:tabular-nums">' + ev.pct + '%</td>' +
     '</tr>';
   }).join('');
