@@ -1590,6 +1590,12 @@ $csrf = csrfToken();
           </div>
         </div>
         <small style="color:var(--gris-400);display:block;margin-top:4px">Imagen o PDF · Máx 5MB por archivo</small>
+        <div id="btnExpedienteWrap" style="display:none;margin-top:12px">
+          <button type="button" class="btn btn-secondary btn-sm" id="btnExpedientePersonal" onclick="descargarExpedientePersonal()">
+            <i class="fas fa-file-pdf"></i> Descargar expediente (PDF)
+          </button>
+          <small style="color:var(--gris-400);margin-left:8px">Une todos los documentos en un solo PDF</small>
+        </div>
 
         <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px">
           <button type="button" class="btn btn-secondary" onclick="cerrarModal('modalPersonal')">Cancelar</button>

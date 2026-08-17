@@ -142,6 +142,7 @@ async function eliminarDocPersonal(campo) {
     const del  = document.getElementById('personal_' + campo + '_del');
     if (link) { link.style.display = 'none'; link.removeAttribute('href'); }
     if (del)  del.style.display = 'none';
+    if (_personalActual) { _personalActual[campo] = null; _actualizarBtnExpediente(_personalActual); }
     cargarPersonal();
   } catch { toast('Error de conexión', 'error'); }
 }
@@ -159,6 +160,105 @@ function verDocumento(url) {
   abrirModal('modalVisorDoc');
 }
 
+// Persona actualmente en edición (para armar su expediente).
+let _personalActual = null;
+
+// Carga pdf-lib bajo demanda (solo al generar un expediente).
+function cargarPdfLib() {
+  if (typeof PDFLib !== 'undefined') return Promise.resolve(true);
+  return new Promise(resolve => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js';
+    s.onload = () => resolve(true);
+    s.onerror = () => resolve(false);
+    document.head.appendChild(s);
+  });
+}
+
+// WEBP → PNG (pdf-lib no incrusta WEBP): se rasteriza vía canvas.
+function _webpAPng(bytes) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(new Blob([bytes], { type: 'image/webp' }));
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement('canvas');
+      c.width = img.naturalWidth; c.height = img.naturalHeight;
+      c.getContext('2d').drawImage(img, 0, 0);
+      c.toBlob(b => { URL.revokeObjectURL(url); b.arrayBuffer().then(resolve).catch(reject); }, 'image/png');
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('webp')); };
+    img.src = url;
+  });
+}
+
+// Une todos los documentos de la persona en un solo PDF y lo descarga.
+async function descargarExpedientePersonal() {
+  const p = _personalActual;
+  if (!p) return;
+
+  const orden = [
+    ['doc_dni','DNI'], ['doc_licencia','Licencia'], ['doc_certijoven','Certijoven'],
+    ['doc_sctr','SCTR'], ['doc_verif_ref','Verificación de referencias']
+  ];
+  const docs = orden.filter(([c]) => p[c]).map(([c,label]) => {
+    const ruta = p[c];
+    return { url: UPLOAD_URL + ruta, label, ext: (ruta.split('.').pop() || '').toLowerCase() };
+  });
+  if (!docs.length) { toast('Esta persona no tiene documentos', 'warning'); return; }
+
+  const btn = document.getElementById('btnExpedientePersonal');
+  const prev = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando…'; }
+  try {
+    if (!(await cargarPdfLib())) { toast('No se pudo cargar el módulo PDF (revisa tu conexión).', 'error'); return; }
+    const { PDFDocument } = PDFLib;
+    const merged = await PDFDocument.create();
+    let incluidos = 0; const fallos = [];
+
+    for (const d of docs) {
+      try {
+        const bytes = await (await fetch(d.url)).arrayBuffer();
+        if (d.ext === 'pdf') {
+          const src = await PDFDocument.load(bytes);
+          const pages = await merged.copyPages(src, src.getPageIndices());
+          pages.forEach(pg => merged.addPage(pg));
+        } else {
+          let imgBytes = bytes, tipo = d.ext;
+          if (tipo === 'webp') { imgBytes = await _webpAPng(bytes); tipo = 'png'; }
+          const img = (tipo === 'png') ? await merged.embedPng(imgBytes) : await merged.embedJpg(imgBytes);
+          const page = merged.addPage([img.width, img.height]);
+          page.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
+        }
+        incluidos++;
+      } catch (e) { fallos.push(d.label); }
+    }
+    if (!incluidos) { toast('No se pudo procesar ningún documento', 'error'); return; }
+
+    const out = await merged.save();
+    const nombre = (p.nombre || 'personal').replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '_');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([out], { type: 'application/pdf' }));
+    a.download = `expediente_${p.dni || ''}_${nombre}.pdf`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast(fallos.length
+      ? `Expediente generado (${incluidos} docs · con error: ${fallos.join(', ')})`
+      : `Expediente generado (${incluidos} documentos)`, fallos.length ? 'warning' : 'success', 6000);
+  } catch (e) {
+    toast('Error al generar el expediente: ' + e.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = prev; }
+  }
+}
+
+// Muestra el botón de expediente si la persona tiene al menos un documento.
+function _actualizarBtnExpediente(p) {
+  const wrap = document.getElementById('btnExpedienteWrap');
+  if (!wrap) return;
+  const tiene = ['doc_dni','doc_licencia','doc_certijoven','doc_sctr','doc_verif_ref'].some(c => p && p[c]);
+  wrap.style.display = tiene ? 'block' : 'none';
+}
+
 function abrirModalPersonal() {
   document.getElementById('formPersonal').reset();
   document.getElementById('personal_id').value='';
@@ -169,6 +269,8 @@ function abrirModalPersonal() {
     const del=document.getElementById('personal_'+c+'_del');
     if (del) del.style.display='none';
   });
+  _personalActual = null;
+  _actualizarBtnExpediente(null);
   togglePersonalLicencia();
   abrirModal('modalPersonal');
 }
@@ -204,6 +306,8 @@ async function editarPersonal(id) {
     }
     if (del) del.style.display = tiene ? 'inline' : 'none';
   });
+  _personalActual = p;
+  _actualizarBtnExpediente(p);
   document.getElementById('modalPersonalTitulo').textContent='Editar Personal';
   togglePersonalLicencia();
   abrirModal('modalPersonal');
