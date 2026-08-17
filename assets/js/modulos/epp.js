@@ -519,7 +519,8 @@ let eppStockMap = {};   // tipo_epp_id -> stock actual (se refresca al abrir el 
 async function cargarEppDashboard() {
   const kpis  = document.getElementById('eppEntKpis');
   const renov = document.getElementById('eppRenovBody');
-  const j = await eppGet('api/epp/entregas.php?action=dashboard');
+  const _egD = (typeof getEmpresaGlobal === 'function') ? getEmpresaGlobal() : '';
+  const j = await eppGet('api/epp/entregas.php?action=dashboard' + (_egD ? '&empresa_id=' + _egD : ''));
   if (!j.success) { toast('No se pudo cargar el panel de entregas', 'error'); return; }
   const { resumen, renovaciones } = j.data;
 
@@ -1119,6 +1120,8 @@ async function eppRepEntregas() {
   if (q) p.set('q', q);
   if (d) p.set('desde', d);
   if (h) p.set('hasta', h);
+  const _egR = (typeof getEmpresaGlobal === 'function') ? getEmpresaGlobal() : '';
+  if (_egR) p.set('empresa_id', _egR);
   const j = await eppGet('api/epp/entregas.php?' + p.toString());
   eppRepEntData = j.success ? (j.data || []) : [];
   const body = document.getElementById('eppRepEntBody');
@@ -1140,7 +1143,8 @@ async function eppRepEntregas() {
 
 async function eppRepVencimientos() {
   const dias = parseInt(document.getElementById('eppRepVenDias').value, 10);
-  const j = await eppGet('api/epp/entregas.php?action=vencimientos&dias=' + (isNaN(dias) ? 30 : dias));
+  const _egV = (typeof getEmpresaGlobal === 'function') ? getEmpresaGlobal() : '';
+  const j = await eppGet('api/epp/entregas.php?action=vencimientos&dias=' + (isNaN(dias) ? 30 : dias) + (_egV ? '&empresa_id=' + _egV : ''));
   eppRepVenData = j.success ? (j.data || []) : [];
   const body = document.getElementById('eppRepVenBody');
   if (!eppRepVenData.length) {

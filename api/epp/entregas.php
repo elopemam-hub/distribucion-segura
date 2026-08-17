@@ -287,25 +287,33 @@ function dashboard() {
     $hoy = date('Y-m-d');
     $mesIni = date('Y-m-01');
 
+    // Filtro opcional por empresa (selector global). Bare = tabla sin alias;
+    // E = consultas con JOIN donde epp_entregas está aliasada como e.
+    $empresaId = trim($_GET['empresa_id'] ?? '');
+    $empBare = $empresaId !== '' ? ' AND empresa_id = ?'   : '';
+    $empE    = $empresaId !== '' ? ' AND e.empresa_id = ?' : '';
+    $empP    = $empresaId !== '' ? [(int)$empresaId]       : [];
+
     $totEntregas = (int)(db()->fetchOne(
-        "SELECT COUNT(*) c FROM epp_entregas WHERE estado='vigente'")['c'] ?? 0);
+        "SELECT COUNT(*) c FROM epp_entregas WHERE estado='vigente'" . $empBare, $empP)['c'] ?? 0);
     $entregasMes = (int)(db()->fetchOne(
-        "SELECT COUNT(*) c FROM epp_entregas WHERE estado='vigente' AND fecha >= ?", [$mesIni])['c'] ?? 0);
+        "SELECT COUNT(*) c FROM epp_entregas WHERE estado='vigente' AND fecha >= ?" . $empBare,
+        array_merge([$mesIni], $empP))['c'] ?? 0);
     $trabajadores = (int)(db()->fetchOne(
         "SELECT COUNT(DISTINCT personal_id) c FROM epp_entregas
-          WHERE estado='vigente' AND personal_id IS NOT NULL")['c'] ?? 0);
+          WHERE estado='vigente' AND personal_id IS NOT NULL" . $empBare, $empP)['c'] ?? 0);
 
     // Renovaciones vencidas o por vencer en los próximos 30 días.
     $vencidas = (int)(db()->fetchOne(
         "SELECT COUNT(*) c FROM epp_entrega_items i
            JOIN epp_entregas e ON e.id = i.entrega_id
-          WHERE e.estado='vigente' AND i.fecha_renovacion IS NOT NULL AND i.fecha_renovacion < ?",
-        [$hoy])['c'] ?? 0);
+          WHERE e.estado='vigente' AND i.fecha_renovacion IS NOT NULL AND i.fecha_renovacion < ?" . $empE,
+        array_merge([$hoy], $empP))['c'] ?? 0);
     $porVencer = (int)(db()->fetchOne(
         "SELECT COUNT(*) c FROM epp_entrega_items i
            JOIN epp_entregas e ON e.id = i.entrega_id
-          WHERE e.estado='vigente' AND i.fecha_renovacion BETWEEN ? AND DATE_ADD(?, INTERVAL 30 DAY)",
-        [$hoy, $hoy])['c'] ?? 0);
+          WHERE e.estado='vigente' AND i.fecha_renovacion BETWEEN ? AND DATE_ADD(?, INTERVAL 30 DAY)" . $empE,
+        array_merge([$hoy, $hoy], $empP))['c'] ?? 0);
 
     // Detalle de próximas renovaciones (últimas por trabajador/EPP).
     $renovaciones = db()->fetchAll(
@@ -315,10 +323,10 @@ function dashboard() {
            FROM epp_entrega_items i
            JOIN epp_entregas e ON e.id = i.entrega_id
           WHERE e.estado='vigente' AND i.fecha_renovacion IS NOT NULL
-            AND i.fecha_renovacion <= DATE_ADD(?, INTERVAL 30 DAY)
+            AND i.fecha_renovacion <= DATE_ADD(?, INTERVAL 30 DAY)" . $empE . "
           ORDER BY i.fecha_renovacion ASC
           LIMIT 100",
-        [$hoy, $hoy]
+        array_merge([$hoy, $hoy], $empP)
     );
 
     jsonResponse(true, '', [
@@ -343,8 +351,10 @@ function reporte() {
     $hasta   = trim($_GET['hasta'] ?? '');
     $incAnul = ($_GET['incluir_anuladas'] ?? '') === '1';
 
+    $empresaId = trim($_GET['empresa_id'] ?? '');
     $where = ['1=1']; $params = [];
     if (!$incAnul) $where[] = "e.estado = 'vigente'";
+    if ($empresaId !== '') { $where[] = 'e.empresa_id = ?'; $params[] = (int)$empresaId; }
     if ($q !== '') {
         $where[] = '(e.trabajador_nombre LIKE ? OR e.trabajador_dni LIKE ?)';
         $params[] = "%$q%"; $params[] = "%$q%";
@@ -375,6 +385,9 @@ function vencimientos() {
     $dias = (int)($_GET['dias'] ?? 30);
     if ($dias < 0) $dias = 30;
     $hoy = date('Y-m-d');
+    $empresaId = trim($_GET['empresa_id'] ?? '');
+    $empE = $empresaId !== '' ? ' AND e.empresa_id = ?' : '';
+    $empP = $empresaId !== '' ? [(int)$empresaId]       : [];
 
     $rows = db()->fetchAll(
         "SELECT e.id AS entrega_id, e.trabajador_nombre, e.trabajador_dni, e.trabajador_cargo,
@@ -383,10 +396,10 @@ function vencimientos() {
            FROM epp_entrega_items i
            JOIN epp_entregas e ON e.id = i.entrega_id
           WHERE e.estado = 'vigente' AND i.fecha_renovacion IS NOT NULL
-            AND i.fecha_renovacion <= DATE_ADD(?, INTERVAL ? DAY)
+            AND i.fecha_renovacion <= DATE_ADD(?, INTERVAL ? DAY)" . $empE . "
           ORDER BY i.fecha_renovacion ASC
           LIMIT 5000",
-        [$hoy, $hoy, $dias]
+        array_merge([$hoy, $hoy, $dias], $empP)
     );
     foreach ($rows as &$r) {
         $d = (int)$r['dias'];

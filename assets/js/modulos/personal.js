@@ -248,6 +248,64 @@ async function descargarExpedientePersonal() {
       page.drawText('Generado el ' + new Date().toLocaleDateString('es-PE'), { x: 40, y: 36, size: 9, font, color: rgb(0.6, 0.62, 0.66) });
     };
 
+    // 'YYYY-MM-DD' → 'DD/MM/YYYY' (sin desfase de zona horaria).
+    const fmt = f => { if (!f) return '—'; const m = String(f).split('-'); return m.length === 3 ? m[2] + '/' + m[1] + '/' + m[0] : f; };
+
+    // Portada A4 con la identidad de la EMPRESA del trabajador + sus datos.
+    const addPortada = async (emp) => {
+      const page = merged.addPage([595.28, 841.89]);
+      const { width, height } = page.getSize();
+      page.drawRectangle({ x: 0, y: height - 150, width, height: 150, color: rgb(0.11, 0.13, 0.17) });
+      let textX = 40;
+      if (emp && emp.logo) {
+        try {
+          const rl = await fetch(UPLOAD_URL + emp.logo);
+          if (rl.ok) {
+            const png = await _imagenAPng(await rl.arrayBuffer(), (emp.logo.split('.').pop() || 'png').toLowerCase());
+            const img = await merged.embedPng(png);
+            const box = 78, sc = Math.min(box / img.width, box / img.height), w = img.width * sc, hh = img.height * sc;
+            page.drawRectangle({ x: 40, y: height - 40 - box, width: box, height: box, color: rgb(1, 1, 1) });
+            page.drawImage(img, { x: 40 + (box - w) / 2, y: height - 40 - box + (box - hh) / 2, width: w, height: hh });
+            textX = 40 + box + 18;
+          }
+        } catch (e) {}
+      }
+      const rs = _win((emp && emp.razon_social) || p.empresa || 'EMPRESA');
+      page.drawText('EXPEDIENTE DE PERSONAL', { x: textX, y: height - 52, size: 10, font, color: rgb(0.96, 0.784, 0) });
+      page.drawText(rs.slice(0, 42), { x: textX, y: height - 80, size: 18, font: fontBold, color: rgb(1, 1, 1) });
+      if (emp && emp.ruc) page.drawText('RUC ' + _win(emp.ruc), { x: textX, y: height - 102, size: 11, font, color: rgb(0.78, 0.8, 0.83) });
+      if (emp && emp.domicilio) page.drawText(_win(emp.domicilio).slice(0, 62), { x: textX, y: height - 120, size: 9, font, color: rgb(0.7, 0.72, 0.76) });
+
+      let y = height - 200;
+      const seccion = (txt) => { page.drawText(txt, { x: 40, y, size: 12, font: fontBold, color: rgb(0.11, 0.13, 0.17) }); page.drawRectangle({ x: 40, y: y - 8, width: 80, height: 2.5, color: rgb(0.96, 0.784, 0) }); y -= 32; };
+      seccion('DATOS DEL TRABAJADOR');
+      const filas = [
+        ['Nombre y apellidos', nom], ['DNI', dni], ['Cargo', _win(p.cargo || '—')],
+        ['Empresa', rs], ['Teléfono', _win(p.telefono || '—')],
+        ['Fecha de ingreso', fmt(p.fecha_ingreso)], ['Fecha de nacimiento', fmt(p.fecha_nacimiento)],
+        ['Vencimiento DNI', fmt(p.dni_vencimiento)],
+      ];
+      if (p.cargo === 'conductor') {
+        filas.push(['N° Licencia', _win(p.num_licencia || '—')], ['Categoría', _win(p.categoria_licencia || '—')], ['Vencimiento brevete', fmt(p.vencimiento_brevete)]);
+      }
+      filas.forEach(([k, v]) => {
+        page.drawText(k, { x: 40, y, size: 10, font, color: rgb(0.42, 0.45, 0.5) });
+        page.drawText(String(v || '—'), { x: 220, y, size: 11, font: fontBold, color: rgb(0.13, 0.15, 0.19) });
+        y -= 23;
+      });
+      y -= 14;
+      seccion('DOCUMENTOS INCLUIDOS');
+      docs.forEach((d, i) => { page.drawText((i + 1) + '.  ' + _win(d.label), { x: 48, y, size: 11, font, color: rgb(0.2, 0.22, 0.26) }); y -= 20; });
+      page.drawText('Generado el ' + new Date().toLocaleDateString('es-PE'), { x: 40, y: 36, size: 9, font, color: rgb(0.6, 0.62, 0.66) });
+    };
+
+    // Trae la empresa del trabajador para la portada (si tiene una asignada).
+    let _emp = null;
+    if (p.empresa_id) {
+      try { const re = await fetch('api/empresas.php?action=get&id=' + p.empresa_id); const de = await re.json(); if (de && de.success) _emp = de.data; } catch (e) {}
+    }
+    await addPortada(_emp);
+
     let incluidos = 0; const fallos = [];
     for (const d of docs) {
       try {
