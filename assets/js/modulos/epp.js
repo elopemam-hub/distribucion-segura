@@ -954,27 +954,64 @@ async function cargarEppEmpresa() {
   const inMax = document.getElementById('epp_pct_max');
   if (inMin) inMin.value = eppPctMin;
   if (inMax) inMax.value = eppPctMax;
+  // Logo de la empresa: preview + botón quitar.
+  eppMostrarLogo(c.emp_logo || '');
+  const fileLogo = document.getElementById('epp_emp_logo');
+  if (fileLogo) fileLogo.value = '';
+}
+
+// Muestra el logo actual (o "sin logo") y el botón quitar.
+function eppMostrarLogo(ruta) {
+  const prev  = document.getElementById('epp_emp_logo_prev');
+  const vacio = document.getElementById('epp_emp_logo_vacio');
+  const quit  = document.getElementById('epp_emp_logo_quitar');
+  if (ruta) {
+    if (prev)  { prev.src = 'uploads/' + ruta + '?t=' + Date.now(); prev.style.display = 'block'; }
+    if (vacio) vacio.style.display = 'none';
+    if (quit)  quit.style.display = 'inline-block';
+  } else {
+    if (prev)  { prev.src = ''; prev.style.display = 'none'; }
+    if (vacio) vacio.style.display = 'inline';
+    if (quit)  quit.style.display = 'none';
+  }
+}
+
+// Preview local del logo al seleccionar archivo (antes de guardar).
+function eppLogoPreview(input) {
+  const f = input.files && input.files[0];
+  if (!f) return;
+  const prev = document.getElementById('epp_emp_logo_prev');
+  const vacio = document.getElementById('epp_emp_logo_vacio');
+  if (prev)  { prev.src = URL.createObjectURL(f); prev.style.display = 'block'; }
+  if (vacio) vacio.style.display = 'none';
+}
+
+async function eppQuitarLogo() {
+  if (!confirm('¿Quitar el logo de la empresa? Se usará el logo por defecto en el PDF.')) return;
+  const j = await eppPost('api/epp/ajustes.php?action=delete_logo', {});
+  if (!j.success) { toast(j.message || 'Error', 'error'); return; }
+  toast('Logo eliminado', 'success');
+  const fl = document.getElementById('epp_emp_logo'); if (fl) fl.value = '';
+  eppMostrarLogo('');
 }
 
 async function eppGuardarEmpresa() {
   const val = id => document.getElementById(id)?.value || '';
-  const j = await eppPost('api/epp/ajustes.php?action=save', {
-    emp_razon_social: val('epp_emp_razon_social'),
-    emp_ruc:          val('epp_emp_ruc'),
-    emp_actividad:    val('epp_emp_actividad'),
-    emp_num_trab:     val('epp_emp_num_trab'),
-    emp_domicilio:    val('epp_emp_domicilio'),
-    emp_responsable:  val('epp_emp_responsable'),
-    ct_nombre:        val('epp_ct_nombre'),
-    ct_domicilio:     val('epp_ct_domicilio'),
-    ct_responsable:   val('epp_ct_responsable'),
-    ct_num_trab:      val('epp_ct_num_trab'),
-    doc_codigo:       val('epp_doc_codigo'),
-    doc_version:      val('epp_doc_version'),
-    doc_fecha:        val('epp_doc_fecha'),
-  });
+  const fd = new FormData();
+  fd.append('csrf_token', CSRF_TOKEN);
+  [['emp_razon_social','epp_emp_razon_social'],['emp_ruc','epp_emp_ruc'],['emp_actividad','epp_emp_actividad'],
+   ['emp_num_trab','epp_emp_num_trab'],['emp_domicilio','epp_emp_domicilio'],['emp_responsable','epp_emp_responsable'],
+   ['ct_nombre','epp_ct_nombre'],['ct_domicilio','epp_ct_domicilio'],['ct_responsable','epp_ct_responsable'],
+   ['ct_num_trab','epp_ct_num_trab'],['doc_codigo','epp_doc_codigo'],['doc_version','epp_doc_version'],
+   ['doc_fecha','epp_doc_fecha']].forEach(([k,id]) => fd.append(k, val(id)));
+  const logo = document.getElementById('epp_emp_logo')?.files[0];
+  if (logo) fd.append('emp_logo', logo);
+
+  const r = await fetch('api/epp/ajustes.php?action=save', { method: 'POST', body: fd });
+  const j = await r.json().catch(() => ({ success: false, message: 'Respuesta inválida del servidor.' }));
   if (!j.success) { toast(j.message || 'Error', 'error'); return; }
   toast(j.message, 'success');
+  cargarEppEmpresa();   // refresca el preview con el logo guardado
 }
 
 // ══════════════ CONFIGURACIÓN: matriz de EPP por puesto ══════════════

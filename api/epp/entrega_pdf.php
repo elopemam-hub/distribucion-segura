@@ -44,9 +44,22 @@ $fmtFecha = function ($f) {
     return $ts ? date('d/m/Y', $ts) : $f;
 };
 
-// Logo de la app (incrustado en base64).
-$logoPath = __DIR__ . '/../../assets/img/logo-camion.png';
-$logo = is_file($logoPath) ? 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath)) : '';
+// Logo: el de la empresa configurado en EPP → Configuración (uploads/epp/),
+// y si no hay, el logo por defecto de la app.
+$logo = '';
+$logoEmp = $cfg['emp_logo'] ?? '';
+if ($logoEmp) {
+    $p = __DIR__ . '/../../uploads/' . $logoEmp;
+    if (is_file($p)) {
+        $ext  = strtolower(pathinfo($p, PATHINFO_EXTENSION));
+        $mime = ['jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png', 'webp' => 'image/webp'][$ext] ?? 'image/png';
+        $logo = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($p));
+    }
+}
+if ($logo === '') {
+    $logoPath = __DIR__ . '/../../assets/img/logo-camion.png';
+    if (is_file($logoPath)) $logo = 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath));
+}
 
 $nData = count($items);
 $minRows = 6;                       // filas mínimas (aspecto de formulario)

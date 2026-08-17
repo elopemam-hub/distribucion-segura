@@ -16,15 +16,15 @@ header('Content-Type: application/json; charset=utf-8');
 
 $action = $_GET['action'] ?? $_POST['action'] ?? 'get';
 
-// Claves permitidas (whitelist) — mismas que se siembran en setupEpp().
+// Claves permitidas (whitelist). emp_logo se gestiona por archivo (no texto).
 const EPP_CONFIG_KEYS = [
     'emp_razon_social', 'emp_ruc', 'emp_domicilio', 'emp_actividad', 'emp_num_trab', 'emp_responsable',
     'ct_nombre', 'ct_domicilio', 'ct_responsable', 'ct_num_trab',
-    'doc_codigo', 'doc_version', 'doc_fecha',
+    'doc_codigo', 'doc_version', 'doc_fecha', 'emp_logo',
     'stock_min_pct', 'stock_max_pct',
 ];
 
-if ($action === 'save') {
+if (in_array($action, ['save', 'delete_logo'], true)) {
     requireCsrf();
     $user = getCurrentUser();
     if (!in_array($user['rol'], ['administrador', 'supervisor'])) {
@@ -34,11 +34,12 @@ if ($action === 'save') {
 
 try {
     switch ($action) {
-        case 'get':  obtener();  break;
-        case 'save': guardar();  break;
+        case 'get':         obtener();     break;
+        case 'save':        guardar();     break;
+        case 'delete_logo': eliminarLogo(); break;
         default: jsonResponse(false, 'Acción no válida.', null, 400);
     }
-} catch (Exception $e) {
+} catch (Throwable $e) {
     error_log('[epp/config] ' . $e->getMessage());
     jsonResponse(false, 'Error en la operación.', null, 500);
 }
@@ -57,6 +58,7 @@ function obtener() {
 function guardar() {
     $tocaPct = false;
     foreach (EPP_CONFIG_KEYS as $k) {
+        if ($k === 'emp_logo') continue;          // se gestiona por archivo
         if (!isset($_POST[$k])) continue;
         $valor = trim($_POST[$k]);
         if ($k === 'emp_ruc' && $valor !== '' && !preg_match('/^\d{11}$/', $valor)) {
@@ -89,5 +91,43 @@ function guardar() {
         );
     }
 
+    // Logo de la empresa (opcional): imagen a uploads/epp/. Reemplaza el anterior.
+    if (!empty($_FILES['emp_logo']['tmp_name'])) {
+        $ruta = guardarLogoEpp($_FILES['emp_logo']);
+        if (!$ruta) jsonResponse(false, 'El logo debe ser una imagen (JPG/PNG/WEBP) de máx 5MB.', null, 422);
+        $ant = db()->fetchOne("SELECT valor FROM epp_config WHERE clave='emp_logo'")['valor'] ?? '';
+        if ($ant && is_file(__DIR__ . '/../../uploads/' . $ant)) @unlink(__DIR__ . '/../../uploads/' . $ant);
+        db()->query("INSERT INTO epp_config (clave, valor) VALUES ('emp_logo', ?)
+                     ON DUPLICATE KEY UPDATE valor = VALUES(valor)", [$ruta]);
+    }
+
     jsonResponse(true, 'Configuración guardada.');
+}
+
+// Elimina el logo de la empresa (config a '' y borra el archivo).
+function eliminarLogo() {
+    $ant = db()->fetchOne("SELECT valor FROM epp_config WHERE clave='emp_logo'")['valor'] ?? '';
+    if ($ant && is_file(__DIR__ . '/../../uploads/' . $ant)) @unlink(__DIR__ . '/../../uploads/' . $ant);
+    db()->query("INSERT INTO epp_config (clave, valor) VALUES ('emp_logo', '')
+                 ON DUPLICATE KEY UPDATE valor = ''");
+    jsonResponse(true, 'Logo eliminado.');
+}
+
+// Sube el logo (solo imagen) a uploads/epp/. Devuelve ruta relativa o null.
+function guardarLogoEpp(array $file): ?string {
+    if ($file['error'] !== UPLOAD_ERR_OK) return null;
+    if ($file['size'] <= 0 || $file['size'] > MAX_FILE_SIZE) return null;
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mime  = $finfo->file($file['tmp_name']);
+    $map   = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
+    if (!isset($map[$mime])) return null;
+    if (@getimagesize($file['tmp_name']) === false) return null;
+    $dir = __DIR__ . '/../../uploads/epp/';
+    if (!is_dir($dir)) mkdir($dir, 0755, true);
+    $filename = 'logo_' . bin2hex(random_bytes(6)) . '.' . $map[$mime];
+    if (move_uploaded_file($file['tmp_name'], $dir . $filename)) {
+        @chmod($dir . $filename, 0644);
+        return 'epp/' . $filename;
+    }
+    return null;
 }

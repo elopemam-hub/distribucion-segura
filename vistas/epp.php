@@ -385,6 +385,18 @@
                 <label class="form-label">Domicilio</label>
                 <input type="text" class="form-control" id="epp_emp_domicilio">
               </div>
+              <div class="form-group" style="grid-column:1/-1">
+                <label class="form-label">Logo de la empresa <span style="font-weight:400;color:var(--gris-400)">· aparece en el registro PDF</span></label>
+                <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+                  <div style="width:120px;height:56px;border:1px solid var(--gris-600);border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden">
+                    <img id="epp_emp_logo_prev" src="" alt="" style="max-width:100%;max-height:100%;object-fit:contain;display:none">
+                    <span id="epp_emp_logo_vacio" style="color:#999;font-size:11px">Sin logo</span>
+                  </div>
+                  <input type="file" class="form-control" id="epp_emp_logo" accept="image/png,image/jpeg,image/webp" style="max-width:280px;padding:7px" onchange="eppLogoPreview(this)">
+                  <button type="button" class="btn btn-danger btn-sm" id="epp_emp_logo_quitar" onclick="eppQuitarLogo()" style="display:none"><i class="fas fa-trash"></i> Quitar logo</button>
+                </div>
+                <small style="color:var(--gris-400)">PNG, JPG o WEBP · Máx 5MB. Se guarda al pulsar "Guardar datos".</small>
+              </div>
             </div>
 
             <p style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--gris-400);letter-spacing:.06em;margin:14px 0 10px">Datos del centro de trabajo</p>
