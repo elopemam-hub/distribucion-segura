@@ -46,6 +46,12 @@ define('DB_PASS', 'TuPasswordAqui');        // ← tu contraseña
 define('DB_NAME', 'u123456789_bd');         // ← nombre de tu BD
 define('DEBUG_MODE', false);
 
+// Integración con el proyecto de vigilancia (mismo servidor MySQL).
+// El campo Placa/Unidad de Inspecciones autocompleta desde esta BD.
+// El usuario de BD de arriba debe tener SELECT sobre ella. Si no aplica,
+// déjalo comentado y la Inspección seguirá funcionando con texto libre.
+// define('VIGILANCIA_DB', 'u248634042_bdvigilancia');
+
 // ============================================================
 // NO MODIFIQUES NADA DE AQUÍ HACIA ABAJO
 // ============================================================

@@ -373,9 +373,13 @@ $csrf = csrfToken();
         </div>
         <div class="card-body">
           <div class="form-grid">
-            <div class="form-group">
+            <div class="form-group" style="position:relative">
               <label class="form-label">Placa / Unidad *</label>
-              <input type="text" class="form-control" id="f_unidad" placeholder="Ej: ABC-123" required style="text-transform:uppercase">
+              <input type="text" class="form-control" id="f_unidad" placeholder="Ej: ABC-123" required style="text-transform:uppercase"
+                     autocomplete="off" oninput="buscarVehiculo(this.value)"
+                     onblur="setTimeout(()=>{const b=document.getElementById('vehiculoAC');if(b)b.style.display='none'},200)">
+              <div class="autocomplete-box" id="vehiculoAC"></div>
+              <div id="vehiculoInfo" style="font-size:11.5px;color:var(--gris-400);margin-top:4px;display:none"></div>
             </div>
             <div class="form-group">
               <label class="form-label">Fecha *</label>

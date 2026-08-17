@@ -3,6 +3,53 @@
 // Listado, detalle, guardar, eliminar, PDF, Excel
 // ============================================================
 
+// ── Autocompletar Placa/Unidad desde el catálogo de vehículos (BD vigilancia) ──
+// Si la BD de vigilancia no es accesible, el endpoint devuelve vacío y el campo
+// sigue funcionando como texto libre (sin ruido).
+let _vehTimer = null;
+function buscarVehiculo(q) {
+  const box  = document.getElementById('vehiculoAC');
+  const info = document.getElementById('vehiculoInfo');
+  clearTimeout(_vehTimer);
+  if (info) info.style.display = 'none';
+  q = (q || '').trim();
+  if (!box) return;
+  if (q.length < 2) { box.style.display = 'none'; box.innerHTML = ''; return; }
+  _vehTimer = setTimeout(async () => {
+    try {
+      const r = await fetch('api/vehiculos.php?action=buscar&q=' + encodeURIComponent(q));
+      const j = await r.json();
+      const rows = (j && j.success) ? (j.data || []) : [];
+      if (!rows.length) { box.style.display = 'none'; box.innerHTML = ''; return; }
+      const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      const q2  = s => esc(s).replace(/'/g, "\\'");
+      box.innerHTML = rows.map(v => {
+        const det = [v.tipo, v.marca, v.modelo, v.anio].filter(Boolean).join(' · ');
+        return `<div class="auto-item" onmousedown="seleccionarVehiculo('${q2(v.placa)}','${q2(det)}','${q2(v.estado || '')}')">
+          <div style="font-weight:600">${esc(v.placa)}</div>
+          <div style="font-size:11px;color:var(--gris-400)">${esc(det)}${v.estado ? ' · ' + esc(v.estado) : ''}</div>
+        </div>`;
+      }).join('');
+      box.style.display = 'block';
+    } catch { box.style.display = 'none'; }
+  }, 250);
+}
+
+function seleccionarVehiculo(placa, detalle, estado) {
+  const el = document.getElementById('f_unidad');
+  if (el) el.value = placa;
+  const box = document.getElementById('vehiculoAC');
+  if (box) box.style.display = 'none';
+  const info = document.getElementById('vehiculoInfo');
+  if (info && (detalle || estado)) {
+    const badge = estado
+      ? ` · <strong style="color:${/dispon/i.test(estado) ? 'var(--verde)' : 'var(--naranja)'}">${estado}</strong>`
+      : '';
+    info.innerHTML = `<i class="fas fa-truck" style="color:var(--primary)"></i> ${detalle}${badge}`;
+    info.style.display = 'block';
+  }
+}
+
 // ── Submit formulario inspección ──────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   const formInsp = document.getElementById('formInspeccion');
