@@ -100,6 +100,7 @@ function showPage(page) {
   if (page === 'matriz' && typeof initMatriz === 'function') initMatriz();
   if (page === 'epp' && typeof initEpp === 'function') initEpp();
   if (page === 'vehiculos' && typeof initVehiculos === 'function') initVehiculos();
+  if (page === 'empresas' && typeof initEmpresas === 'function') initEmpresas();
 }
 
 function switchInspeccionTab(tab) {

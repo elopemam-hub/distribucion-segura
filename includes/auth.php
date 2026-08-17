@@ -115,11 +115,11 @@ function requireCsrf(): void {
 // PERMISOS POR MÓDULO
 // ============================================================
 
-const MODULOS_VALIDOS = ['dashboard', 'inspecciones', 'personal', 'reportes', 'matriz', 'amonestaciones', 'geocercas', 'evaluaciones', 'kpi_analytics', 'epp', 'vehiculos'];
+const MODULOS_VALIDOS = ['dashboard', 'inspecciones', 'personal', 'reportes', 'matriz', 'amonestaciones', 'geocercas', 'evaluaciones', 'kpi_analytics', 'epp', 'vehiculos', 'empresas'];
 
 // Defaults de acceso según rol (cuando el usuario no tiene filas en permisos)
 const ROL_DEFAULTS = [
-    'supervisor' => ['dashboard', 'inspecciones', 'personal', 'reportes', 'matriz', 'amonestaciones', 'geocercas', 'evaluaciones', 'kpi_analytics', 'epp', 'vehiculos'],
+    'supervisor' => ['dashboard', 'inspecciones', 'personal', 'reportes', 'matriz', 'amonestaciones', 'geocercas', 'evaluaciones', 'kpi_analytics', 'epp', 'vehiculos', 'empresas'],
     'inspector'  => ['dashboard', 'inspecciones', 'evaluaciones'],
 ];
 
@@ -404,6 +404,72 @@ function setupEpp(): void {
         if (!$exists) db()->query("ALTER TABLE epp_entregas ADD COLUMN firma_entrega MEDIUMTEXT NULL AFTER firma_trabajador", []);
     } catch (Exception $e) {
         error_log('[setupEpp] ' . $e->getMessage());
+    }
+}
+
+// ============================================================
+// AUTO-PROVISIÓN: MÓDULO EMPRESAS (multi-empresa, Fase 1)
+// Se administran varias empresas tercerizadoras (Ley 29245), cada una con su
+// propia identidad legal (RUC, logo, cabecera). Cada trabajador pertenece a una
+// empresa (personal.empresa_id). Idempotente, sin SQL manual en el deploy.
+// ============================================================
+function setupEmpresas(): void {
+    try {
+        db()->query("CREATE TABLE IF NOT EXISTS empresas (
+            id            INT AUTO_INCREMENT PRIMARY KEY,
+            razon_social  VARCHAR(200) NOT NULL,
+            ruc           VARCHAR(20)  NULL,
+            tipo          VARCHAR(40)  NOT NULL DEFAULT 'tercerizacion',
+            domicilio     VARCHAR(255) NULL,
+            actividad     VARCHAR(200) NULL,
+            responsable   VARCHAR(150) NULL,
+            telefono      VARCHAR(30)  NULL,
+            email         VARCHAR(150) NULL,
+            logo          VARCHAR(255) NULL,
+            color         VARCHAR(20)  NULL,
+            activo        TINYINT(1)   NOT NULL DEFAULT 1,
+            creado_en     DATETIME     DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY uk_empresa_ruc (ruc)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", []);
+
+        // Enlace del trabajador a su empresa (idempotente).
+        $existe = db()->fetchOne(
+            "SELECT 1 FROM information_schema.columns
+              WHERE table_schema = DATABASE() AND table_name = 'personal' AND column_name = 'empresa_id'"
+        );
+        if (!$existe) db()->query("ALTER TABLE personal ADD COLUMN empresa_id INT NULL AFTER empresa", []);
+
+        // Migración: convierte los textos distintos de personal.empresa en filas de
+        // empresas y enlaza empresa_id. Solo corre si aún hay trabajadores con
+        // empresa (texto) pero sin empresa_id — así es segura de repetir.
+        $pendientes = (int)(db()->fetchOne(
+            "SELECT COUNT(*) c FROM personal
+              WHERE empresa IS NOT NULL AND TRIM(empresa) <> '' AND empresa_id IS NULL"
+        )['c'] ?? 0);
+        if ($pendientes > 0) {
+            $nombres = db()->fetchAll(
+                "SELECT DISTINCT TRIM(empresa) AS nom FROM personal
+                  WHERE empresa IS NOT NULL AND TRIM(empresa) <> '' AND empresa_id IS NULL"
+            );
+            foreach ($nombres as $n) {
+                $nom = $n['nom'];
+                if ($nom === '') continue;
+                $emp = db()->fetchOne("SELECT id FROM empresas WHERE razon_social = ?", [$nom]);
+                if ($emp) {
+                    $empId = (int)$emp['id'];
+                } else {
+                    db()->query("INSERT INTO empresas (razon_social, tipo) VALUES (?, 'tercerizacion')", [$nom]);
+                    $empId = (int)db()->lastInsertId();
+                }
+                db()->query(
+                    "UPDATE personal SET empresa_id = ?
+                      WHERE empresa_id IS NULL AND TRIM(empresa) = ?",
+                    [$empId, $nom]
+                );
+            }
+        }
+    } catch (Exception $e) {
+        error_log('[setupEmpresas] ' . $e->getMessage());
     }
 }
 

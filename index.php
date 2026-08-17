@@ -147,7 +147,7 @@ $csrf = csrfToken();
     </a>
 
 
-    <?php if (tieneAccesoModulo('inspecciones') || tieneAccesoModulo('personal') || tieneAccesoModulo('geocercas') || tieneAccesoModulo('vehiculos')): ?>
+    <?php if (tieneAccesoModulo('inspecciones') || tieneAccesoModulo('personal') || tieneAccesoModulo('geocercas') || tieneAccesoModulo('vehiculos') || tieneAccesoModulo('empresas')): ?>
     <div class="nav-section-title" style="margin-top:12px">Operaciones</div>
     <?php endif; ?>
     <?php if (tieneAccesoModulo('inspecciones')): ?>
@@ -158,6 +158,11 @@ $csrf = csrfToken();
     <?php if (tieneAccesoModulo('personal')): ?>
     <a class="nav-item" data-page="personal" onclick="showPage('personal')">
       <i class="fas fa-users-gear"></i> Personal
+    </a>
+    <?php endif; ?>
+    <?php if (tieneAccesoModulo('empresas')): ?>
+    <a class="nav-item" data-page="empresas" onclick="showPage('empresas')">
+      <i class="fas fa-building"></i> Empresas
     </a>
     <?php endif; ?>
     <?php if (tieneAccesoModulo('geocercas')): ?>
@@ -773,6 +778,8 @@ $csrf = csrfToken();
           <div class="filter-bar">
             <div class="form-group"><label class="form-label">Buscar</label>
               <input type="text" class="form-control" id="cumpBuscar" placeholder="Nombre o DNI" oninput="renderCumplimiento()"></div>
+            <div class="form-group"><label class="form-label">Empresa</label>
+              <select class="form-control" id="cumpEmpresa" onchange="renderCumplimiento()"><option value="">Todas</option></select></div>
             <div class="form-group"><label class="form-label">Cargo</label>
               <select class="form-control" id="cumpCargo" onchange="renderCumplimiento()">
                 <option value="">Todos</option><option value="conductor">Conductor</option><option value="reparto">Reparto</option>
@@ -804,6 +811,8 @@ $csrf = csrfToken();
                 <option value="mes">Este mes</option>
                 <option value="todos">Todo el año</option>
               </select></div>
+            <div class="form-group"><label class="form-label">Empresa</label>
+              <select class="form-control" id="cumpleEmpresa" onchange="renderCumpleanos()"><option value="">Todas</option></select></div>
             <div class="form-group"><label class="form-label">Buscar</label>
               <input type="text" class="form-control" id="cumpleBuscar" placeholder="Nombre" oninput="renderCumpleanos()"></div>
           </div>
@@ -1208,6 +1217,10 @@ $csrf = csrfToken();
   <?php require_once __DIR__ . '/vistas/epp.php'; ?>
   <?php endif; ?>
 
+  <?php if (tieneAccesoModulo('empresas')): ?>
+  <?php require_once __DIR__ . '/vistas/empresas.php'; ?>
+  <?php endif; ?>
+
   <?php if (tieneAccesoModulo('vehiculos')): ?>
   <?php require_once __DIR__ . '/vistas/vehiculos.php'; ?>
   <?php endif; ?>
@@ -1547,7 +1560,9 @@ $csrf = csrfToken();
           </div>
           <div class="form-group">
             <label class="form-label">Empresa</label>
-            <input type="text" class="form-control" id="personal_empresa" maxlength="100" placeholder="DICORJES E.I.R.L.">
+            <select class="form-control" id="personal_empresa_id">
+              <option value="">— Sin asignar —</option>
+            </select>
           </div>
           <div class="form-group">
             <label class="form-label">Teléfono</label>
@@ -1783,6 +1798,7 @@ $csrf = csrfToken();
             <label class="modulo-check"><input type="checkbox" value="kpi_analytics" id="mod_kpi_analytics"> <i class="fas fa-chart-line"></i> KPI Analytics</label>
             <label class="modulo-check"><input type="checkbox" value="epp" id="mod_epp"> <i class="fas fa-helmet-safety"></i> EPP</label>
             <label class="modulo-check"><input type="checkbox" value="vehiculos" id="mod_vehiculos"> <i class="fas fa-truck"></i> Vehículos</label>
+            <label class="modulo-check"><input type="checkbox" value="empresas" id="mod_empresas"> <i class="fas fa-building"></i> Empresas</label>
           </div>
           <p style="font-size:11px;color:var(--gris-400);margin-top:8px"><i class="fas fa-info-circle"></i> Dashboard siempre visible. Desmarca todo para usar defaults del rol.</p>
         </div>
@@ -2058,6 +2074,9 @@ $csrf = csrfToken();
 <?php endif; ?>
 <?php if (tieneAccesoModulo('vehiculos')): ?>
 <script src="assets/js/modulos/vehiculos.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/vehiculos.js') ?>"></script>
+<?php endif; ?>
+<?php if (tieneAccesoModulo('empresas')): ?>
+<script src="assets/js/modulos/empresas.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/empresas.js') ?>"></script>
 <?php endif; ?>
 <?php if (tieneAccesoModulo('kpi_analytics')): ?>
 <script src="assets/js/modulos/kpi_datasets.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/kpi_datasets.js') ?>"></script>

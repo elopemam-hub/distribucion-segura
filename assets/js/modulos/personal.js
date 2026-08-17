@@ -312,6 +312,7 @@ function abrirModalPersonal() {
   });
   _personalActual = null;
   _actualizarBtnExpediente(null);
+  if (typeof cargarEmpresasSelect === 'function') cargarEmpresasSelect('personal_empresa_id', '');
   togglePersonalLicencia();
   abrirModal('modalPersonal');
 }
@@ -325,7 +326,7 @@ async function editarPersonal(id) {
   document.getElementById('personal_dni').value=p.dni;
   document.getElementById('personal_nombre').value=p.nombre;
   document.getElementById('personal_cargo').value=p.cargo;
-  document.getElementById('personal_empresa').value=p.empresa||'';
+  if (typeof cargarEmpresasSelect === 'function') cargarEmpresasSelect('personal_empresa_id', p.empresa_id || '');
   document.getElementById('personal_telefono').value=p.telefono||'';
   document.getElementById('personal_fecha_nacimiento').value=p.fecha_nacimiento||'';
   document.getElementById('personal_fecha_ingreso').value=p.fecha_ingreso||'';
@@ -373,7 +374,7 @@ document.addEventListener('DOMContentLoaded', () => {
     fd.append('dni',                  document.getElementById('personal_dni').value.trim());
     fd.append('nombre',               document.getElementById('personal_nombre').value.trim());
     fd.append('cargo',                document.getElementById('personal_cargo').value);
-    fd.append('empresa',              document.getElementById('personal_empresa').value.trim());
+    fd.append('empresa_id',           document.getElementById('personal_empresa_id').value);
     fd.append('telefono',             document.getElementById('personal_telefono').value.trim());
     fd.append('fecha_nacimiento',     document.getElementById('personal_fecha_nacimiento').value);
     fd.append('fecha_ingreso',        document.getElementById('personal_fecha_ingreso').value);
@@ -503,8 +504,22 @@ function switchPersonalTab(tab) {
   document.querySelectorAll('.personal-tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('personal-panel-' + tab)?.classList.add('active');
   document.getElementById('personal-btn-' + tab)?.classList.add('active');
-  if (tab === 'cumplimiento') cargarResumenPersonal(renderCumplimiento);
-  if (tab === 'cumpleanos')   cargarResumenPersonal(renderCumpleanos);
+  if (tab === 'cumplimiento') cargarResumenPersonal(() => { _llenarSelectEmpresasResumen(); renderCumplimiento(); });
+  if (tab === 'cumpleanos')   cargarResumenPersonal(() => { _llenarSelectEmpresasResumen(); renderCumpleanos(); });
+}
+
+// Llena los <select> de empresa de Cumplimiento y Cumpleaños con las empresas
+// presentes en el resumen (deriva del propio _resumenData, sin otra llamada).
+function _llenarSelectEmpresasResumen() {
+  const mapa = new Map();
+  _resumenData.forEach(p => { if (p.empresa_id && p.empresa_nombre) mapa.set(String(p.empresa_id), p.empresa_nombre); });
+  const opts = '<option value="">Todas</option>' +
+    Array.from(mapa.entries()).sort((a, b) => a[1].localeCompare(b[1]))
+      .map(([id, nom]) => '<option value="' + id + '">' + escapeHtml(nom) + '</option>').join('');
+  ['cumpEmpresa', 'cumpleEmpresa'].forEach(sid => {
+    const sel = document.getElementById(sid);
+    if (sel) { const prev = sel.value; sel.innerHTML = opts; sel.value = prev; }
+  });
 }
 
 // Carga TODOS los activos (independiente del filtro del listado).
@@ -524,8 +539,10 @@ function renderCumplimiento() {
   const q      = (document.getElementById('cumpBuscar')?.value || '').trim().toLowerCase();
   const cargo  = document.getElementById('cumpCargo')?.value || '';
   const estado = document.getElementById('cumpEstado')?.value || '';
+  const emp    = document.getElementById('cumpEmpresa')?.value || '';
 
   let filas = _resumenData.map(p => ({ p, ev: _cumpEval(p) }));
+  if (emp)   filas = filas.filter(f => String(f.p.empresa_id) === emp);
   if (cargo) filas = filas.filter(f => f.p.cargo === cargo);
   if (q)     filas = filas.filter(f => (f.p.nombre || '').toLowerCase().includes(q) || String(f.p.dni || '').includes(q));
   if (estado === 'completo')   filas = filas.filter(f => f.ev.pct === 100);
@@ -603,9 +620,11 @@ function renderCumpleanos() {
   if (!body) return;
   const rango = document.getElementById('cumpleRango')?.value || '30';
   const q = (document.getElementById('cumpleBuscar')?.value || '').trim().toLowerCase();
+  const emp = document.getElementById('cumpleEmpresa')?.value || '';
   const mesActual = new Date().getMonth() + 1;
 
   let items = _resumenData.map(p => ({ p: p, c: _proxCumple(p.fecha_nacimiento) })).filter(x => x.c);
+  if (emp) items = items.filter(x => String(x.p.empresa_id) === emp);
   if (q) items = items.filter(x => (x.p.nombre || '').toLowerCase().includes(q));
   let filtrados = items;
   if (rango === '30')      filtrados = items.filter(x => x.c.dias <= 30);

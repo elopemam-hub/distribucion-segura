@@ -16,6 +16,8 @@ const PERSONAL_DOC_COLS = ['doc_dni', 'doc_licencia', 'doc_certijoven', 'doc_sct
 
 // Auto-provisión de columnas de documentos.
 setupPersonalDocs();
+// Auto-provisión multi-empresa (crea empresas + personal.empresa_id y migra textos).
+setupEmpresas();
 
 $action = $_GET['action'] ?? $_POST['action'] ?? 'list';
 
@@ -49,30 +51,34 @@ try {
 
 // ============================================================
 function listar() {
-    $q       = trim($_GET['q'] ?? '');
-    $cargo   = trim($_GET['cargo'] ?? '');
-    $activo  = $_GET['activo'] ?? '';
-    $page    = max(1, (int)($_GET['page'] ?? 1));
-    $limit   = min(200, max(10, (int)($_GET['limit'] ?? 50)));
-    $offset  = ($page - 1) * $limit;
+    $q         = trim($_GET['q'] ?? '');
+    $cargo     = trim($_GET['cargo'] ?? '');
+    $activo    = $_GET['activo'] ?? '';
+    $empresaId = $_GET['empresa_id'] ?? '';
+    $page      = max(1, (int)($_GET['page'] ?? 1));
+    $limit     = min(500, max(10, (int)($_GET['limit'] ?? 50)));
+    $offset    = ($page - 1) * $limit;
 
     $where = ['1=1'];
     $params = [];
     if ($q !== '') {
-        $where[] = '(nombre LIKE ? OR dni LIKE ?)';
+        $where[] = '(p.nombre LIKE ? OR p.dni LIKE ?)';
         $params[] = "%$q%";
         $params[] = "%$q%";
     }
-    if ($cargo !== '') { $where[] = 'cargo = ?'; $params[] = $cargo; }
-    if ($activo !== '') { $where[] = 'activo = ?'; $params[] = (int)$activo; }
+    if ($cargo !== '') { $where[] = 'p.cargo = ?'; $params[] = $cargo; }
+    if ($activo !== '') { $where[] = 'p.activo = ?'; $params[] = (int)$activo; }
+    if ($empresaId !== '') { $where[] = 'p.empresa_id = ?'; $params[] = (int)$empresaId; }
     $whereSQL = implode(' AND ', $where);
 
-    $total = db()->fetchOne("SELECT COUNT(*) t FROM personal WHERE $whereSQL", $params)['t'];
+    $total = db()->fetchOne("SELECT COUNT(*) t FROM personal p WHERE $whereSQL", $params)['t'];
     $rows  = db()->fetchAll(
-        "SELECT *,
-                DATEDIFF(dni_vencimiento, CURDATE())     AS dias_vencer_dni,
-                DATEDIFF(vencimiento_brevete, CURDATE()) AS dias_vencer_brevete
-         FROM personal WHERE $whereSQL ORDER BY nombre ASC LIMIT $limit OFFSET $offset",
+        "SELECT p.*, e.razon_social AS empresa_nombre,
+                DATEDIFF(p.dni_vencimiento, CURDATE())     AS dias_vencer_dni,
+                DATEDIFF(p.vencimiento_brevete, CURDATE()) AS dias_vencer_brevete
+         FROM personal p
+         LEFT JOIN empresas e ON e.id = p.empresa_id
+         WHERE $whereSQL ORDER BY p.nombre ASC LIMIT $limit OFFSET $offset",
         $params
     );
 
@@ -126,8 +132,15 @@ function guardar() {
     $dni            = trim($_POST['dni'] ?? '');
     $nombre         = trim($_POST['nombre'] ?? '');
     $cargo          = $_POST['cargo'] ?? 'reparto';
+    $empresaId      = (int)($_POST['empresa_id'] ?? 0);
     $empresa        = trim($_POST['empresa'] ?? '');
     $tel            = trim($_POST['telefono'] ?? '');
+
+    // Si se eligió una empresa registrada, el texto se sincroniza con su razón social.
+    if ($empresaId > 0) {
+        $emp = db()->fetchOne("SELECT razon_social FROM empresas WHERE id = ?", [$empresaId]);
+        if ($emp) $empresa = $emp['razon_social']; else $empresaId = 0;
+    }
     $fechaNac       = $_POST['fecha_nacimiento'] ?? null;
     $fechaIng       = $_POST['fecha_ingreso'] ?? null;
     $dniVenc        = $_POST['dni_vencimiento'] ?? null;
@@ -170,13 +183,13 @@ function guardar() {
             if (isset($docs[$campo])) { $sqlDocs .= ", `$campo`=?"; $paramDocs[] = $docs[$campo]; }
         }
         $sql = "UPDATE personal SET
-                    dni=?, nombre=?, cargo=?, empresa=?, telefono=?,
+                    dni=?, nombre=?, cargo=?, empresa=?, empresa_id=?, telefono=?,
                     fecha_nacimiento=?, fecha_ingreso=?, dni_vencimiento=?,
                     num_licencia=?, categoria_licencia=?, vencimiento_brevete=?,
                     observaciones=?, activo=?, tipo_contrato=?"
              . ($fotoNombre ? ", foto=?" : "") . $sqlDocs . " WHERE id=?";
         $params = [
-            $dni, $nombre, $cargo, $empresa ?: null, $tel ?: null,
+            $dni, $nombre, $cargo, $empresa ?: null, $empresaId ?: null, $tel ?: null,
             $fechaNac ?: null, $fechaIng ?: null, $dniVenc ?: null,
             $numLicencia ?: null, $catLicencia ?: null, $vencBrevete ?: null,
             $obs ?: null, $activo, $tipoContrato ?: null
@@ -190,13 +203,13 @@ function guardar() {
         // INSERT
         db()->query(
             "INSERT INTO personal
-                (dni, nombre, cargo, empresa, telefono, fecha_nacimiento,
+                (dni, nombre, cargo, empresa, empresa_id, telefono, fecha_nacimiento,
                  fecha_ingreso, dni_vencimiento, num_licencia, categoria_licencia,
                  vencimiento_brevete, foto, observaciones, activo, tipo_contrato,
                  doc_dni, doc_licencia, doc_certijoven, doc_sctr, doc_verif_ref)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
-                $dni, $nombre, $cargo, $empresa ?: null, $tel ?: null,
+                $dni, $nombre, $cargo, $empresa ?: null, $empresaId ?: null, $tel ?: null,
                 $fechaNac ?: null, $fechaIng ?: null, $dniVenc ?: null,
                 $numLicencia ?: null, $catLicencia ?: null, $vencBrevete ?: null,
                 $fotoNombre, $obs ?: null, $activo, $tipoContrato ?: null,
