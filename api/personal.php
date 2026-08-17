@@ -20,7 +20,7 @@ setupPersonalDocs();
 $action = $_GET['action'] ?? $_POST['action'] ?? 'list';
 
 // Acciones que modifican datos requieren CSRF
-$mutaciones = ['save', 'delete', 'importar_excel'];
+$mutaciones = ['save', 'delete', 'importar_excel', 'eliminar_doc'];
 if (in_array($action, $mutaciones, true)) {
     requireCsrf();
     // Solo admin/supervisor pueden mutar
@@ -38,6 +38,7 @@ try {
         case 'delete':    eliminar(); break;
         case 'buscar':    buscar(); break;
         case 'importar_excel': importarExcel(); break;
+        case 'eliminar_doc':   eliminarDoc(); break;
         default:
             jsonResponse(false, 'Acción no válida.', null, 400);
     }
@@ -205,6 +206,25 @@ function guardar() {
         );
         jsonResponse(true, 'Personal creado.', ['id' => db()->lastInsertId()]);
     }
+}
+
+// ------------------------------------------------------------
+// Elimina un documento adjunto: pone la columna en NULL y borra el archivo.
+function eliminarDoc() {
+    $id    = (int)($_POST['id'] ?? 0);
+    $campo = $_POST['campo'] ?? '';
+    if ($id <= 0) jsonResponse(false, 'ID inválido.', null, 422);
+    if (!in_array($campo, PERSONAL_DOC_COLS, true)) jsonResponse(false, 'Documento inválido.', null, 422);
+
+    $row = db()->fetchOne("SELECT `$campo` AS ruta FROM personal WHERE id = ?", [$id]);
+    if (!$row) jsonResponse(false, 'No encontrado.', null, 404);
+
+    if (!empty($row['ruta'])) {
+        $file = __DIR__ . '/../uploads/' . $row['ruta'];
+        if (is_file($file)) @unlink($file);
+    }
+    db()->query("UPDATE personal SET `$campo` = NULL WHERE id = ?", [$id]);
+    jsonResponse(true, 'Documento eliminado.');
 }
 
 // ------------------------------------------------------------

@@ -125,6 +125,27 @@ function renderPersonalTabla() {
   }).join('');
 }
 
+// Elimina un documento adjunto (columna a NULL + borra el archivo).
+async function eliminarDocPersonal(campo) {
+  const id = document.getElementById('personal_id').value;
+  if (!id) return;
+  if (!confirm('¿Eliminar este documento? Esta acción no se puede deshacer.')) return;
+  const fd = new FormData();
+  fd.append('action', 'eliminar_doc'); fd.append('csrf_token', CSRF_TOKEN);
+  fd.append('id', id); fd.append('campo', campo);
+  try {
+    const r = await fetch('api/personal.php', { method: 'POST', body: fd });
+    const j = await r.json();
+    if (!j.success) { toast(j.message || 'Error', 'error'); return; }
+    toast('Documento eliminado', 'success');
+    const link = document.getElementById('personal_' + campo + '_link');
+    const del  = document.getElementById('personal_' + campo + '_del');
+    if (link) { link.style.display = 'none'; link.removeAttribute('href'); }
+    if (del)  del.style.display = 'none';
+    cargarPersonal();
+  } catch { toast('Error de conexión', 'error'); }
+}
+
 // Visor de documento en la misma pantalla (imagen o PDF), sin abrir otra página.
 function verDocumento(url) {
   const body = document.getElementById('visorDocBody');
@@ -145,6 +166,8 @@ function abrirModalPersonal() {
   PERSONAL_DOCS.forEach(c=>{
     const link=document.getElementById('personal_'+c+'_link');
     if (link) { link.style.display='none'; link.removeAttribute('href'); }
+    const del=document.getElementById('personal_'+c+'_del');
+    if (del) del.style.display='none';
   });
   togglePersonalLicencia();
   abrirModal('modalPersonal');
@@ -173,9 +196,13 @@ async function editarPersonal(id) {
   // Enlaces "ver actual" de los documentos ya cargados
   PERSONAL_DOCS.forEach(c=>{
     const link=document.getElementById('personal_'+c+'_link');
-    if (!link) return;
-    if (p[c]) { link.href=UPLOAD_URL+p[c]; link.style.display='inline'; }
-    else { link.style.display='none'; link.removeAttribute('href'); }
+    const del=document.getElementById('personal_'+c+'_del');
+    const tiene=!!p[c];
+    if (link) {
+      if (tiene) { link.href=UPLOAD_URL+p[c]; link.style.display='inline'; }
+      else { link.style.display='none'; link.removeAttribute('href'); }
+    }
+    if (del) del.style.display = tiene ? 'inline' : 'none';
   });
   document.getElementById('modalPersonalTitulo').textContent='Editar Personal';
   togglePersonalLicencia();

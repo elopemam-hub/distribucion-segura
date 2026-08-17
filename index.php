@@ -1569,23 +1569,23 @@ $csrf = csrfToken();
         <p style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--gris-400);letter-spacing:.08em;margin:18px 0 10px">Documentos</p>
         <div class="form-grid">
           <div class="form-group">
-            <label class="form-label">DNI (archivo) <a id="personal_doc_dni_link" href="#" onclick="verDocumento(this.href);return false;" style="display:none;font-weight:400;font-size:11px;color:var(--primary);margin-left:6px"><i class="fas fa-eye"></i> ver actual</a></label>
+            <label class="form-label">DNI (archivo) <a id="personal_doc_dni_link" href="#" onclick="verDocumento(this.href);return false;" style="display:none;font-weight:400;font-size:11px;color:var(--primary);margin-left:6px"><i class="fas fa-eye"></i> ver actual</a> <a id="personal_doc_dni_del" href="#" onclick="eliminarDocPersonal('doc_dni');return false;" style="display:none;font-weight:400;font-size:11px;color:var(--rojo);margin-left:8px"><i class="fas fa-trash"></i> quitar</a></label>
             <input type="file" class="form-control" id="personal_doc_dni" accept="image/*,application/pdf">
           </div>
           <div class="form-group" id="personalDocLicenciaWrap">
-            <label class="form-label">Licencia (archivo) <a id="personal_doc_licencia_link" href="#" onclick="verDocumento(this.href);return false;" style="display:none;font-weight:400;font-size:11px;color:var(--primary);margin-left:6px"><i class="fas fa-eye"></i> ver actual</a></label>
+            <label class="form-label">Licencia (archivo) <a id="personal_doc_licencia_link" href="#" onclick="verDocumento(this.href);return false;" style="display:none;font-weight:400;font-size:11px;color:var(--primary);margin-left:6px"><i class="fas fa-eye"></i> ver actual</a> <a id="personal_doc_licencia_del" href="#" onclick="eliminarDocPersonal('doc_licencia');return false;" style="display:none;font-weight:400;font-size:11px;color:var(--rojo);margin-left:8px"><i class="fas fa-trash"></i> quitar</a></label>
             <input type="file" class="form-control" id="personal_doc_licencia" accept="image/*,application/pdf">
           </div>
           <div class="form-group">
-            <label class="form-label">Certijoven (archivo) <a id="personal_doc_certijoven_link" href="#" onclick="verDocumento(this.href);return false;" style="display:none;font-weight:400;font-size:11px;color:var(--primary);margin-left:6px"><i class="fas fa-eye"></i> ver actual</a></label>
+            <label class="form-label">Certijoven (archivo) <a id="personal_doc_certijoven_link" href="#" onclick="verDocumento(this.href);return false;" style="display:none;font-weight:400;font-size:11px;color:var(--primary);margin-left:6px"><i class="fas fa-eye"></i> ver actual</a> <a id="personal_doc_certijoven_del" href="#" onclick="eliminarDocPersonal('doc_certijoven');return false;" style="display:none;font-weight:400;font-size:11px;color:var(--rojo);margin-left:8px"><i class="fas fa-trash"></i> quitar</a></label>
             <input type="file" class="form-control" id="personal_doc_certijoven" accept="image/*,application/pdf">
           </div>
           <div class="form-group">
-            <label class="form-label">SCTR (archivo) <a id="personal_doc_sctr_link" href="#" onclick="verDocumento(this.href);return false;" style="display:none;font-weight:400;font-size:11px;color:var(--primary);margin-left:6px"><i class="fas fa-eye"></i> ver actual</a></label>
+            <label class="form-label">SCTR (archivo) <a id="personal_doc_sctr_link" href="#" onclick="verDocumento(this.href);return false;" style="display:none;font-weight:400;font-size:11px;color:var(--primary);margin-left:6px"><i class="fas fa-eye"></i> ver actual</a> <a id="personal_doc_sctr_del" href="#" onclick="eliminarDocPersonal('doc_sctr');return false;" style="display:none;font-weight:400;font-size:11px;color:var(--rojo);margin-left:8px"><i class="fas fa-trash"></i> quitar</a></label>
             <input type="file" class="form-control" id="personal_doc_sctr" accept="image/*,application/pdf">
           </div>
           <div class="form-group">
-            <label class="form-label">Verificación de referencias <a id="personal_doc_verif_ref_link" href="#" onclick="verDocumento(this.href);return false;" style="display:none;font-weight:400;font-size:11px;color:var(--primary);margin-left:6px"><i class="fas fa-eye"></i> ver actual</a></label>
+            <label class="form-label">Verificación de referencias <a id="personal_doc_verif_ref_link" href="#" onclick="verDocumento(this.href);return false;" style="display:none;font-weight:400;font-size:11px;color:var(--primary);margin-left:6px"><i class="fas fa-eye"></i> ver actual</a> <a id="personal_doc_verif_ref_del" href="#" onclick="eliminarDocPersonal('doc_verif_ref');return false;" style="display:none;font-weight:400;font-size:11px;color:var(--rojo);margin-left:8px"><i class="fas fa-trash"></i> quitar</a></label>
             <input type="file" class="form-control" id="personal_doc_verif_ref" accept="image/*,application/pdf">
           </div>
         </div>
