@@ -376,6 +376,11 @@ select.form-control {
 .data-table td { padding: 12px 15px; color: var(--gris-200); vertical-align: middle; }
 .data-table td.muted { color: var(--gris-400); font-size: 12px; }
 
+/* Cabecera inmovilizada: coloca la tabla en un contenedor con scroll y la fila
+   de cabecera queda pegada arriba al desplazarse. Reutilizable en cualquier tabla. */
+.tbl-scroll { max-height: calc(100vh - 300px); min-height: 220px; overflow: auto; }
+.tbl-scroll .data-table thead th { position: sticky; top: 0; z-index: 4; }
+
 /* ======================== BADGES ======================== */
 .badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 3px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
 .badge         { background: rgba(245,200,0,.12);  color: var(--primary); }

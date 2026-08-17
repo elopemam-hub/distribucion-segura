@@ -741,7 +741,7 @@ $csrf = csrfToken();
 
     <div class="card">
       <div class="card-body" style="padding:0">
-        <div class="table-wrap">
+        <div class="table-wrap tbl-scroll">
           <table class="data-table">
             <thead>
               <tr>
@@ -783,16 +783,16 @@ $csrf = csrfToken();
         <div class="card-body" style="padding:14px 20px">
           <div class="filter-bar">
             <div class="form-group"><label class="form-label">Buscar</label>
-              <input type="text" class="form-control" id="cumpBuscar" placeholder="Nombre o DNI" oninput="renderCumplimiento()"></div>
+              <input type="text" class="form-control" id="cumpBuscar" placeholder="Nombre o DNI" oninput="_cumpPag=1;renderCumplimiento()"></div>
             <div class="form-group"><label class="form-label">Empresa</label>
-              <select class="form-control" id="cumpEmpresa" onchange="renderCumplimiento()"><option value="">Todas</option></select></div>
+              <select class="form-control" id="cumpEmpresa" onchange="_cumpPag=1;renderCumplimiento()"><option value="">Todas</option></select></div>
             <div class="form-group"><label class="form-label">Cargo</label>
-              <select class="form-control" id="cumpCargo" onchange="renderCumplimiento()">
+              <select class="form-control" id="cumpCargo" onchange="_cumpPag=1;renderCumplimiento()">
                 <option value="">Todos</option><option value="conductor">Conductor</option><option value="reparto">Reparto</option>
                 <option value="auxiliar">Auxiliar</option><option value="supervisor">Supervisor</option><option value="otro">Otro</option>
               </select></div>
             <div class="form-group"><label class="form-label">Estado</label>
-              <select class="form-control" id="cumpEstado" onchange="renderCumplimiento()">
+              <select class="form-control" id="cumpEstado" onchange="_cumpPag=1;renderCumplimiento()">
                 <option value="">Todos</option><option value="incompleto">Incompletos</option><option value="completo">Completos</option>
               </select></div>
             <button class="btn btn-outline btn-sm" onclick="exportarCumplimiento()"><i class="fas fa-file-excel"></i> Exportar</button>
@@ -812,25 +812,25 @@ $csrf = csrfToken();
         <div class="card-body" style="padding:14px 20px">
           <div class="filter-bar">
             <div class="form-group"><label class="form-label">Rango</label>
-              <select class="form-control" id="cumpleRango" onchange="renderCumpleanos()">
+              <select class="form-control" id="cumpleRango" onchange="_cumplePag=1;renderCumpleanos()">
                 <option value="30">Próximos 30 días</option>
                 <option value="mes">Este mes</option>
                 <option value="todos">Todo el año</option>
               </select></div>
             <div class="form-group"><label class="form-label">Empresa</label>
-              <select class="form-control" id="cumpleEmpresa" onchange="renderCumpleanos()"><option value="">Todas</option></select></div>
+              <select class="form-control" id="cumpleEmpresa" onchange="_cumplePag=1;renderCumpleanos()"><option value="">Todas</option></select></div>
             <div class="form-group"><label class="form-label">Buscar</label>
-              <input type="text" class="form-control" id="cumpleBuscar" placeholder="Nombre" oninput="renderCumpleanos()"></div>
+              <input type="text" class="form-control" id="cumpleBuscar" placeholder="Nombre" oninput="_cumplePag=1;renderCumpleanos()"></div>
           </div>
         </div>
       </div>
-      <div class="card"><div class="card-body" style="padding:0"><div class="table-wrap">
+      <div class="card"><div class="card-body" style="padding:0"><div class="table-wrap tbl-scroll">
         <table class="data-table">
           <thead><tr><th>Trabajador</th><th>Cargo</th><th>Fecha</th><th style="text-align:right">Cumple</th>
               <th style="text-align:right">Faltan</th><th>Estado</th></tr></thead>
           <tbody id="cumpleBody"><tr><td colspan="6" class="muted" style="text-align:center;padding:28px">Cargando…</td></tr></tbody>
         </table>
-      </div></div></div>
+      </div><div id="cumplePagWrap"></div></div></div>
     </div>
   </div>
   <?php endif; // personal ?>

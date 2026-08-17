@@ -5,9 +5,39 @@
 
 let personalData = [];
 let personalPagina = 1;
-const PERSONAL_PAGE_SIZE = 10;
+const PERSONAL_PAGE_SIZE = 15;
 // Documentos adjuntos (misma lista que el backend PERSONAL_DOC_COLS).
 const PERSONAL_DOCS = ['doc_dni','doc_licencia','doc_certijoven','doc_sctr','doc_verif_ref'];
+
+// Barra de paginación reutilizable (mismas clases que el listado). Devuelve HTML;
+// los botones llaman a la función global fnName(nroPagina).
+function _pagBar(total, pagina, porPag, fnName) {
+  const totalPags = Math.max(1, Math.ceil(total / porPag));
+  const desde = total ? (pagina - 1) * porPag + 1 : 0;
+  const hasta = Math.min(pagina * porPag, total);
+  let pags = [];
+  if (totalPags <= 7) pags = Array.from({ length: totalPags }, (_, i) => i + 1);
+  else {
+    pags = [1];
+    if (pagina > 3) pags.push('…');
+    for (let p = Math.max(2, pagina - 1); p <= Math.min(totalPags - 1, pagina + 1); p++) pags.push(p);
+    if (pagina < totalPags - 2) pags.push('…');
+    pags.push(totalPags);
+  }
+  const btns =
+    `<button onclick="${fnName}(${pagina - 1})" ${pagina === 1 ? 'disabled' : ''}>&#8249;</button>` +
+    pags.map(p => p === '…'
+      ? '<button disabled style="border:none;background:none;cursor:default">…</button>'
+      : `<button class="${p === pagina ? 'active' : ''}" onclick="${fnName}(${p})">${p}</button>`).join('') +
+    `<button onclick="${fnName}(${pagina + 1})" ${pagina === totalPags ? 'disabled' : ''}>&#8250;</button>`;
+  return '<div class="amon-pag-bar"><span class="amon-pag-info">' +
+    (total ? `Mostrando ${desde}–${hasta} de ${total}` : '') +
+    '</span><div class="amon-pag-btns">' + (totalPags > 1 ? btns : '') + '</div></div>';
+}
+const RESUMEN_PAGE_SIZE = 15;   // Cumplimiento y Cumpleaños
+let _cumpPag = 1, _cumplePag = 1;
+function irCumpPagina(n) { _cumpPag = n; renderCumplimiento(); }
+function irCumplePagina(n) { _cumplePag = n; renderCumpleanos(); }
 
 // La Licencia (sección + archivo) solo aplica al cargo conductor.
 function togglePersonalLicencia() {
@@ -623,6 +653,12 @@ function renderCumplimiento() {
 
   if (!filas.length) { wrap.innerHTML = '<p class="muted" style="text-align:center;padding:28px">Sin resultados.</p>'; return; }
 
+  // Paginación (15 por página).
+  const totalPags = Math.max(1, Math.ceil(filas.length / RESUMEN_PAGE_SIZE));
+  if (_cumpPag > totalPags) _cumpPag = totalPags;
+  if (_cumpPag < 1) _cumpPag = 1;
+  const pageRows = filas.slice((_cumpPag - 1) * RESUMEN_PAGE_SIZE, _cumpPag * RESUMEN_PAGE_SIZE);
+
   // Celda: si es archivo presente, el ✓ enlaza al visor; si no, ícono simple.
   const celda = (estado, campo, p) => {
     if (estado === 'ok' && campo.file && p[campo.k]) {
@@ -634,10 +670,11 @@ function renderCumplimiento() {
     if (estado === 'falta') return '<i class="fas fa-xmark" style="color:var(--rojo)"></i>';
     return '<span style="color:var(--gris-500)">—</span>';
   };
-  const head = '<th style="position:sticky;left:0;background:var(--gris-800);z-index:2">Trabajador</th>' +
+  // Cabecera: la primera columna es esquina (fija arriba + izquierda → z-index alto).
+  const head = '<th style="position:sticky;left:0;top:0;background:var(--gris-800);z-index:6">Trabajador</th>' +
     CUMP_CAMPOS.map(c => '<th style="text-align:center;font-size:9.5px;white-space:nowrap">' + c.label + '</th>').join('') +
     '<th style="text-align:right">%</th>';
-  const body = filas.map(o => {
+  const body = pageRows.map(o => {
     const p = o.p, ev = o.ev;
     const col = ev.pct === 100 ? 'var(--verde)' : ev.pct >= 60 ? 'var(--naranja)' : 'var(--rojo)';
     return '<tr>' +
@@ -649,7 +686,8 @@ function renderCumplimiento() {
       '<td style="text-align:right;font-weight:700;color:' + col + ';font-variant-numeric:tabular-nums">' + ev.pct + '%</td>' +
     '</tr>';
   }).join('');
-  wrap.innerHTML = '<table class="data-table" style="min-width:920px"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table>';
+  wrap.innerHTML = '<div class="tbl-scroll"><table class="data-table" style="min-width:920px"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table></div>' +
+    _pagBar(filas.length, _cumpPag, RESUMEN_PAGE_SIZE, 'irCumpPagina');
 }
 
 function exportarCumplimiento() {
@@ -703,9 +741,21 @@ function renderCumpleanos() {
     '<div class="kpi-card azul"><div class="kpi-label">Este mes</div><div class="kpi-value azul">' + mesN + '</div><div class="kpi-sub">cumpleañeros</div><i class="fas fa-calendar-day kpi-icon"></i></div>' +
     '<div class="kpi-card verde"><div class="kpi-label">Próximos 30 días</div><div class="kpi-value verde">' + p30 + '</div><div class="kpi-sub">por celebrar</div><i class="fas fa-gift kpi-icon"></i></div>';
 
-  if (!filtrados.length) { body.innerHTML = '<tr><td colspan="6" class="muted" style="text-align:center;padding:28px">Sin cumpleaños en el rango. (¿Falta la fecha de nacimiento?)</td></tr>'; return; }
+  const pagWrap = document.getElementById('cumplePagWrap');
+  if (!filtrados.length) {
+    body.innerHTML = '<tr><td colspan="6" class="muted" style="text-align:center;padding:28px">Sin cumpleaños en el rango. (¿Falta la fecha de nacimiento?)</td></tr>';
+    if (pagWrap) pagWrap.innerHTML = '';
+    return;
+  }
+  // Paginación (15 por página).
+  const totalPags = Math.max(1, Math.ceil(filtrados.length / RESUMEN_PAGE_SIZE));
+  if (_cumplePag > totalPags) _cumplePag = totalPags;
+  if (_cumplePag < 1) _cumplePag = 1;
+  const pageRows = filtrados.slice((_cumplePag - 1) * RESUMEN_PAGE_SIZE, _cumplePag * RESUMEN_PAGE_SIZE);
+  if (pagWrap) pagWrap.innerHTML = _pagBar(filtrados.length, _cumplePag, RESUMEN_PAGE_SIZE, 'irCumplePagina');
+
   const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-  body.innerHTML = filtrados.map(o => {
+  body.innerHTML = pageRows.map(o => {
     const p = o.p, c = o.c;
     const est = c.dias === 0 ? '<span class="badge badge-warning">🎂 HOY</span>'
               : c.dias <= 7 ? '<span class="badge badge-info">En ' + c.dias + ' d</span>'
