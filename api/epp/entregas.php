@@ -15,6 +15,8 @@ require_once __DIR__ . '/../../includes/auth.php';
 
 requireLogin();
 setupEpp();
+setupEmpresas();
+setupUsuarioEmpresas();   // restricción de empresas por usuario (Fase 3)
 header('Content-Type: application/json; charset=utf-8');
 
 $action = $_GET['action'] ?? $_POST['action'] ?? 'list';
@@ -73,6 +75,8 @@ function listar() {
     if ($desde !== '') { $where[] = 'e.fecha >= ?'; $params[] = $desde; }
     if ($hasta !== '') { $where[] = 'e.fecha <= ?'; $params[] = $hasta; }
     $whereSql = implode(' AND ', $where);
+    [$empRestr, $empRestrP] = empresaWhere('e.empresa_id');   // Fase 3
+    $whereSql .= $empRestr; $params = array_merge($params, $empRestrP);
 
     $rows = db()->fetchAll(
         "SELECT e.id, e.personal_id, e.trabajador_nombre, e.trabajador_dni, e.trabajador_cargo,
@@ -103,6 +107,7 @@ function obtener() {
 
     $ent = db()->fetchOne("SELECT * FROM epp_entregas WHERE id = ?", [$id]);
     if (!$ent) jsonResponse(false, 'Entrega no encontrada.', null, 404);
+    if (!empresaEsPermitida($ent['empresa_id'] ?? 0)) jsonResponse(false, 'Sin acceso a esta entrega.', null, 403);
 
     $ent['items'] = db()->fetchAll(
         "SELECT id, tipo_epp_id, tipo_nombre, norma_tecnica, cantidad, vida_util_dias, fecha_renovacion
@@ -139,6 +144,10 @@ function registrar() {
     // Trabajador: snapshot desde la tabla personal (incluye su empresa).
     $p = db()->fetchOne("SELECT id, dni, nombre, cargo, empresa_id FROM personal WHERE id = ?", [$personalId]);
     if (!$p) jsonResponse(false, 'Trabajador no encontrado.', null, 422);
+    // Restricción por empresa del usuario (Fase 3).
+    if (!empresaEsPermitida($p['empresa_id'] ?? 0)) {
+        jsonResponse(false, 'No puedes registrar entregas para trabajadores fuera de tus empresas.', null, 403);
+    }
 
     // Consolida cantidades por tipo (evita duplicar renglones del mismo EPP).
     // Captura además la fecha de renovación manual opcional (yyyy-mm-dd) por tipo.
@@ -230,8 +239,9 @@ function anular() {
     $id = (int)($_POST['id'] ?? 0);
     if ($id <= 0) jsonResponse(false, 'ID inválido.', null, 422);
 
-    $ent = db()->fetchOne("SELECT id, estado, trabajador_nombre FROM epp_entregas WHERE id = ?", [$id]);
+    $ent = db()->fetchOne("SELECT id, estado, trabajador_nombre, empresa_id FROM epp_entregas WHERE id = ?", [$id]);
     if (!$ent) jsonResponse(false, 'Entrega no encontrada.', null, 404);
+    if (!empresaEsPermitida($ent['empresa_id'] ?? 0)) jsonResponse(false, 'Sin acceso a esta entrega.', null, 403);
     if ($ent['estado'] === 'anulada') jsonResponse(false, 'La entrega ya estaba anulada.', null, 422);
 
     $items = db()->fetchAll("SELECT tipo_epp_id, cantidad FROM epp_entrega_items WHERE entrega_id = ?", [$id]);
@@ -271,8 +281,9 @@ function editar() {
     if (!in_array($motivo, EPP_MOTIVOS, true)) jsonResponse(false, 'Motivo inválido.', null, 422);
     if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha)) jsonResponse(false, 'Fecha inválida.', null, 422);
 
-    $ent = db()->fetchOne("SELECT id FROM epp_entregas WHERE id = ?", [$id]);
+    $ent = db()->fetchOne("SELECT id, empresa_id FROM epp_entregas WHERE id = ?", [$id]);
     if (!$ent) jsonResponse(false, 'Entrega no encontrada.', null, 404);
+    if (!empresaEsPermitida($ent['empresa_id'] ?? 0)) jsonResponse(false, 'Sin acceso a esta entrega.', null, 403);
 
     db()->query(
         "UPDATE epp_entregas SET motivo = ?, fecha = ?, observacion = ? WHERE id = ?",
@@ -294,26 +305,33 @@ function dashboard() {
     $empE    = $empresaId !== '' ? ' AND e.empresa_id = ?' : '';
     $empP    = $empresaId !== '' ? [(int)$empresaId]       : [];
 
+    // Restricción por empresa del usuario (Fase 3): se suma al filtro del selector.
+    [$reBare, $reBareP] = empresaWhere('empresa_id');
+    [$reE,    $reEP]    = empresaWhere('e.empresa_id');
+    $empBare .= $reBare; $empE .= $reE;
+
     $totEntregas = (int)(db()->fetchOne(
-        "SELECT COUNT(*) c FROM epp_entregas WHERE estado='vigente'" . $empBare, $empP)['c'] ?? 0);
+        "SELECT COUNT(*) c FROM epp_entregas WHERE estado='vigente'" . $empBare,
+        array_merge($empP, $reBareP))['c'] ?? 0);
     $entregasMes = (int)(db()->fetchOne(
         "SELECT COUNT(*) c FROM epp_entregas WHERE estado='vigente' AND fecha >= ?" . $empBare,
-        array_merge([$mesIni], $empP))['c'] ?? 0);
+        array_merge([$mesIni], $empP, $reBareP))['c'] ?? 0);
     $trabajadores = (int)(db()->fetchOne(
         "SELECT COUNT(DISTINCT personal_id) c FROM epp_entregas
-          WHERE estado='vigente' AND personal_id IS NOT NULL" . $empBare, $empP)['c'] ?? 0);
+          WHERE estado='vigente' AND personal_id IS NOT NULL" . $empBare,
+        array_merge($empP, $reBareP))['c'] ?? 0);
 
     // Renovaciones vencidas o por vencer en los próximos 30 días.
     $vencidas = (int)(db()->fetchOne(
         "SELECT COUNT(*) c FROM epp_entrega_items i
            JOIN epp_entregas e ON e.id = i.entrega_id
           WHERE e.estado='vigente' AND i.fecha_renovacion IS NOT NULL AND i.fecha_renovacion < ?" . $empE,
-        array_merge([$hoy], $empP))['c'] ?? 0);
+        array_merge([$hoy], $empP, $reEP))['c'] ?? 0);
     $porVencer = (int)(db()->fetchOne(
         "SELECT COUNT(*) c FROM epp_entrega_items i
            JOIN epp_entregas e ON e.id = i.entrega_id
           WHERE e.estado='vigente' AND i.fecha_renovacion BETWEEN ? AND DATE_ADD(?, INTERVAL 30 DAY)" . $empE,
-        array_merge([$hoy, $hoy], $empP))['c'] ?? 0);
+        array_merge([$hoy, $hoy], $empP, $reEP))['c'] ?? 0);
 
     // Detalle de próximas renovaciones (últimas por trabajador/EPP).
     $renovaciones = db()->fetchAll(
@@ -326,7 +344,7 @@ function dashboard() {
             AND i.fecha_renovacion <= DATE_ADD(?, INTERVAL 30 DAY)" . $empE . "
           ORDER BY i.fecha_renovacion ASC
           LIMIT 100",
-        array_merge([$hoy, $hoy], $empP)
+        array_merge([$hoy, $hoy], $empP, $reEP)
     );
 
     jsonResponse(true, '', [
@@ -363,6 +381,8 @@ function reporte() {
     if ($desde !== '') { $where[] = 'e.fecha >= ?'; $params[] = $desde; }
     if ($hasta !== '') { $where[] = 'e.fecha <= ?'; $params[] = $hasta; }
     $whereSql = implode(' AND ', $where);
+    [$empRestr, $empRestrP] = empresaWhere('e.empresa_id');   // Fase 3
+    $whereSql .= $empRestr; $params = array_merge($params, $empRestrP);
 
     $rows = db()->fetchAll(
         "SELECT e.id AS entrega_id, e.fecha, e.trabajador_nombre, e.trabajador_dni, e.trabajador_cargo,
@@ -388,6 +408,8 @@ function vencimientos() {
     $empresaId = trim($_GET['empresa_id'] ?? '');
     $empE = $empresaId !== '' ? ' AND e.empresa_id = ?' : '';
     $empP = $empresaId !== '' ? [(int)$empresaId]       : [];
+    [$reE, $reEP] = empresaWhere('e.empresa_id');   // Fase 3
+    $empE .= $reE;
 
     $rows = db()->fetchAll(
         "SELECT e.id AS entrega_id, e.trabajador_nombre, e.trabajador_dni, e.trabajador_cargo,
@@ -399,7 +421,7 @@ function vencimientos() {
             AND i.fecha_renovacion <= DATE_ADD(?, INTERVAL ? DAY)" . $empE . "
           ORDER BY i.fecha_renovacion ASC
           LIMIT 5000",
-        array_merge([$hoy, $hoy, $dias], $empP)
+        array_merge([$hoy, $hoy, $dias], $empP, $reEP)
     );
     foreach ($rows as &$r) {
         $d = (int)$r['dias'];

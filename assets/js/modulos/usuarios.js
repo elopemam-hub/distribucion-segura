@@ -32,7 +32,10 @@ function renderUsuariosTabla(usuarios) {
 
 function actualizarSeccionModulos() {
   const rol=document.getElementById('usuario_rol').value, sec=document.getElementById('seccionModulos');
-  if(sec) sec.style.display=rol==='administrador'?'none':'block';
+  const vis=rol==='administrador'?'none':'block';
+  if(sec) sec.style.display=vis;
+  const secE=document.getElementById('seccionEmpresasPerm');
+  if(secE) secE.style.display=vis;
 }
 function setModulosChecked(modulos) {
   ['inspecciones','personal','reportes','matriz','amonestaciones','geocercas','evaluaciones','kpi_analytics','epp','vehiculos','empresas'].forEach(m=>{const el=document.getElementById('mod_'+m);if(el)el.checked=modulos.includes(m);});
@@ -43,6 +46,23 @@ function getModulosSeleccionados() {
   return checked;
 }
 
+// ── Empresas permitidas (Fase 3) ──
+// Sin marcar ninguna = usuario ve TODAS las empresas (sin restricción).
+function renderEmpresasPerm(todas, asignadas) {
+  const cont=document.getElementById('checkboxEmpresasPerm');
+  if(!cont) return;
+  if(!todas||!todas.length){ cont.innerHTML='<p style="font-size:12px;color:var(--gris-400);grid-column:1/-1">No hay empresas registradas.</p>'; return; }
+  const asig=(asignadas||[]).map(String);
+  cont.innerHTML=todas.map(e=>`<label class="modulo-check"><input type="checkbox" class="emp-perm-check" value="${e.id}" ${asig.includes(String(e.id))?'checked':''}> <i class="fas fa-building"></i> ${escapeHtml(e.razon_social)}${(+e.activo===1?'':' (inactiva)')}</label>`).join('');
+}
+function getEmpresasSeleccionadas() {
+  return Array.from(document.querySelectorAll('.emp-perm-check:checked')).map(c=>parseInt(c.value,10));
+}
+async function cargarEmpresasPerm(asignadas) {
+  try { const r=await fetch('api/empresas.php?action=list'); const d=await r.json(); renderEmpresasPerm(d.success?d.data.empresas:[], asignadas||[]); }
+  catch(e){ renderEmpresasPerm([], asignadas||[]); }
+}
+
 function abrirModalUsuario() {
   document.getElementById('formUsuario').reset();
   document.getElementById('usuario_id').value='';
@@ -50,7 +70,7 @@ function abrirModalUsuario() {
   document.getElementById('pwd_label_hint').textContent='*';
   document.getElementById('pwd_hint').textContent='Mínimo 6 caracteres';
   document.getElementById('usuario_password').required=true;
-  setModulosChecked([]); actualizarSeccionModulos(); abrirModal('modalUsuario');
+  setModulosChecked([]); cargarEmpresasPerm([]); actualizarSeccionModulos(); abrirModal('modalUsuario');
 }
 
 async function editarUsuario(id) {
@@ -68,7 +88,9 @@ async function editarUsuario(id) {
   document.getElementById('pwd_label_hint').textContent='(dejar en blanco para no cambiar)';
   document.getElementById('pwd_hint').textContent='Solo escribe si quieres cambiarla';
   document.getElementById('usuario_password').required=false;
-  setModulosChecked(dPerm.success?dPerm.data.modulos:[]); actualizarSeccionModulos(); abrirModal('modalUsuario');
+  setModulosChecked(dPerm.success?dPerm.data.modulos:[]);
+  renderEmpresasPerm(dPerm.success?dPerm.data.empresas_todas:[], dPerm.success?dPerm.data.empresas_asignadas:[]);
+  actualizarSeccionModulos(); abrirModal('modalUsuario');
 }
 
 async function submitUsuario(e) {
@@ -85,7 +107,7 @@ async function submitUsuario(e) {
     if (!data.success) { toast(data.message,'error'); return; }
     const userId=data.data?.id||id;
     if (rol!=='administrador'&&userId) {
-      const fp=new FormData(); fp.append('action','permisos_save'); fp.append('csrf_token',CSRF_TOKEN); fp.append('id',userId); fp.append('modulos',JSON.stringify(getModulosSeleccionados()));
+      const fp=new FormData(); fp.append('action','permisos_save'); fp.append('csrf_token',CSRF_TOKEN); fp.append('id',userId); fp.append('modulos',JSON.stringify(getModulosSeleccionados())); fp.append('empresas',JSON.stringify(getEmpresasSeleccionadas()));
       await fetch('api/usuarios.php',{method:'POST',body:fp});
     }
     toast(data.message,'success'); cerrarModal('modalUsuario'); cargarUsuarios();

@@ -482,6 +482,56 @@ function setupEmpresas(): void {
     }
 }
 
+// ============================================================
+// RESTRICCIÓN DE EMPRESAS POR USUARIO (multi-empresa, Fase 3)
+// Un usuario puede quedar limitado a ver solo ciertas empresas. Sin filas =
+// sin restricción (ve todas). El administrador siempre ve todas.
+// ============================================================
+function setupUsuarioEmpresas(): void {
+    try {
+        db()->query("CREATE TABLE IF NOT EXISTS usuario_empresas (
+            usuario_id INT NOT NULL,
+            empresa_id INT NOT NULL,
+            creado_en  DATETIME DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (usuario_id, empresa_id),
+            KEY idx_ue_usuario (usuario_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", []);
+    } catch (Exception $e) {
+        error_log('[setupUsuarioEmpresas] ' . $e->getMessage());
+    }
+}
+
+// Empresas que el usuario puede ver. null = SIN restricción (todas).
+// Array de ids = restringido a esas. [] = restringido a nada.
+function empresasPermitidas(?int $userId = null): ?array {
+    $user = $userId ? db()->fetchOne("SELECT id, rol FROM usuarios WHERE id = ?", [$userId]) : getCurrentUser();
+    if (!$user) return [];
+    if (($user['rol'] ?? '') === 'administrador') return null;
+    try {
+        $rows = db()->fetchAll("SELECT empresa_id FROM usuario_empresas WHERE usuario_id = ?", [(int)$user['id']]);
+    } catch (Exception $e) { return null; }
+    if (!$rows) return null;
+    return array_map('intval', array_column($rows, 'empresa_id'));
+}
+
+// Fragmento WHERE para restringir por la empresa del usuario actual.
+// $col = columna de empresa (ej. 'p.empresa_id', 'e.empresa_id', 'empresa_id').
+// Devuelve [sqlFragment, params]; '' si el usuario no tiene restricción.
+function empresaWhere(string $col): array {
+    $ids = empresasPermitidas();
+    if ($ids === null) return ['', []];
+    if (!$ids) return [' AND 1=0', []];
+    $ph = implode(',', array_fill(0, count($ids), '?'));
+    return [" AND $col IN ($ph)", array_values($ids)];
+}
+
+// Valida que la empresa esté dentro de lo permitido para el usuario actual.
+function empresaEsPermitida($empresaId): bool {
+    $ids = empresasPermitidas();
+    if ($ids === null) return true;
+    return in_array((int)$empresaId, $ids, true);
+}
+
 // Valida que un formulario_id exista en eval_formularios.
 // Fallback a los 3 base si la tabla aún no fue migrada.
 function formularioEsValido(string $formulario): bool {

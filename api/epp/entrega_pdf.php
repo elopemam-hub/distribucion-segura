@@ -11,12 +11,15 @@ require_once __DIR__ . '/../../includes/auth.php';
 requireLogin();
 setupEpp();
 setupEmpresas();
+setupUsuarioEmpresas();
 
 $id = (int)($_GET['id'] ?? 0);
 if ($id <= 0) { http_response_code(400); die('ID inválido'); }
 
 $ent = db()->fetchOne("SELECT * FROM epp_entregas WHERE id = ?", [$id]);
 if (!$ent) { http_response_code(404); die('Entrega no encontrada'); }
+// Restricción por empresa del usuario (Fase 3).
+if (!empresaEsPermitida($ent['empresa_id'] ?? 0)) { http_response_code(403); die('Sin acceso a esta entrega'); }
 
 // Ítems + código del EPP (join al catálogo por si cambió el snapshot).
 $items = db()->fetchAll(

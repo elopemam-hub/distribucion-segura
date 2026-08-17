@@ -1809,6 +1809,16 @@ $csrf = csrfToken();
           <p style="font-size:11px;color:var(--gris-400);margin-top:8px"><i class="fas fa-info-circle"></i> Dashboard siempre visible. Desmarca todo para usar defaults del rol.</p>
         </div>
 
+        <div id="seccionEmpresasPerm" style="margin-top:18px;display:none">
+          <div style="font-size:11px;font-weight:700;color:var(--gris-300);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--gris-600)">
+            <i class="fas fa-building" style="color:var(--primary);margin-right:6px"></i>
+            Empresas permitidas
+            <span style="font-weight:400;color:var(--gris-400);margin-left:6px">(vacío = ve todas)</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="checkboxEmpresasPerm"></div>
+          <p style="font-size:11px;color:var(--gris-400);margin-top:8px"><i class="fas fa-info-circle"></i> Si marcas una o más, el usuario solo verá el personal, EPP y documentos de esas empresas. Sin marcar ninguna, ve todas.</p>
+        </div>
+
         <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px">
           <button type="button" class="btn btn-secondary" onclick="cerrarModal('modalUsuario')">Cancelar</button>
           <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar</button>

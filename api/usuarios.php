@@ -10,6 +10,8 @@ require_once __DIR__ . '/../includes/auth.php';
 
 requireLogin();
 requireRole(['administrador']);
+setupEmpresas();
+setupUsuarioEmpresas();   // restricción de empresas por usuario (Fase 3)
 header('Content-Type: application/json; charset=utf-8');
 
 $action = $_GET['action'] ?? $_POST['action'] ?? 'list';
@@ -185,9 +187,15 @@ function permisosGet() {
     if (!$u) jsonResponse(false, 'Usuario no encontrado.', null, 404);
 
     $rows = db()->fetchAll("SELECT modulo FROM permisos WHERE usuario_id = ?", [$id]);
+    // Empresas: las asignadas al usuario + el catálogo completo para la UI (Fase 3).
+    $empAsig = array_map('intval', array_column(
+        db()->fetchAll("SELECT empresa_id FROM usuario_empresas WHERE usuario_id = ?", [$id]), 'empresa_id'));
+    $empTodas = db()->fetchAll("SELECT id, razon_social, activo FROM empresas ORDER BY activo DESC, razon_social ASC");
     jsonResponse(true, '', [
-        'rol'     => $u['rol'],
-        'modulos' => array_column($rows, 'modulo'),
+        'rol'      => $u['rol'],
+        'modulos'  => array_column($rows, 'modulo'),
+        'empresas_asignadas' => $empAsig,
+        'empresas_todas'     => $empTodas,
     ]);
 }
 
@@ -214,6 +222,19 @@ function permisosSave() {
         fn($m) => in_array($m, MODULOS_VALIDOS, true)
     );
 
+    // Empresas asignadas (Fase 3). Vacío = sin restricción (ve todas).
+    $empresasRaw = $_POST['empresas'] ?? null;
+    $procesarEmpresas = $empresasRaw !== null;   // solo si el cliente las envía
+    $empresasIds = [];
+    if ($procesarEmpresas) {
+        $dec = json_decode($empresasRaw, true);
+        $validas = array_map('intval', array_column(db()->fetchAll("SELECT id FROM empresas"), 'id'));
+        $empresasIds = array_values(array_unique(array_filter(
+            array_map('intval', is_array($dec) ? $dec : []),
+            fn($eid) => in_array($eid, $validas, true)
+        )));
+    }
+
     db()->beginTransaction();
     try {
         db()->query("DELETE FROM permisos WHERE usuario_id = ?", [$id]);
@@ -223,8 +244,14 @@ function permisosSave() {
                 [$id, $modulo]
             );
         }
+        if ($procesarEmpresas) {
+            db()->query("DELETE FROM usuario_empresas WHERE usuario_id = ?", [$id]);
+            foreach ($empresasIds as $eid) {
+                db()->query("INSERT INTO usuario_empresas (usuario_id, empresa_id) VALUES (?, ?)", [$id, $eid]);
+            }
+        }
         db()->commit();
-        jsonResponse(true, 'Permisos guardados correctamente.', ['modulos' => array_values($modulosLimpios)]);
+        jsonResponse(true, 'Permisos guardados correctamente.', ['modulos' => array_values($modulosLimpios), 'empresas' => $empresasIds]);
     } catch (Exception $e) {
         db()->rollback();
         error_log('[permisos_save] ' . $e->getMessage());

@@ -18,6 +18,7 @@ const PERSONAL_DOC_COLS = ['doc_dni', 'doc_licencia', 'doc_certijoven', 'doc_sct
 setupPersonalDocs();
 // Auto-provisión multi-empresa (crea empresas + personal.empresa_id y migra textos).
 setupEmpresas();
+setupUsuarioEmpresas();   // restricción de empresas por usuario (Fase 3)
 
 $action = $_GET['action'] ?? $_POST['action'] ?? 'list';
 
@@ -71,6 +72,11 @@ function listar() {
     if ($empresaId !== '') { $where[] = 'p.empresa_id = ?'; $params[] = (int)$empresaId; }
     $whereSQL = implode(' AND ', $where);
 
+    // Restricción por empresa del usuario (Fase 3).
+    [$empRestr, $empRestrP] = empresaWhere('p.empresa_id');
+    $whereSQL .= $empRestr;
+    $params = array_merge($params, $empRestrP);
+
     $total = db()->fetchOne("SELECT COUNT(*) t FROM personal p WHERE $whereSQL", $params)['t'];
     $rows  = db()->fetchAll(
         "SELECT p.*, e.razon_social AS empresa_nombre,
@@ -103,6 +109,8 @@ function obtener() {
         [$id]
     );
     if (!$p) jsonResponse(false, 'No encontrado.', null, 404);
+    // Restricción por empresa del usuario (Fase 3).
+    if (!empresaEsPermitida($p['empresa_id'] ?? 0)) jsonResponse(false, 'Sin acceso a este trabajador.', null, 403);
     jsonResponse(true, '', $p);
 }
 
@@ -116,10 +124,15 @@ function buscar() {
     $where = ['activo = 1', '(nombre LIKE ? OR dni LIKE ?)'];
     $params = ["%$q%", "%$q%"];
     if ($cargo !== '') { $where[] = 'cargo = ?'; $params[] = $cargo; }
+    $whereSQL = implode(' AND ', $where);
+    // Restricción por empresa del usuario (Fase 3).
+    [$empRestr, $empRestrP] = empresaWhere('empresa_id');
+    $whereSQL .= $empRestr;
+    $params = array_merge($params, $empRestrP);
 
     $rows = db()->fetchAll(
         "SELECT id, dni, nombre, cargo, telefono FROM personal
-         WHERE " . implode(' AND ', $where) . "
+         WHERE $whereSQL
          ORDER BY nombre ASC LIMIT 15",
         $params
     );
@@ -160,6 +173,21 @@ function guardar() {
     // DNI único (excepto si es el mismo registro)
     $existe = db()->fetchOne("SELECT id FROM personal WHERE dni = ? AND id <> ?", [$dni, $id]);
     if ($existe) jsonResponse(false, 'Ya existe otra persona con ese DNI.', null, 409);
+
+    // Restricción por empresa del usuario (Fase 3): solo puede crear/editar
+    // trabajadores dentro de sus empresas, y asignarlos a una de ellas.
+    $permAll = empresasPermitidas();
+    if ($permAll !== null) {
+        if (!in_array((int)$empresaId, $permAll, true)) {
+            jsonResponse(false, 'Debes asignar el trabajador a una de tus empresas.', null, 403);
+        }
+        if ($id > 0) {
+            $actual = db()->fetchOne("SELECT empresa_id FROM personal WHERE id = ?", [$id]);
+            if ($actual && !in_array((int)$actual['empresa_id'], $permAll, true)) {
+                jsonResponse(false, 'No puedes editar trabajadores de otra empresa.', null, 403);
+            }
+        }
+    }
 
     // Subir foto si viene
     $fotoNombre = null;
@@ -229,8 +257,9 @@ function eliminarDoc() {
     if ($id <= 0) jsonResponse(false, 'ID inválido.', null, 422);
     if (!in_array($campo, PERSONAL_DOC_COLS, true)) jsonResponse(false, 'Documento inválido.', null, 422);
 
-    $row = db()->fetchOne("SELECT `$campo` AS ruta FROM personal WHERE id = ?", [$id]);
+    $row = db()->fetchOne("SELECT `$campo` AS ruta, empresa_id FROM personal WHERE id = ?", [$id]);
     if (!$row) jsonResponse(false, 'No encontrado.', null, 404);
+    if (!empresaEsPermitida($row['empresa_id'] ?? 0)) jsonResponse(false, 'Sin acceso a este trabajador.', null, 403);
 
     if (!empty($row['ruta'])) {
         $file = __DIR__ . '/../uploads/' . $row['ruta'];
@@ -244,6 +273,10 @@ function eliminarDoc() {
 function eliminar() {
     $id = (int)($_POST['id'] ?? 0);
     if ($id <= 0) jsonResponse(false, 'ID inválido.', null, 400);
+
+    // Restricción por empresa del usuario (Fase 3).
+    $pe = db()->fetchOne("SELECT empresa_id FROM personal WHERE id = ?", [$id]);
+    if ($pe && !empresaEsPermitida($pe['empresa_id'] ?? 0)) jsonResponse(false, 'Sin acceso a este trabajador.', null, 403);
 
     // Soft delete: lo marcamos inactivo (evita romper FK con inspecciones históricas)
     $aff = db()->query("UPDATE personal SET activo = 0 WHERE id = ?", [$id])->rowCount();

@@ -11,6 +11,7 @@ require_once __DIR__ . '/../includes/auth.php';
 
 requireLogin();
 setupEmpresas();
+setupUsuarioEmpresas();   // restricción de empresas por usuario (Fase 3)
 header('Content-Type: application/json; charset=utf-8');
 
 $action = $_GET['action'] ?? $_POST['action'] ?? 'list';
@@ -41,12 +42,19 @@ try {
 // ============================================================
 function listar() {
     $soloActivas = ($_GET['activas'] ?? '') === '1';
-    $where = $soloActivas ? 'WHERE e.activo = 1' : '';
+    $conds = []; $params = [];
+    if ($soloActivas) $conds[] = 'e.activo = 1';
+    // Restricción por empresa del usuario (Fase 3): solo ve sus empresas.
+    [$empRestr, $empRestrP] = empresaWhere('e.id');
+    $whereSql = $conds ? ('WHERE ' . implode(' AND ', $conds)) : 'WHERE 1=1';
+    $whereSql .= $empRestr;
+    $params = array_merge($params, $empRestrP);
     $rows = db()->fetchAll(
         "SELECT e.*,
                 (SELECT COUNT(*) FROM personal p WHERE p.empresa_id = e.id AND p.activo = 1) AS num_trab
-           FROM empresas e $where
-          ORDER BY e.activo DESC, e.razon_social ASC"
+           FROM empresas e $whereSql
+          ORDER BY e.activo DESC, e.razon_social ASC",
+        $params
     );
     jsonResponse(true, '', ['empresas' => $rows]);
 }
@@ -54,6 +62,7 @@ function listar() {
 function obtener() {
     $id = (int)($_GET['id'] ?? 0);
     if ($id <= 0) jsonResponse(false, 'ID inválido.', null, 400);
+    if (!empresaEsPermitida($id)) jsonResponse(false, 'Sin acceso a esta empresa.', null, 403);
     $e = db()->fetchOne("SELECT * FROM empresas WHERE id = ?", [$id]);
     if (!$e) jsonResponse(false, 'No encontrada.', null, 404);
     jsonResponse(true, '', $e);
@@ -72,6 +81,7 @@ function guardar() {
     $color        = trim($_POST['color'] ?? '');
 
     if ($razon === '') jsonResponse(false, 'La razón social es obligatoria.', null, 422);
+    if ($id > 0 && !empresaEsPermitida($id)) jsonResponse(false, 'Sin acceso a esta empresa.', null, 403);
     if ($ruc !== '' && !preg_match('/^\d{11}$/', $ruc)) {
         jsonResponse(false, 'El RUC debe tener 11 dígitos.', null, 422);
     }
@@ -114,6 +124,7 @@ function guardar() {
 function alternar() {
     $id = (int)($_POST['id'] ?? 0);
     if ($id <= 0) jsonResponse(false, 'ID inválido.', null, 400);
+    if (!empresaEsPermitida($id)) jsonResponse(false, 'Sin acceso a esta empresa.', null, 403);
     db()->query("UPDATE empresas SET activo = 1 - activo WHERE id = ?", [$id]);
     jsonResponse(true, 'Estado actualizado.');
 }
@@ -121,6 +132,7 @@ function alternar() {
 function eliminarLogo() {
     $id = (int)($_POST['id'] ?? 0);
     if ($id <= 0) jsonResponse(false, 'ID inválido.', null, 400);
+    if (!empresaEsPermitida($id)) jsonResponse(false, 'Sin acceso a esta empresa.', null, 403);
     $ant = db()->fetchOne("SELECT logo FROM empresas WHERE id = ?", [$id])['logo'] ?? '';
     if ($ant && is_file(__DIR__ . '/../uploads/' . $ant)) @unlink(__DIR__ . '/../uploads/' . $ant);
     db()->query("UPDATE empresas SET logo = NULL WHERE id = ?", [$id]);
