@@ -460,3 +460,172 @@ async function importarExcelPersonal(input) {
   } catch(err) { console.error(err); toast('Error al leer el Excel','error'); }
   input.value='';
 }
+
+// ============================================================
+// SUB-MÓDULOS DE PERSONAL: cumplimiento documentario + cumpleaños
+// ============================================================
+let _resumenData = [];
+
+// Campos que se evalúan. cond=true → solo aplica al cargo conductor.
+const CUMP_CAMPOS = [
+  { k:'foto',                label:'Foto',          cond:false },
+  { k:'telefono',            label:'Teléfono',      cond:false },
+  { k:'fecha_nacimiento',    label:'F. Nac.',       cond:false },
+  { k:'fecha_ingreso',       label:'F. Ingreso',    cond:false },
+  { k:'dni_vencimiento',     label:'Venc. DNI',     cond:false },
+  { k:'num_licencia',        label:'N° Licencia',   cond:true  },
+  { k:'categoria_licencia',  label:'Cat. Lic.',     cond:true  },
+  { k:'vencimiento_brevete', label:'Venc. Brevete', cond:true  },
+  { k:'doc_dni',             label:'Doc. DNI',      cond:false },
+  { k:'doc_licencia',        label:'Doc. Licencia', cond:true  },
+  { k:'doc_certijoven',      label:'Certijoven',    cond:false },
+  { k:'doc_sctr',            label:'SCTR',          cond:false },
+  { k:'doc_verif_ref',       label:'Verif. Ref.',   cond:false },
+];
+
+// Evalúa una persona: celdas (ok/falta/na) + % de cumplimiento sobre lo aplicable.
+function _cumpEval(p) {
+  const esCond = p.cargo === 'conductor';
+  let aplican = 0, ok = 0;
+  const celdas = CUMP_CAMPOS.map(c => {
+    if (c.cond && !esCond) return { estado: 'na' };
+    aplican++;
+    const tiene = !!(p[c.k] && String(p[c.k]).trim() !== '');
+    if (tiene) ok++;
+    return { estado: tiene ? 'ok' : 'falta' };
+  });
+  return { celdas, pct: aplican ? Math.round(ok / aplican * 100) : 100 };
+}
+
+function switchPersonalTab(tab) {
+  document.querySelectorAll('.personal-tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.personal-tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('personal-panel-' + tab)?.classList.add('active');
+  document.getElementById('personal-btn-' + tab)?.classList.add('active');
+  if (tab === 'cumplimiento') cargarResumenPersonal(renderCumplimiento);
+  if (tab === 'cumpleanos')   cargarResumenPersonal(renderCumpleanos);
+}
+
+// Carga TODOS los activos (independiente del filtro del listado).
+async function cargarResumenPersonal(cb) {
+  try {
+    const r = await fetch('api/personal.php?action=list&activo=1&limit=500');
+    const d = await r.json();
+    _resumenData = (d && d.success && d.data && d.data.personal) ? d.data.personal : [];
+  } catch (e) { _resumenData = []; }
+  if (cb) cb();
+}
+
+// ── Matriz de cumplimiento ──
+function renderCumplimiento() {
+  const wrap = document.getElementById('cumpTablaWrap');
+  if (!wrap) return;
+  const q      = (document.getElementById('cumpBuscar')?.value || '').trim().toLowerCase();
+  const cargo  = document.getElementById('cumpCargo')?.value || '';
+  const estado = document.getElementById('cumpEstado')?.value || '';
+
+  let filas = _resumenData.map(p => ({ p, ev: _cumpEval(p) }));
+  if (cargo) filas = filas.filter(f => f.p.cargo === cargo);
+  if (q)     filas = filas.filter(f => (f.p.nombre || '').toLowerCase().includes(q) || String(f.p.dni || '').includes(q));
+  if (estado === 'completo')   filas = filas.filter(f => f.ev.pct === 100);
+  if (estado === 'incompleto') filas = filas.filter(f => f.ev.pct < 100);
+
+  const total = filas.length;
+  const prom = total ? Math.round(filas.reduce((a, f) => a + f.ev.pct, 0) / total) : 0;
+  const completos = filas.filter(f => f.ev.pct === 100).length;
+  const kpis = document.getElementById('cumpKpis');
+  if (kpis) kpis.innerHTML =
+    '<div class="kpi-card azul"><div class="kpi-label">Trabajadores</div><div class="kpi-value azul">' + total + '</div><div class="kpi-sub">en el resumen</div><i class="fas fa-users kpi-icon"></i></div>' +
+    '<div class="kpi-card ' + (prom >= 80 ? 'verde' : 'amarillo') + '"><div class="kpi-label">Cumplimiento promedio</div><div class="kpi-value ' + (prom >= 80 ? 'verde' : 'amarillo') + '">' + prom + '%</div><div class="kpi-sub">campos aplicables</div><i class="fas fa-chart-pie kpi-icon"></i></div>' +
+    '<div class="kpi-card verde"><div class="kpi-label">Completos</div><div class="kpi-value verde">' + completos + '</div><div class="kpi-sub">al 100%</div><i class="fas fa-circle-check kpi-icon"></i></div>' +
+    '<div class="kpi-card rojo"><div class="kpi-label">Incompletos</div><div class="kpi-value rojo">' + (total - completos) + '</div><div class="kpi-sub">con faltantes</div><i class="fas fa-triangle-exclamation kpi-icon"></i></div>';
+
+  if (!filas.length) { wrap.innerHTML = '<p class="muted" style="text-align:center;padding:28px">Sin resultados.</p>'; return; }
+
+  const icono = e => e === 'ok' ? '<i class="fas fa-check" style="color:var(--verde)"></i>'
+                   : e === 'falta' ? '<i class="fas fa-xmark" style="color:var(--rojo)"></i>'
+                   : '<span style="color:var(--gris-500)">—</span>';
+  const head = '<th style="position:sticky;left:0;background:var(--gris-800);z-index:2">Trabajador</th>' +
+    CUMP_CAMPOS.map(c => '<th style="text-align:center;font-size:9.5px;white-space:nowrap">' + c.label + '</th>').join('') +
+    '<th style="text-align:right">%</th>';
+  const body = filas.map(o => {
+    const p = o.p, ev = o.ev;
+    const col = ev.pct === 100 ? 'var(--verde)' : ev.pct >= 60 ? 'var(--naranja)' : 'var(--rojo)';
+    return '<tr>' +
+      '<td style="position:sticky;left:0;background:var(--gris-800);z-index:1">' +
+        '<div style="font-weight:600;color:var(--gris-100)">' + escapeHtml(p.nombre) + '</div>' +
+        '<div class="muted" style="font-size:11px">' + escapeHtml(p.dni) + ' · ' + escapeHtml(p.cargo) + '</div>' +
+      '</td>' +
+      ev.celdas.map(c => '<td style="text-align:center">' + icono(c.estado) + '</td>').join('') +
+      '<td style="text-align:right;font-weight:700;color:' + col + ';font-variant-numeric:tabular-nums">' + ev.pct + '%</td>' +
+    '</tr>';
+  }).join('');
+  wrap.innerHTML = '<table class="data-table" style="min-width:920px"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table>';
+}
+
+function exportarCumplimiento() {
+  if (typeof XLSX === 'undefined') { toast('Módulo Excel no disponible', 'error'); return; }
+  if (!_resumenData.length) { toast('Nada que exportar', 'warning'); return; }
+  const head = ['Trabajador', 'DNI', 'Cargo'].concat(CUMP_CAMPOS.map(c => c.label)).concat(['% Cumplimiento']);
+  const rows = _resumenData.map(p => {
+    const ev = _cumpEval(p);
+    return [p.nombre, p.dni, p.cargo].concat(ev.celdas.map(c => c.estado === 'ok' ? 'Sí' : c.estado === 'falta' ? 'No' : 'N/A')).concat([ev.pct + '%']);
+  });
+  const ws = XLSX.utils.aoa_to_sheet([head].concat(rows));
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Cumplimiento');
+  XLSX.writeFile(wb, 'cumplimiento_personal_' + new Date().toISOString().slice(0, 10) + '.xlsx');
+}
+
+// ── Cumpleaños ──
+function _proxCumple(fechaNac) {
+  if (!fechaNac) return null;
+  const partes = String(fechaNac).split('-'); if (partes.length < 3) return null;
+  const anio = +partes[0], mes = +partes[1], dia = +partes[2];
+  if (!mes || !dia) return null;
+  const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+  let prox = new Date(hoy.getFullYear(), mes - 1, dia);
+  if (prox < hoy) prox = new Date(hoy.getFullYear() + 1, mes - 1, dia);
+  const dias = Math.round((prox - hoy) / 86400000);
+  return { dias: dias, edad: prox.getFullYear() - anio, dia: dia, mes: mes };
+}
+
+function renderCumpleanos() {
+  const body = document.getElementById('cumpleBody');
+  if (!body) return;
+  const rango = document.getElementById('cumpleRango')?.value || '30';
+  const q = (document.getElementById('cumpleBuscar')?.value || '').trim().toLowerCase();
+  const mesActual = new Date().getMonth() + 1;
+
+  let items = _resumenData.map(p => ({ p: p, c: _proxCumple(p.fecha_nacimiento) })).filter(x => x.c);
+  if (q) items = items.filter(x => (x.p.nombre || '').toLowerCase().includes(q));
+  let filtrados = items;
+  if (rango === '30')      filtrados = items.filter(x => x.c.dias <= 30);
+  else if (rango === 'mes') filtrados = items.filter(x => x.c.mes === mesActual);
+  filtrados.sort((a, b) => a.c.dias - b.c.dias);
+
+  const hoyN = items.filter(x => x.c.dias === 0).length;
+  const mesN = items.filter(x => x.c.mes === mesActual).length;
+  const p30 = items.filter(x => x.c.dias <= 30).length;
+  const kpis = document.getElementById('cumpleKpis');
+  if (kpis) kpis.innerHTML =
+    '<div class="kpi-card ' + (hoyN ? 'amarillo' : 'verde') + '"><div class="kpi-label">Cumpleaños hoy</div><div class="kpi-value ' + (hoyN ? 'amarillo' : 'verde') + '">' + hoyN + '</div><div class="kpi-sub">🎂</div><i class="fas fa-cake-candles kpi-icon"></i></div>' +
+    '<div class="kpi-card azul"><div class="kpi-label">Este mes</div><div class="kpi-value azul">' + mesN + '</div><div class="kpi-sub">cumpleañeros</div><i class="fas fa-calendar-day kpi-icon"></i></div>' +
+    '<div class="kpi-card verde"><div class="kpi-label">Próximos 30 días</div><div class="kpi-value verde">' + p30 + '</div><div class="kpi-sub">por celebrar</div><i class="fas fa-gift kpi-icon"></i></div>';
+
+  if (!filtrados.length) { body.innerHTML = '<tr><td colspan="6" class="muted" style="text-align:center;padding:28px">Sin cumpleaños en el rango. (¿Falta la fecha de nacimiento?)</td></tr>'; return; }
+  const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  body.innerHTML = filtrados.map(o => {
+    const p = o.p, c = o.c;
+    const est = c.dias === 0 ? '<span class="badge badge-warning">🎂 HOY</span>'
+              : c.dias <= 7 ? '<span class="badge badge-info">En ' + c.dias + ' d</span>'
+              : '<span class="muted">En ' + c.dias + ' d</span>';
+    return '<tr style="' + (c.dias === 0 ? 'background:rgba(243,156,18,.08)' : '') + '">' +
+      '<td style="font-weight:600;color:var(--gris-100)">' + escapeHtml(p.nombre) + '</td>' +
+      '<td class="muted">' + escapeHtml(p.cargo) + '</td>' +
+      '<td class="muted">' + String(c.dia).padStart(2, '0') + ' ' + meses[c.mes - 1] + '</td>' +
+      '<td style="text-align:right;font-variant-numeric:tabular-nums">' + c.edad + ' años</td>' +
+      '<td style="text-align:right;font-variant-numeric:tabular-nums">' + (c.dias === 0 ? '—' : c.dias) + '</td>' +
+      '<td>' + est + '</td>' +
+    '</tr>';
+  }).join('');
+}
