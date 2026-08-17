@@ -47,10 +47,15 @@ define('DB_NAME', 'u123456789_bd');         // ← nombre de tu BD
 define('DEBUG_MODE', false);
 
 // Integración con el proyecto de vigilancia (mismo servidor MySQL).
-// El campo Placa/Unidad de Inspecciones autocompleta desde esta BD.
-// El usuario de BD de arriba debe tener SELECT sobre ella. Si no aplica,
-// déjalo comentado y la Inspección seguirá funcionando con texto libre.
-// define('VIGILANCIA_DB', 'u248634042_bdvigilancia');
+// El módulo Vehículos y el autocompletar de Inspecciones leen la BD de
+// vigilancia con SU PROPIO usuario (el mismo que usa ese proyecto), así no
+// hace falta ningún permiso cross-database. Copia aquí las credenciales de
+// la BD de vigilancia. Si lo dejas comentado, el módulo queda vacío y la
+// Inspección sigue con texto libre (sin romper nada).
+// define('VIGILANCIA_DB_HOST', 'localhost');
+// define('VIGILANCIA_DB_NAME', 'u248634042_bdvigilancia');
+// define('VIGILANCIA_DB_USER', 'u248634042_usuario_vigilancia');
+// define('VIGILANCIA_DB_PASS', 'password_de_vigilancia');
 
 // ============================================================
 // NO MODIFIQUES NADA DE AQUÍ HACIA ABAJO

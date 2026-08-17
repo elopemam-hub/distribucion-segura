@@ -100,3 +100,35 @@ class Database {
 function db(): Database {
     return Database::getInstance();
 }
+
+// ============================================================
+// Conexión secundaria a la BD del proyecto de vigilancia (mismo servidor
+// MySQL). Usa credenciales propias (VIGILANCIA_DB_*), así no depende de
+// permisos cross-database. Devuelve null si no está configurada o falla.
+// ============================================================
+function dbVigilancia(): ?PDO {
+    static $pdo = null, $tried = false;
+    if ($tried) return $pdo;
+    $tried = true;
+
+    if (!defined('VIGILANCIA_DB_NAME') || !defined('VIGILANCIA_DB_USER')) return null;
+
+    $host = defined('VIGILANCIA_DB_HOST') ? VIGILANCIA_DB_HOST : DB_HOST;
+    $pass = defined('VIGILANCIA_DB_PASS') ? VIGILANCIA_DB_PASS : '';
+    $charset = defined('DB_CHARSET') ? DB_CHARSET : 'utf8mb4';
+    try {
+        $pdo = new PDO(
+            "mysql:host={$host};dbname=" . VIGILANCIA_DB_NAME . ";charset={$charset}",
+            VIGILANCIA_DB_USER, $pass,
+            [
+                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES   => false,
+            ]
+        );
+    } catch (Throwable $e) {
+        error_log('[dbVigilancia] ' . $e->getMessage());
+        $pdo = null;
+    }
+    return $pdo;
+}

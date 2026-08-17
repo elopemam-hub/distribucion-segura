@@ -1,45 +1,50 @@
 <?php
 // ============================================================
-// API: catálogo de vehículos (lectura cross-database)
+// API: catálogo de vehículos (proyecto de vigilancia)
 // Archivo: api/vehiculos.php
-// Lee la tabla `vehiculos` de la BD de vigilancia (mismo servidor MySQL).
-// Requiere que el usuario MySQL de esta app tenga SELECT sobre esa BD.
-// Si no lo tiene, degrada a vacío y la Inspección sigue con texto libre.
-// Acciones (?action=): ping (diagnóstico), buscar (autocompletar), get
+// Se conecta a la BD de vigilancia con SU PROPIO usuario (VIGILANCIA_DB_* en
+// config.php) — no depende de permisos cross-database. Si no está configurada
+// o no conecta, degrada a vacío y la Inspección sigue con texto libre.
+// Acciones (?action=): ping (diagnóstico), buscar (autocompletar), list, estados, get
 // ============================================================
 
 require_once __DIR__ . '/../includes/auth.php';
 requireLogin();
 header('Content-Type: application/json; charset=utf-8');
 
-// Nombre de la BD de vigilancia. Se puede sobreescribir en config.php con
-// define('VIGILANCIA_DB', '...'); por defecto usa la de producción.
-$vigDb = defined('VIGILANCIA_DB') ? VIGILANCIA_DB : 'u248634042_bdvigilancia';
-if (!preg_match('/^[A-Za-z0-9_]+$/', $vigDb)) {
-    jsonResponse(false, 'Nombre de BD de vigilancia inválido.', null, 500);
-}
-
 $action = $_GET['action'] ?? 'buscar';
+$vig = dbVigilancia();
+
+// Helper local: consulta sobre la conexión de vigilancia.
+$vigAll = function (string $sql, array $params = []) use ($vig): array {
+    $st = $vig->prepare($sql);
+    $st->execute($params);
+    return $st->fetchAll();
+};
 
 // Diagnóstico: confirma si esta app puede leer la BD de vigilancia.
 if ($action === 'ping') {
+    if (!$vig) {
+        jsonResponse(false, 'No configurado: falta definir VIGILANCIA_DB_NAME / VIGILANCIA_DB_USER / VIGILANCIA_DB_PASS en includes/config.php.', null, 200);
+    }
     try {
-        $c = db()->fetchOne("SELECT COUNT(*) c FROM `$vigDb`.`vehiculos`");
-        jsonResponse(true, 'Acceso correcto.', ['db' => $vigDb, 'total_vehiculos' => (int)($c['c'] ?? 0)]);
+        $c = $vigAll("SELECT COUNT(*) c FROM vehiculos");
+        jsonResponse(true, 'Acceso correcto.', ['db' => VIGILANCIA_DB_NAME, 'total_vehiculos' => (int)($c[0]['c'] ?? 0)]);
     } catch (Throwable $e) {
-        jsonResponse(false, "Sin acceso a `$vigDb`.vehiculos: " . $e->getMessage(), ['db' => $vigDb], 200);
+        jsonResponse(false, 'Conecta pero falla la consulta: ' . $e->getMessage(), null, 200);
     }
 }
+
+// Sin conexión configurada → vacío (degradación segura).
+if (!$vig) { jsonResponse(true, '', []); }
 
 try {
     if ($action === 'buscar') {
         $q = trim($_GET['q'] ?? '');
         if ($q === '') { jsonResponse(true, '', []); }
-        $rows = db()->fetchAll(
+        $rows = $vigAll(
             "SELECT id, placa, tipo, marca, modelo, anio, estado
-               FROM `$vigDb`.`vehiculos`
-              WHERE placa LIKE ?
-              ORDER BY placa ASC LIMIT 15",
+               FROM vehiculos WHERE placa LIKE ? ORDER BY placa ASC LIMIT 15",
             ["%$q%"]
         );
         jsonResponse(true, '', $rows);
@@ -47,15 +52,13 @@ try {
     } elseif ($action === 'get') {
         $placa = trim($_GET['placa'] ?? '');
         if ($placa === '') { jsonResponse(true, '', null); }
-        $row = db()->fetchOne(
-            "SELECT id, placa, tipo, marca, modelo, anio, estado
-               FROM `$vigDb`.`vehiculos` WHERE placa = ? LIMIT 1",
+        $rows = $vigAll(
+            "SELECT id, placa, tipo, marca, modelo, anio, estado FROM vehiculos WHERE placa = ? LIMIT 1",
             [$placa]
         );
-        jsonResponse(true, '', $row);
+        jsonResponse(true, '', $rows[0] ?? null);
 
     } elseif ($action === 'list') {
-        // Listado para el módulo Vehículos (búsqueda + filtro por estado).
         $q      = trim($_GET['q'] ?? '');
         $estado = trim($_GET['estado'] ?? '');
         $where = ['1=1']; $params = [];
@@ -64,25 +67,21 @@ try {
             $params[] = "%$q%"; $params[] = "%$q%"; $params[] = "%$q%";
         }
         if ($estado !== '') { $where[] = 'estado = ?'; $params[] = $estado; }
-        $rows = db()->fetchAll(
+        $rows = $vigAll(
             "SELECT id, placa, tipo, marca, modelo, anio, n_serie, estado
-               FROM `$vigDb`.`vehiculos`
-              WHERE " . implode(' AND ', $where) . "
-              ORDER BY placa ASC LIMIT 500",
+               FROM vehiculos WHERE " . implode(' AND ', $where) . " ORDER BY placa ASC LIMIT 500",
             $params
         );
         jsonResponse(true, '', $rows);
 
     } elseif ($action === 'estados') {
-        // Valores distintos de estado, para el filtro.
-        $rows = db()->fetchAll("SELECT DISTINCT estado FROM `$vigDb`.`vehiculos` WHERE estado IS NOT NULL AND estado <> '' ORDER BY estado");
+        $rows = $vigAll("SELECT DISTINCT estado FROM vehiculos WHERE estado IS NOT NULL AND estado <> '' ORDER BY estado");
         jsonResponse(true, '', array_column($rows, 'estado'));
 
     } else {
         jsonResponse(false, 'Acción no válida.', null, 400);
     }
 } catch (Throwable $e) {
-    // Sin acceso / BD inexistente → vacío. Inspecciones sigue con texto libre.
     error_log('[vehiculos] ' . $e->getMessage());
     jsonResponse(true, '', []);
 }
