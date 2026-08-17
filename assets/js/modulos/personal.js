@@ -211,21 +211,53 @@ async function descargarExpedientePersonal() {
   if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando…'; }
   try {
     if (!(await cargarPdfLib())) { toast('No se pudo cargar el módulo PDF (revisa tu conexión).', 'error'); return; }
-    const { PDFDocument } = PDFLib;
+    const { PDFDocument, StandardFonts, rgb } = PDFLib;
     const merged = await PDFDocument.create();
-    let incluidos = 0; const fallos = [];
+    const font     = await merged.embedFont(StandardFonts.Helvetica);
+    const fontBold = await merged.embedFont(StandardFonts.HelveticaBold);
+    // pdf-lib (fuentes estándar) usa WinAnsi: descarta lo que no sea Latin-1
+    // para que un carácter raro en el nombre no rompa el separador.
+    const _win = s => String(s || '').replace(/[^\x20-\xFF]/g, '');
+    const nom = _win((p.nombre || '').toUpperCase());
+    const dni = _win(p.dni || '—');
+    let nSec = 0;
 
+    // Página separadora A4 con el nombre del documento y datos de la persona.
+    const addSeparador = (rotulo) => {
+      const titulo = _win(rotulo);
+      nSec++;
+      const page = merged.addPage([595.28, 841.89]);
+      const { width, height } = page.getSize();
+      const centrar = (txt, f, size) => (width - f.widthOfTextAtSize(txt, size)) / 2;
+      // Banda superior con datos del expediente.
+      page.drawRectangle({ x: 0, y: height - 130, width, height: 130, color: rgb(0.11, 0.13, 0.17) });
+      page.drawText('EXPEDIENTE DE PERSONAL', { x: 40, y: height - 58, size: 11, font, color: rgb(0.96, 0.784, 0) });
+      page.drawText(nom || '-', { x: 40, y: height - 84, size: 16, font: fontBold, color: rgb(1, 1, 1) });
+      page.drawText('DNI ' + dni, { x: 40, y: height - 106, size: 11, font, color: rgb(0.78, 0.8, 0.83) });
+      // Título del documento, centrado.
+      page.drawText(titulo, { x: centrar(titulo, fontBold, 32), y: height / 2 + 6, size: 32, font: fontBold, color: rgb(0.11, 0.13, 0.17) });
+      const cap = 'Documento ' + nSec;
+      page.drawText(cap, { x: centrar(cap, font, 12), y: height / 2 - 22, size: 12, font, color: rgb(0.5, 0.53, 0.57) });
+      // Línea de acento.
+      page.drawRectangle({ x: width / 2 - 40, y: height / 2 - 6, width: 80, height: 3, color: rgb(0.96, 0.784, 0) });
+      page.drawText('Generado el ' + new Date().toLocaleDateString('es-PE'), { x: 40, y: 36, size: 9, font, color: rgb(0.6, 0.62, 0.66) });
+    };
+
+    let incluidos = 0; const fallos = [];
     for (const d of docs) {
       try {
         const bytes = await (await fetch(d.url)).arrayBuffer();
         if (d.ext === 'pdf') {
+          // Procesa el contenido ANTES del separador para no dejar separadores huérfanos si falla.
           const src = await PDFDocument.load(bytes);
           const pages = await merged.copyPages(src, src.getPageIndices());
+          addSeparador(d.label.toUpperCase());
           pages.forEach(pg => merged.addPage(pg));
         } else {
           let imgBytes = bytes, tipo = d.ext;
           if (tipo === 'webp') { imgBytes = await _webpAPng(bytes); tipo = 'png'; }
           const img = (tipo === 'png') ? await merged.embedPng(imgBytes) : await merged.embedJpg(imgBytes);
+          addSeparador(d.label.toUpperCase());
           const page = merged.addPage([img.width, img.height]);
           page.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
         }
