@@ -175,18 +175,21 @@ function cargarPdfLib() {
   });
 }
 
-// WEBP → PNG (pdf-lib no incrusta WEBP): se rasteriza vía canvas.
-function _webpAPng(bytes) {
+// Cualquier imagen (jpg/png/webp, incluso progresiva/CMYK) → PNG vía canvas.
+// pdf-lib solo incrusta JPEG baseline y PNG; el canvas normaliza todo lo que
+// el navegador pueda mostrar, así ningún documento-imagen se pierde.
+function _imagenAPng(bytes, ext) {
+  const mime = { jpg:'image/jpeg', jpeg:'image/jpeg', png:'image/png', webp:'image/webp' }[ext] || 'image/jpeg';
   return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(new Blob([bytes], { type: 'image/webp' }));
+    const url = URL.createObjectURL(new Blob([bytes], { type: mime }));
     const img = new Image();
     img.onload = () => {
       const c = document.createElement('canvas');
-      c.width = img.naturalWidth; c.height = img.naturalHeight;
+      c.width = img.naturalWidth || img.width; c.height = img.naturalHeight || img.height;
       c.getContext('2d').drawImage(img, 0, 0);
-      c.toBlob(b => { URL.revokeObjectURL(url); b.arrayBuffer().then(resolve).catch(reject); }, 'image/png');
+      c.toBlob(b => { URL.revokeObjectURL(url); b ? b.arrayBuffer().then(resolve).catch(reject) : reject(new Error('canvas')); }, 'image/png');
     };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('webp')); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('imagen ilegible')); };
     img.src = url;
   });
 }
@@ -246,23 +249,29 @@ async function descargarExpedientePersonal() {
     let incluidos = 0; const fallos = [];
     for (const d of docs) {
       try {
-        const bytes = await (await fetch(d.url)).arrayBuffer();
+        const resp = await fetch(d.url);
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const bytes = await resp.arrayBuffer();
         if (d.ext === 'pdf') {
           // Procesa el contenido ANTES del separador para no dejar separadores huérfanos si falla.
-          const src = await PDFDocument.load(bytes);
+          // ignoreEncryption: permite PDFs cifrados sin contraseña de apertura (scans típicos).
+          const src = await PDFDocument.load(bytes, { ignoreEncryption: true });
           const pages = await merged.copyPages(src, src.getPageIndices());
           addSeparador(d.label.toUpperCase());
           pages.forEach(pg => merged.addPage(pg));
         } else {
-          let imgBytes = bytes, tipo = d.ext;
-          if (tipo === 'webp') { imgBytes = await _webpAPng(bytes); tipo = 'png'; }
-          const img = (tipo === 'png') ? await merged.embedPng(imgBytes) : await merged.embedJpg(imgBytes);
+          // Todas las imágenes pasan por canvas → PNG (robusto ante jpg progresivo/CMYK/webp).
+          const pngBytes = await _imagenAPng(bytes, d.ext);
+          const img = await merged.embedPng(pngBytes);
           addSeparador(d.label.toUpperCase());
           const page = merged.addPage([img.width, img.height]);
           page.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
         }
         incluidos++;
-      } catch (e) { fallos.push(d.label); }
+      } catch (e) {
+        console.error('[expediente] falló ' + d.label + ' (' + d.url + '):', e);
+        fallos.push(d.label);
+      }
     }
     if (!incluidos) { toast('No se pudo procesar ningún documento', 'error'); return; }
 
