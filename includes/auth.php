@@ -115,11 +115,11 @@ function requireCsrf(): void {
 // PERMISOS POR MÓDULO
 // ============================================================
 
-const MODULOS_VALIDOS = ['dashboard', 'inspecciones', 'personal', 'reportes', 'matriz', 'amonestaciones', 'geocercas', 'evaluaciones', 'kpi_analytics', 'epp'];
+const MODULOS_VALIDOS = ['dashboard', 'inspecciones', 'personal', 'reportes', 'matriz', 'amonestaciones', 'geocercas', 'evaluaciones', 'kpi_analytics', 'epp', 'vehiculos'];
 
 // Defaults de acceso según rol (cuando el usuario no tiene filas en permisos)
 const ROL_DEFAULTS = [
-    'supervisor' => ['dashboard', 'inspecciones', 'personal', 'reportes', 'matriz', 'amonestaciones', 'geocercas', 'evaluaciones', 'kpi_analytics', 'epp'],
+    'supervisor' => ['dashboard', 'inspecciones', 'personal', 'reportes', 'matriz', 'amonestaciones', 'geocercas', 'evaluaciones', 'kpi_analytics', 'epp', 'vehiculos'],
     'inspector'  => ['dashboard', 'inspecciones', 'evaluaciones'],
 ];
 

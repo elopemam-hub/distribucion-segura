@@ -54,6 +54,30 @@ try {
         );
         jsonResponse(true, '', $row);
 
+    } elseif ($action === 'list') {
+        // Listado para el módulo Vehículos (búsqueda + filtro por estado).
+        $q      = trim($_GET['q'] ?? '');
+        $estado = trim($_GET['estado'] ?? '');
+        $where = ['1=1']; $params = [];
+        if ($q !== '') {
+            $where[] = '(placa LIKE ? OR marca LIKE ? OR n_serie LIKE ?)';
+            $params[] = "%$q%"; $params[] = "%$q%"; $params[] = "%$q%";
+        }
+        if ($estado !== '') { $where[] = 'estado = ?'; $params[] = $estado; }
+        $rows = db()->fetchAll(
+            "SELECT id, placa, tipo, marca, modelo, anio, n_serie, estado
+               FROM `$vigDb`.`vehiculos`
+              WHERE " . implode(' AND ', $where) . "
+              ORDER BY placa ASC LIMIT 500",
+            $params
+        );
+        jsonResponse(true, '', $rows);
+
+    } elseif ($action === 'estados') {
+        // Valores distintos de estado, para el filtro.
+        $rows = db()->fetchAll("SELECT DISTINCT estado FROM `$vigDb`.`vehiculos` WHERE estado IS NOT NULL AND estado <> '' ORDER BY estado");
+        jsonResponse(true, '', array_column($rows, 'estado'));
+
     } else {
         jsonResponse(false, 'Acción no válida.', null, 400);
     }

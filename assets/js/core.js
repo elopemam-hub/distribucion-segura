@@ -99,6 +99,7 @@ function showPage(page) {
   if (page === 'usuarios')           cargarUsuarios();
   if (page === 'matriz' && typeof initMatriz === 'function') initMatriz();
   if (page === 'epp' && typeof initEpp === 'function') initEpp();
+  if (page === 'vehiculos' && typeof initVehiculos === 'function') initVehiculos();
 }
 
 function switchInspeccionTab(tab) {

@@ -147,7 +147,7 @@ $csrf = csrfToken();
     </a>
 
 
-    <?php if (tieneAccesoModulo('inspecciones') || tieneAccesoModulo('personal') || tieneAccesoModulo('geocercas')): ?>
+    <?php if (tieneAccesoModulo('inspecciones') || tieneAccesoModulo('personal') || tieneAccesoModulo('geocercas') || tieneAccesoModulo('vehiculos')): ?>
     <div class="nav-section-title" style="margin-top:12px">Operaciones</div>
     <?php endif; ?>
     <?php if (tieneAccesoModulo('inspecciones')): ?>
@@ -163,6 +163,11 @@ $csrf = csrfToken();
     <?php if (tieneAccesoModulo('geocercas')): ?>
     <a class="nav-item" data-page="geocercas" onclick="showPage('geocercas');setTimeout(initGeoMap,80)">
       <i class="fas fa-map-location-dot"></i> Geocercas
+    </a>
+    <?php endif; ?>
+    <?php if (tieneAccesoModulo('vehiculos')): ?>
+    <a class="nav-item" data-page="vehiculos" onclick="showPage('vehiculos')">
+      <i class="fas fa-truck"></i> Vehículos
     </a>
     <?php endif; ?>
 
@@ -1141,6 +1146,10 @@ $csrf = csrfToken();
   <?php require_once __DIR__ . '/vistas/epp.php'; ?>
   <?php endif; ?>
 
+  <?php if (tieneAccesoModulo('vehiculos')): ?>
+  <?php require_once __DIR__ . '/vistas/vehiculos.php'; ?>
+  <?php endif; ?>
+
   <?php require_once __DIR__ . '/vistas/kpi_analytics.php'; ?>
 </main>
 
@@ -1660,6 +1669,7 @@ $csrf = csrfToken();
             <label class="modulo-check"><input type="checkbox" value="evaluaciones" id="mod_evaluaciones"> <i class="fas fa-clipboard-check"></i> Evaluaciones</label>
             <label class="modulo-check"><input type="checkbox" value="kpi_analytics" id="mod_kpi_analytics"> <i class="fas fa-chart-line"></i> KPI Analytics</label>
             <label class="modulo-check"><input type="checkbox" value="epp" id="mod_epp"> <i class="fas fa-helmet-safety"></i> EPP</label>
+            <label class="modulo-check"><input type="checkbox" value="vehiculos" id="mod_vehiculos"> <i class="fas fa-truck"></i> Vehículos</label>
           </div>
           <p style="font-size:11px;color:var(--gris-400);margin-top:8px"><i class="fas fa-info-circle"></i> Dashboard siempre visible. Desmarca todo para usar defaults del rol.</p>
         </div>
@@ -1932,6 +1942,9 @@ $csrf = csrfToken();
 <?php endif; ?>
 <?php if (tieneAccesoModulo('epp')): ?>
 <script src="assets/js/modulos/epp.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/epp.js') ?>"></script>
+<?php endif; ?>
+<?php if (tieneAccesoModulo('vehiculos')): ?>
+<script src="assets/js/modulos/vehiculos.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/vehiculos.js') ?>"></script>
 <?php endif; ?>
 <?php if (tieneAccesoModulo('kpi_analytics')): ?>
 <script src="assets/js/modulos/kpi_datasets.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/kpi_datasets.js') ?>"></script>
