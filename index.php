@@ -160,11 +160,6 @@ $csrf = csrfToken();
       <i class="fas fa-users-gear"></i> Personal
     </a>
     <?php endif; ?>
-    <?php if (tieneAccesoModulo('empresas')): ?>
-    <a class="nav-item" data-page="empresas" onclick="showPage('empresas')">
-      <i class="fas fa-building"></i> Empresas
-    </a>
-    <?php endif; ?>
     <?php if (tieneAccesoModulo('geocercas')): ?>
     <a class="nav-item" data-page="geocercas" onclick="showPage('geocercas');setTimeout(initGeoMap,80)">
       <i class="fas fa-map-location-dot"></i> Geocercas
@@ -244,12 +239,6 @@ $csrf = csrfToken();
       <div class="topbar-title"><span>DISTRIBUCIÓN SEGURA</span> — JULIACA</div>
     </div>
     <div class="topbar-actions">
-      <?php if (tieneAccesoModulo('empresas') || tieneAccesoModulo('personal')): ?>
-      <select id="empresaGlobal" class="form-control" style="width:auto;max-width:210px;font-size:12px;padding:6px 10px;display:none"
-              onchange="onEmpresaGlobalChange()" title="Filtrar todo el sistema por empresa">
-        <option value="">Todas las empresas</option>
-      </select>
-      <?php endif; ?>
       <div class="theme-switch" role="group" aria-label="Tema de la interfaz">
         <button type="button" class="theme-opt" data-theme-choice="light" onclick="setTheme('light')" title="Tema claro" aria-label="Tema claro"><i class="fas fa-sun"></i></button>
         <button type="button" class="theme-opt" data-theme-choice="dark" onclick="setTheme('dark')" title="Tema oscuro" aria-label="Tema oscuro"><i class="fas fa-moon"></i></button>
@@ -1564,7 +1553,7 @@ $csrf = csrfToken();
               <option value="otro">Otro</option>
             </select>
           </div>
-          <div class="form-group">
+          <div class="form-group" style="display:none">
             <label class="form-label">Empresa</label>
             <select class="form-control" id="personal_empresa_id">
               <option value="">— Sin asignar —</option>
@@ -1804,19 +1793,8 @@ $csrf = csrfToken();
             <label class="modulo-check"><input type="checkbox" value="kpi_analytics" id="mod_kpi_analytics"> <i class="fas fa-chart-line"></i> KPI Analytics</label>
             <label class="modulo-check"><input type="checkbox" value="epp" id="mod_epp"> <i class="fas fa-helmet-safety"></i> EPP</label>
             <label class="modulo-check"><input type="checkbox" value="vehiculos" id="mod_vehiculos"> <i class="fas fa-truck"></i> Vehículos</label>
-            <label class="modulo-check"><input type="checkbox" value="empresas" id="mod_empresas"> <i class="fas fa-building"></i> Empresas</label>
           </div>
           <p style="font-size:11px;color:var(--gris-400);margin-top:8px"><i class="fas fa-info-circle"></i> Dashboard siempre visible. Desmarca todo para usar defaults del rol.</p>
-        </div>
-
-        <div id="seccionEmpresasPerm" style="margin-top:18px;display:none">
-          <div style="font-size:11px;font-weight:700;color:var(--gris-300);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--gris-600)">
-            <i class="fas fa-building" style="color:var(--primary);margin-right:6px"></i>
-            Empresas permitidas
-            <span style="font-weight:400;color:var(--gris-400);margin-left:6px">(vacío = ve todas)</span>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="checkboxEmpresasPerm"></div>
-          <p style="font-size:11px;color:var(--gris-400);margin-top:8px"><i class="fas fa-info-circle"></i> Si marcas una o más, el usuario solo verá el personal, EPP y documentos de esas empresas. Sin marcar ninguna, ve todas.</p>
         </div>
 
         <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px">

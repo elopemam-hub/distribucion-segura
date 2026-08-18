@@ -147,8 +147,8 @@ function registrar() {
     // Trabajador: snapshot desde la tabla personal (incluye su empresa).
     $p = db()->fetchOne("SELECT id, dni, nombre, cargo, empresa_id FROM personal WHERE id = ?", [$personalId]);
     if (!$p) jsonResponse(false, 'Trabajador no encontrado.', null, 422);
-    // El trabajador debe pertenecer a la empresa activa.
-    if ((int)($p['empresa_id'] ?? 0) !== $emp) {
+    // En multi-empresa, el trabajador debe pertenecer a la empresa activa.
+    if (esMultiempresa() && (int)($p['empresa_id'] ?? 0) !== $emp) {
         jsonResponse(false, 'El trabajador no pertenece a la empresa seleccionada.', null, 422);
     }
 
@@ -196,7 +196,7 @@ function registrar() {
                (personal_id, empresa_id, trabajador_nombre, trabajador_dni, trabajador_cargo, motivo,
                 fecha, firma_trabajador, firma_entrega, observacion, entregado_por, entregado_por_nombre)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            [$p['id'], $p['empresa_id'] ?: null, mb_strtoupper($p['nombre'], 'UTF-8'), $p['dni'], $p['cargo'], $motivo,
+            [$p['id'], ($emp ?: ($p['empresa_id'] ?: null)), mb_strtoupper($p['nombre'], 'UTF-8'), $p['dni'], $p['cargo'], $motivo,
              $fecha, $firma ?: null, ($firmaEnt !== '' && strpos($firmaEnt, 'data:image/') === 0) ? $firmaEnt : null,
              $obs ?: null, $user['id'], $user['nombre'] ?? null]
         );

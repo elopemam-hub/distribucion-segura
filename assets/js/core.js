@@ -507,8 +507,10 @@ function onEvidenciaError(img) {
 
 // ============ SELECTOR GLOBAL DE EMPRESA (multi-empresa, Fase 2) ============
 // Filtra todo el sistema por empresa. La selección persiste en localStorage.
+// Modo empresa única: sin selector global; el backend resuelve la empresa
+// principal (DICORJES). Devuelve '' para no filtrar por empresa en el front.
 function getEmpresaGlobal() {
-  try { return localStorage.getItem('empresaGlobal') || ''; } catch (e) { return ''; }
+  return '';
 }
 
 async function initEmpresaGlobal() {

@@ -454,9 +454,35 @@ function setupEpp(): void {
     }
 }
 
-// Empresa activa para operaciones EPP (viene del selector global vía empresa_id).
+// ============================================================
+// MODO EMPRESA ÚNICA
+// El sistema opera con una sola empresa (DICORJES). El multi-empresa queda
+// desactivado (selector, módulo Empresas y silos EPP): todo se resuelve sobre
+// la empresa principal. Para reactivar multi-empresa, poner esto en true.
+// ============================================================
+function esMultiempresa(): bool {
+    return false;
+}
+
+// Empresa principal (única). DICORJES por nombre; si no, la primera activa.
+function empresaUnica(): int {
+    static $cache = null;
+    if ($cache !== null) return $cache;
+    try {
+        $r = db()->fetchOne("SELECT id FROM empresas WHERE razon_social LIKE '%DICORJES%' AND activo = 1 ORDER BY id LIMIT 1");
+        if (!$r) $r = db()->fetchOne("SELECT id FROM empresas WHERE activo = 1 ORDER BY id LIMIT 1");
+        $cache = $r ? (int)$r['id'] : 0;
+    } catch (Exception $e) { $cache = 0; }
+    return $cache;
+}
+
+// Empresa activa para operaciones EPP. En modo empresa única siempre es la
+// principal; en multi-empresa viene del selector global (empresa_id).
 function eppEmpresaSel(): int {
-    return (int)($_GET['empresa_id'] ?? $_POST['empresa_id'] ?? 0);
+    $e = (int)($_GET['empresa_id'] ?? $_POST['empresa_id'] ?? 0);
+    if ($e > 0) return $e;
+    if (!esMultiempresa()) return empresaUnica();
+    return 0;
 }
 
 // Escrituras EPP: exige una empresa seleccionada y permitida. Devuelve su id
@@ -607,6 +633,7 @@ function setupUsuarioEmpresas(): void {
 // Empresas que el usuario puede ver. null = SIN restricción (todas).
 // Array de ids = restringido a esas. [] = restringido a nada.
 function empresasPermitidas(?int $userId = null): ?array {
+    if (!esMultiempresa()) return null;   // modo empresa única: sin restricción
     $user = $userId ? db()->fetchOne("SELECT id, rol FROM usuarios WHERE id = ?", [$userId]) : getCurrentUser();
     if (!$user) return [];
     if (($user['rol'] ?? '') === 'administrador') return null;

@@ -152,6 +152,8 @@ function guardar() {
     $empresa        = trim($_POST['empresa'] ?? '');
     $tel            = trim($_POST['telefono'] ?? '');
 
+    // Modo empresa única: todo el personal pertenece a la empresa principal.
+    if (!esMultiempresa() && $empresaId <= 0) $empresaId = empresaUnica();
     // Si se eligió una empresa registrada, el texto se sincroniza con su razón social.
     if ($empresaId > 0) {
         $emp = db()->fetchOne("SELECT razon_social FROM empresas WHERE id = ?", [$empresaId]);
