@@ -435,7 +435,8 @@ async function editarPersonal(id) {
       if (tiene) { link.href=UPLOAD_URL+p[c]; link.style.display='inline'; }
       else { link.style.display='none'; link.removeAttribute('href'); }
     }
-    if (del) del.style.display = tiene ? 'inline' : 'none';
+    // "Quitar documento" solo para administrador.
+    if (del) del.style.display = (tiene && typeof USER_ROL !== 'undefined' && USER_ROL === 'administrador') ? 'inline' : 'none';
   });
   _personalActual = p;
   _actualizarBtnExpediente(p);

@@ -31,6 +31,10 @@ if (in_array($action, $mutaciones, true)) {
     if (!in_array($user['rol'], ['administrador', 'supervisor'])) {
         jsonResponse(false, 'No tienes permisos.', null, 403);
     }
+    // Quitar un documento adjunto es exclusivo del administrador.
+    if ($action === 'eliminar_doc' && $user['rol'] !== 'administrador') {
+        jsonResponse(false, 'Solo un administrador puede quitar documentos.', null, 403);
+    }
 }
 
 try {
