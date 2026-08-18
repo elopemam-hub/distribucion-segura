@@ -185,7 +185,7 @@
                 <i class="fas fa-file-import"></i> Subir hoja firmada
                 <input type="file" id="capFileAsistencia" accept=".pdf,image/*" style="display:none" onchange="capSubirAdjunto('asistencia')">
               </label>
-              <a class="btn btn-primary btn-sm" id="capBtnPdf" href="#" target="_blank" rel="noopener"><i class="fas fa-print"></i> Registro PDF</a>
+              <button class="btn btn-primary btn-sm" onclick="abrirRegistroPdf()"><i class="fas fa-print"></i> Registro PDF</button>
             </div>
           </div>
 
@@ -234,6 +234,23 @@
           <button class="btn btn-secondary" onclick="cerrarModal('modalFirmaCap')">Cancelar</button>
           <button class="btn btn-primary" onclick="capFirmaGuardar()"><i class="fas fa-check"></i> Guardar firma</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: VISOR DEL REGISTRO PDF (en la misma pantalla) ===== -->
+  <div class="modal-overlay" id="modalCapPdf" style="z-index:1200">
+    <div class="modal-box" style="max-width:1000px;width:97%">
+      <div class="modal-header">
+        <h3><i class="fas fa-file-lines" style="color:var(--primary)"></i> Registro de asistencia</h3>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn btn-primary btn-sm" onclick="capImprimirRegistro()"><i class="fas fa-print"></i> Imprimir / PDF</button>
+          <a class="btn btn-secondary btn-sm" id="capPdfAbrir" href="#" target="_blank" rel="noopener" title="Abrir en pestaña nueva"><i class="fas fa-up-right-from-square"></i></a>
+          <button class="modal-close" onclick="cerrarModal('modalCapPdf')"><i class="fas fa-times"></i></button>
+        </div>
+      </div>
+      <div class="modal-body" style="padding:0;background:#525659;min-height:74vh">
+        <iframe id="capPdfFrame" title="Registro" style="width:100%;height:74vh;border:0;background:#fff"></iframe>
       </div>
     </div>
   </div>

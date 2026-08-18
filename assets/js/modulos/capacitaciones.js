@@ -412,7 +412,6 @@ async function abrirEvidencia(id, titulo) {
   _capEvId = id;
   document.getElementById('capEvTitulo').textContent = titulo || '';
   document.getElementById('capEvId').value = id;
-  document.getElementById('capBtnPdf').href = 'api/capacitaciones_pdf.php?id=' + id;
   ['capFileMaterial', 'capFileFoto', 'capFileAsistencia', 'capAsisBuscar', 'capManualNombre', 'capManualDni', 'capManualCargo'].forEach(i => { const el = document.getElementById(i); if (el) el.value = ''; });
   document.getElementById('capManualBox').style.display = 'none';
   document.getElementById('capAsisResultados').style.display = 'none';
@@ -519,6 +518,20 @@ async function capSubirAdjunto(tipo) {
 async function capEliminarAdjunto(id) {
   if (!confirm('¿Quitar este archivo?')) return;
   await _capPost({ action: 'adjunto_del', id: id });
+}
+
+// ── Registro PDF en la misma pantalla (visor con iframe) ──
+function abrirRegistroPdf() {
+  const url = 'api/capacitaciones_pdf.php?id=' + _capEvId;
+  document.getElementById('capPdfFrame').src = url;
+  const ab = document.getElementById('capPdfAbrir');
+  if (ab) ab.href = url;
+  abrirModal('modalCapPdf');
+}
+function capImprimirRegistro() {
+  const f = document.getElementById('capPdfFrame');
+  try { f.contentWindow.focus(); f.contentWindow.print(); }
+  catch (e) { window.open(f.src, '_blank'); }
 }
 
 function capBuscarTrab(q) {

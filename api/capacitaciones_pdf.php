@@ -237,5 +237,10 @@ $fill = max(0, $minRows - count($asis));
       &nbsp;·&nbsp; Total asistentes: <?= count($asis) ?>
     </p>
   </div>
+  <script>
+    // Embebido en el visor del módulo: oculta la barra interna (el modal ya
+    // trae sus propios botones Imprimir / Abrir aparte).
+    if (window.self !== window.top) { var tb = document.querySelector('.toolbar'); if (tb) tb.style.display = 'none'; }
+  </script>
 </body>
 </html>
