@@ -541,11 +541,13 @@ function onEmpresaGlobalChange() {
     if (tabActiva.includes('cumplimiento') && typeof cargarResumenPersonal === 'function') cargarResumenPersonal(() => { _llenarSelectEmpresasResumen && _llenarSelectEmpresasResumen(); renderCumplimiento && renderCumplimiento(); });
     if (tabActiva.includes('cumpleanos') && typeof cargarResumenPersonal === 'function') cargarResumenPersonal(() => { _llenarSelectEmpresasResumen && _llenarSelectEmpresasResumen(); renderCumpleanos && renderCumpleanos(); });
   } else if (page === 'epp') {
-    // Recarga la sub-pestaña EPP visible (entregas/reportes filtran por empresa),
-    // no initEpp() que solo recarga inventario.
-    const t = document.querySelector('.epp-tab-btn.active')?.id?.replace('epp-btn-', '');
-    if (t && typeof switchEppTab === 'function') switchEppTab(t);
-    else if (typeof initEpp === 'function') initEpp();
+    // Al cambiar de empresa: refresca el catálogo (siembra el silo de la nueva
+    // empresa + actualiza los selects) y luego recarga la sub-pestaña visible.
+    const t = document.querySelector('.epp-tab-btn.active')?.id?.replace('epp-btn-', '') || 'inventario';
+    if (typeof recargarEppTipos === 'function') {
+      Promise.all([recargarEppTipos(), recargarEppProv(), recargarEppTallas()])
+        .then(() => { if (typeof switchEppTab === 'function') switchEppTab(t); });
+    } else if (typeof switchEppTab === 'function') { switchEppTab(t); }
   }
 }
 
