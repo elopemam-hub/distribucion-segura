@@ -54,7 +54,7 @@ if (!empty($cap['hora'])) {
     $horaFin = trim($parts[1] ?? '');
 }
 
-$minRows = 8;
+$minRows = 10;
 $fill = max(0, $minRows - count($asis));
 ?>
 <!DOCTYPE html>
@@ -84,12 +84,12 @@ $fill = max(0, $minRows - count($asis));
   .hl { background: #ffff00; }
   .tema { text-align: center; font-weight: 700; font-size: 13px; }
   .asis th { background: #f2f2f2; font-size: 9px; text-transform: uppercase; text-align: center; }
-  .asis td { height: 56px; font-size: 9px; vertical-align: top; padding-top: 3px; }
+  .asis td { height: 44px; font-size: 9px; vertical-align: top; padding-top: 3px; }
   .asis td.cnum, .asis td.cdni, .asis td.carea { vertical-align: middle; }
   .cnum { width: 4%; text-align: center; } .cdni { width: 11%; text-align: center; }
   .cnom { width: 26%; } .ccargo { width: 20%; } .carea { width: 12%; text-align: center; }
   .cfirma { width: 15%; text-align: center; } .cobs { width: 12%; }
-  .cfirma img { max-height: 50px; max-width: 96%; }
+  .cfirma img { max-height: 40px; max-width: 96%; }
   .foot { font-size: 9px; }
   [contenteditable]:empty { background: #fffef2; }
   @media print { body { background: #fff; } .toolbar { display: none; } .sheet { width: auto; padding: 0; } [contenteditable] { background: transparent !important; } }
