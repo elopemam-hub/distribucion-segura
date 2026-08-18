@@ -439,23 +439,33 @@ function _capIcono(archivo) {
 }
 function _capEsImagen(archivo) { return ['jpg', 'jpeg', 'png', 'webp'].includes((archivo.split('.').pop() || '').toLowerCase()); }
 
+// HTML de una fila de documento (material o hoja firmada).
+function _capDocFila(a) {
+  const url = _UP() + a.archivo;
+  const ver = (_capEsImagen(a.archivo) || /\.pdf$/i.test(a.archivo))
+    ? 'onclick="verDocumento(\'' + encodeURI(url) + '\');return false;" href="#"'
+    : 'href="' + url + '" target="_blank" rel="noopener"';
+  return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--gris-700)">' +
+    '<i class="fas ' + _capIcono(a.archivo) + '" style="color:var(--primary)"></i>' +
+    '<a ' + ver + ' style="color:var(--gris-100);flex:1;text-decoration:none">' + escapeHtml(a.nombre_original || a.archivo) + '</a>' +
+    '<button class="btn btn-outline btn-sm" onclick="capEliminarAdjunto(' + a.id + ')" title="Quitar"><i class="fas fa-trash" style="color:var(--rojo)"></i></button>' +
+  '</div>';
+}
+
 function renderEvAdjuntos() {
-  const docs = _capEvData.adjuntos.filter(a => a.tipo !== 'foto');
+  // Material de despliegue y hojas de asistencia firmadas van SEPARADOS.
+  const material = _capEvData.adjuntos.filter(a => a.tipo === 'material');
   const mat = document.getElementById('capEvMaterial');
-  if (mat) {
-    mat.innerHTML = docs.length ? docs.map(a => {
-      const url = _UP() + a.archivo;
-      const tag = a.tipo === 'asistencia' ? '<span class="badge badge-info" style="margin-left:6px">hoja firmada</span>' : '';
-      const ver = (_capEsImagen(a.archivo) || /\.pdf$/i.test(a.archivo))
-        ? 'onclick="verDocumento(\'' + encodeURI(url) + '\');return false;" href="#"'
-        : 'href="' + url + '" target="_blank" rel="noopener"';
-      return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--gris-700)">' +
-        '<i class="fas ' + _capIcono(a.archivo) + '" style="color:var(--primary)"></i>' +
-        '<a ' + ver + ' style="color:var(--gris-100);flex:1;text-decoration:none">' + escapeHtml(a.nombre_original || a.archivo) + '</a>' + tag +
-        '<button class="btn btn-outline btn-sm" onclick="capEliminarAdjunto(' + a.id + ')" title="Quitar"><i class="fas fa-trash" style="color:var(--rojo)"></i></button>' +
-      '</div>';
-    }).join('') : '<span class="muted" style="font-size:12px">Sin material.</span>';
+  if (mat) mat.innerHTML = material.length ? material.map(_capDocFila).join('') : '<span class="muted" style="font-size:12px">Sin material.</span>';
+
+  const hojas = _capEvData.adjuntos.filter(a => a.tipo === 'asistencia');
+  const asisCont = document.getElementById('capEvAsistencia');
+  if (asisCont) {
+    asisCont.innerHTML = hojas.length
+      ? '<div style="font-size:11px;font-weight:700;color:var(--gris-400);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px"><i class="fas fa-file-signature" style="color:var(--primary)"></i> Hojas firmadas</div>' + hojas.map(_capDocFila).join('')
+      : '';
   }
+
   const fotos = _capEvData.adjuntos.filter(a => a.tipo === 'foto');
   const gal = document.getElementById('capEvFotos');
   if (gal) {

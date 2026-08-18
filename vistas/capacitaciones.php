@@ -190,6 +190,9 @@
             </div>
           </div>
 
+          <!-- Hojas de asistencia firmadas (escaneadas), separadas del material -->
+          <div id="capEvAsistencia" style="margin-bottom:8px"></div>
+
           <!-- Autocompletar desde Personal -->
           <div style="position:relative;margin-bottom:8px">
             <input type="text" class="form-control" id="capAsisBuscar" placeholder="Buscar trabajador por nombre o DNI para agregarlo…" oninput="capBuscarTrab(this.value)" autocomplete="off">
