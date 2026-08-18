@@ -151,8 +151,32 @@
       <div class="modal-body">
         <input type="hidden" id="capEvId">
 
-        <!-- 1. Lista de asistencia (lo más importante: núcleo legal) -->
+        <!-- 1. Material de despliegue -->
         <div class="card" style="margin-bottom:14px"><div class="card-body" style="padding:14px 16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
+            <strong style="font-size:13px;color:var(--gris-100)"><i class="fas fa-file-arrow-up" style="color:var(--primary)"></i> Material de despliegue</strong>
+            <div style="display:flex;gap:6px;align-items:center">
+              <input type="file" id="capFileMaterial" accept=".pdf,.doc,.docx,.ppt,.pptx,image/*" style="max-width:230px;font-size:12px">
+              <button class="btn btn-primary btn-sm" onclick="capSubirAdjunto('material')"><i class="fas fa-upload"></i> Subir</button>
+            </div>
+          </div>
+          <div id="capEvMaterial" class="muted" style="font-size:12px">—</div>
+        </div></div>
+
+        <!-- 2. Evidencia fotográfica -->
+        <div class="card" style="margin-bottom:14px"><div class="card-body" style="padding:14px 16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
+            <strong style="font-size:13px;color:var(--gris-100)"><i class="fas fa-camera" style="color:var(--primary)"></i> Evidencia fotográfica</strong>
+            <div style="display:flex;gap:6px;align-items:center">
+              <input type="file" id="capFileFoto" accept="image/*" multiple style="max-width:230px;font-size:12px">
+              <button class="btn btn-primary btn-sm" onclick="capSubirAdjunto('foto')"><i class="fas fa-upload"></i> Subir</button>
+            </div>
+          </div>
+          <div id="capEvFotos" style="display:flex;flex-wrap:wrap;gap:8px"><span class="muted" style="font-size:12px">—</span></div>
+        </div></div>
+
+        <!-- 3. Lista de asistencia -->
+        <div class="card"><div class="card-body" style="padding:14px 16px">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
             <strong style="font-size:13px;color:var(--gris-100)"><i class="fas fa-signature" style="color:var(--primary)"></i> Lista de asistencia <span class="muted" style="font-weight:400">(R.M. 050-2013-TR)</span></strong>
             <div style="display:flex;gap:6px;flex-wrap:wrap">
@@ -186,30 +210,6 @@
               <tbody id="capAsisBody"><tr><td colspan="6" class="muted" style="text-align:center;padding:18px">Sin asistentes.</td></tr></tbody>
             </table>
           </div>
-        </div></div>
-
-        <!-- 2. Material de despliegue -->
-        <div class="card" style="margin-bottom:14px"><div class="card-body" style="padding:14px 16px">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
-            <strong style="font-size:13px;color:var(--gris-100)"><i class="fas fa-file-arrow-up" style="color:var(--primary)"></i> Material de despliegue</strong>
-            <div style="display:flex;gap:6px;align-items:center">
-              <input type="file" id="capFileMaterial" accept=".pdf,.doc,.docx,.ppt,.pptx,image/*" style="max-width:230px;font-size:12px">
-              <button class="btn btn-primary btn-sm" onclick="capSubirAdjunto('material')"><i class="fas fa-upload"></i> Subir</button>
-            </div>
-          </div>
-          <div id="capEvMaterial" class="muted" style="font-size:12px">—</div>
-        </div></div>
-
-        <!-- 3. Evidencia fotográfica -->
-        <div class="card"><div class="card-body" style="padding:14px 16px">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
-            <strong style="font-size:13px;color:var(--gris-100)"><i class="fas fa-camera" style="color:var(--primary)"></i> Evidencia fotográfica</strong>
-            <div style="display:flex;gap:6px;align-items:center">
-              <input type="file" id="capFileFoto" accept="image/*" multiple style="max-width:230px;font-size:12px">
-              <button class="btn btn-primary btn-sm" onclick="capSubirAdjunto('foto')"><i class="fas fa-upload"></i> Subir</button>
-            </div>
-          </div>
-          <div id="capEvFotos" style="display:flex;flex-wrap:wrap;gap:8px"><span class="muted" style="font-size:12px">—</span></div>
         </div></div>
       </div>
       <div class="modal-footer" style="display:flex;justify-content:flex-end;padding:14px 20px;border-top:1px solid var(--gris-700)">
