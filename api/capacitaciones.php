@@ -192,9 +192,16 @@ function adjuntoAdd() {
     $tipo = trim($_POST['tipo'] ?? 'material');
     if ($id <= 0 || !in_array($tipo, CAP_ADJ_TIPOS, true)) jsonResponse(false, 'Datos inválidos.', null, 422);
     _capExiste($id);
-    if (empty($_FILES['archivo']['tmp_name'])) jsonResponse(false, 'No se recibió archivo.', null, 422);
-    [$ruta, $orig] = _guardarAdjuntoCap($_FILES['archivo'], $tipo);
-    if (!$ruta) jsonResponse(false, 'Archivo no permitido (imagen/PDF/Office ≤ ' . round(MAX_FILE_SIZE / 1048576) . 'MB).', null, 422);
+    if (empty($_FILES['archivo']['tmp_name']) && ($_FILES['archivo']['error'] ?? 0) === UPLOAD_ERR_OK) {
+        jsonResponse(false, 'No se recibió archivo.', null, 422);
+    }
+    [$ruta, $orig, $motivo] = _guardarAdjuntoCap($_FILES['archivo'], $tipo);
+    if (!$ruta) {
+        $msg = $motivo === 'grande' ? 'El archivo es muy grande (máx 20 MB; revisa también el límite del servidor).'
+             : ($motivo === 'tipo' ? 'Tipo no permitido. Usa PDF, imagen (JPG/PNG/WEBP) o Office (Word/PowerPoint).'
+             : 'No se pudo subir el archivo. Verifica el tamaño y vuelve a intentar.');
+        jsonResponse(false, $msg, null, 422);
+    }
     db()->query("INSERT INTO cap_adjuntos (capacitacion_id, tipo, archivo, nombre_original) VALUES (?, ?, ?, ?)",
         [$id, $tipo, $ruta, $orig]);
     jsonResponse(true, 'Archivo subido.', ['id' => db()->lastInsertId()]);
@@ -285,31 +292,33 @@ function asistenteDel() {
 }
 
 // Sube un adjunto a uploads/capacitaciones/. material/asistencia: imagen/PDF/Office;
-// foto: solo imagen. Devuelve [rutaRelativa|null, nombreOriginal].
+// foto: solo imagen. Valida por extensión (robusto para PDF/Office, cuyo MIME a
+// veces se detecta mal) + verificación de imagen real para fotos. Límite 20MB.
+// Devuelve [ruta|null, nombreOriginal|null, motivo] (motivo: ok|grande|tipo|error).
 function _guardarAdjuntoCap(array $file, string $tipo): array {
-    if ($file['error'] !== UPLOAD_ERR_OK) return [null, null];
-    if ($file['size'] <= 0 || $file['size'] > MAX_FILE_SIZE) return [null, null];
-    $finfo = new finfo(FILEINFO_MIME_TYPE);
-    $mime  = $finfo->file($file['tmp_name']);
-    $imgs  = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
-    $docs  = [
-        'application/pdf' => 'pdf',
-        'application/msword' => 'doc',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
-        'application/vnd.ms-powerpoint' => 'ppt',
-        'application/vnd.openxmlformats-officedocument.presentationml.presentation' => 'pptx',
-    ];
-    $mapa = ($tipo === 'foto') ? $imgs : array_merge($imgs, $docs);
-    if (!isset($mapa[$mime])) return [null, null];
-    if (isset($imgs[$mime]) && @getimagesize($file['tmp_name']) === false) return [null, null];
+    $CAP_MAX = 20 * 1024 * 1024;   // 20MB (hojas escaneadas pesan)
+    $err = $file['error'] ?? UPLOAD_ERR_NO_FILE;
+    if ($err === UPLOAD_ERR_INI_SIZE || $err === UPLOAD_ERR_FORM_SIZE) return [null, null, 'grande'];
+    if ($err !== UPLOAD_ERR_OK) return [null, null, 'error'];
+    if (($file['size'] ?? 0) <= 0) return [null, null, 'error'];
+    if ($file['size'] > $CAP_MAX) return [null, null, 'grande'];
+
+    $ext = strtolower(pathinfo($file['name'] ?? '', PATHINFO_EXTENSION));
+    $imgExt = ['jpg', 'jpeg', 'png', 'webp'];
+    $docExt = ['pdf', 'doc', 'docx', 'ppt', 'pptx'];
+    $permit = ($tipo === 'foto') ? $imgExt : array_merge($imgExt, $docExt);
+    if (!in_array($ext, $permit, true)) return [null, null, 'tipo'];
+    if (in_array($ext, $imgExt, true) && @getimagesize($file['tmp_name']) === false) return [null, null, 'tipo'];
+
     $dir = __DIR__ . '/../uploads/capacitaciones/';
     if (!is_dir($dir)) mkdir($dir, 0755, true);
-    $filename = 'cap_' . $tipo . '_' . bin2hex(random_bytes(6)) . '.' . $mapa[$mime];
+    $extNorm = $ext === 'jpeg' ? 'jpg' : $ext;
+    $filename = 'cap_' . $tipo . '_' . bin2hex(random_bytes(6)) . '.' . $extNorm;
     if (move_uploaded_file($file['tmp_name'], $dir . $filename)) {
         @chmod($dir . $filename, 0644);
-        return ['capacitaciones/' . $filename, substr(basename($file['name']), 0, 200)];
+        return ['capacitaciones/' . $filename, substr(basename($file['name']), 0, 200), 'ok'];
     }
-    return [null, null];
+    return [null, null, 'error'];
 }
 
 // ------------------------------------------------------------
