@@ -7,6 +7,7 @@
 let _capTipo = 'cronograma';
 let _capData = [];
 let _capBuscarTimer = null;
+let _capVista = 'lista';   // solo cronograma: 'lista' | 'matriz'
 
 // Textos y columnas por sub-módulo.
 const CAP_META = {
@@ -41,17 +42,38 @@ const CAP_ESTADO_BADGE = {
 };
 
 function initCapacitaciones() {
-  _capTipo = 'cronograma';
-  cargarCapacitaciones();
+  switchCapTab('cronograma');
 }
 
 function switchCapTab(tipo) {
   _capTipo = tipo;
+  _capVista = 'lista';
   document.querySelectorAll('.cap-tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('cap-btn-' + tipo)?.classList.add('active');
   const lbl = document.getElementById('capNuevoLabel');
   if (lbl) lbl.textContent = CAP_META[tipo].nuevo;
+  // El toggle Lista/Matriz solo aplica al cronograma anual.
+  const tog = document.getElementById('capVistaToggle');
+  if (tog) tog.style.display = tipo === 'cronograma' ? '' : 'none';
+  _capActualizarToggle();
   cargarCapacitaciones();
+}
+
+function capSetVista(v) {
+  _capVista = v;
+  // La matriz es por año: si no hay año elegido, usa el actual.
+  if (v === 'matriz') {
+    const sel = document.getElementById('capFiltroAnio');
+    if (sel && !sel.value) { sel.value = String(new Date().getFullYear()); }
+  }
+  _capActualizarToggle();
+  cargarCapacitaciones();
+}
+
+function _capActualizarToggle() {
+  const set = (el, on) => { if (el) { el.classList.toggle('btn-primary', on); el.classList.toggle('btn-outline', !on); } };
+  set(document.getElementById('capVistaLista'),  _capVista === 'lista');
+  set(document.getElementById('capVistaMatriz'), _capVista === 'matriz');
 }
 
 function capBuscarDebounced() {
@@ -127,7 +149,14 @@ function _capBadge(estado) {
 }
 function _capFecha(f) { if (!f) return '—'; const m = String(f).split('-'); return m.length === 3 ? `${m[2]}/${m[1]}/${m[0]}` : f; }
 
+// Color de fondo del marcador según estado.
+const CAP_ESTADO_COLOR = {
+  programado: 'var(--azul)', en_curso: 'var(--naranja)', ejecutado: 'var(--verde)',
+  reprogramado: 'var(--amarillo)', cancelado: 'var(--gris-500)',
+};
+
 function renderCapTabla() {
+  if (_capTipo === 'cronograma' && _capVista === 'matriz') { renderCapMatriz(); return; }
   const wrap = document.getElementById('capTablaWrap');
   if (!wrap) return;
   const meta = CAP_META[_capTipo];
@@ -138,6 +167,56 @@ function renderCapTabla() {
   const head = meta.cols.map(c => `<th>${c}</th>`).join('') + '<th style="text-align:right">Acciones</th>';
   const body = _capData.map(x => `<tr>${_capFila(x)}<td style="text-align:right;white-space:nowrap">${_capAcciones(x)}</td></tr>`).join('');
   wrap.innerHTML = `<table class="data-table" style="min-width:760px"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
+}
+
+// Matriz mensual del cronograma anual: temas (filas) × 12 meses (columnas).
+function renderCapMatriz() {
+  const wrap = document.getElementById('capTablaWrap');
+  if (!wrap) return;
+  const anio = parseInt(document.getElementById('capFiltroAnio')?.value, 10) || new Date().getFullYear();
+  const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  const regs = _capData.filter(x => +x.anio === anio);
+
+  if (!regs.length) {
+    wrap.innerHTML = `<p class="muted" style="text-align:center;padding:28px">Sin capacitaciones programadas en ${anio}. Crea una con “${CAP_META.cronograma.nuevo}”.</p>`;
+    return;
+  }
+
+  // Agrupa por tema; cada tema marca los meses donde tiene sesiones.
+  const grupos = new Map();
+  regs.forEach(x => {
+    if (!grupos.has(x.titulo)) grupos.set(x.titulo, { titulo: x.titulo, dirigido_a: x.dirigido_a, meses: Array.from({ length: 12 }, () => []) });
+    const m = x.fecha ? (parseInt(String(x.fecha).split('-')[1], 10) - 1) : -1;
+    if (m >= 0 && m <= 11) grupos.get(x.titulo).meses[m].push(x);
+  });
+
+  const head = '<th style="position:sticky;left:0;background:var(--gris-800);z-index:6;min-width:190px">Tema</th>' +
+    '<th style="min-width:90px">Dirigido a</th>' +
+    meses.map(m => `<th style="text-align:center;font-size:10px;width:40px">${m}</th>`).join('');
+
+  const body = Array.from(grupos.values()).map(g => {
+    const celdas = g.meses.map(arr => {
+      if (!arr.length) return '<td style="text-align:center;color:var(--gris-600)">·</td>';
+      const r = arr[0];
+      const col = CAP_ESTADO_COLOR[r.estado] || 'var(--gris-500)';
+      const tip = arr.map(a => _capFecha(a.fecha) + ' — ' + (CAP_ESTADO_BADGE[a.estado] ? CAP_ESTADO_BADGE[a.estado][1] : a.estado)).join(' · ');
+      const lbl = arr.length > 1 ? arr.length : '<i class="fas fa-check" style="font-size:9px"></i>';
+      return `<td style="text-align:center"><button onclick="editarCapacitacion(${r.id})" title="${escapeHtml(tip)}" ` +
+        `style="border:0;background:${col};color:#fff;border-radius:4px;min-width:24px;height:22px;padding:0 5px;font-size:11px;font-weight:700;cursor:pointer">${lbl}</button></td>`;
+    }).join('');
+    return '<tr>' +
+      `<td style="position:sticky;left:0;background:var(--gris-800);z-index:1;font-weight:600;color:var(--gris-100)">${escapeHtml(g.titulo)}</td>` +
+      `<td class="muted">${g.dirigido_a ? escapeHtml(g.dirigido_a) : 'Todos'}</td>` +
+      celdas + '</tr>';
+  }).join('');
+
+  const leyenda = '<div style="display:flex;gap:14px;flex-wrap:wrap;padding:10px 14px;font-size:11px;color:var(--gris-400)">' +
+    Object.entries(CAP_ESTADO_BADGE).map(([k, v]) =>
+      `<span><span style="display:inline-block;width:11px;height:11px;border-radius:3px;background:${CAP_ESTADO_COLOR[k]};vertical-align:middle;margin-right:4px"></span>${v[1]}</span>`).join('') +
+    '<span style="margin-left:auto;font-weight:600;color:var(--gris-300)">Programa anual ' + anio + '</span></div>';
+
+  wrap.innerHTML = leyenda +
+    `<table class="data-table" style="min-width:820px"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
 }
 
 function _capFila(x) {
@@ -283,7 +362,7 @@ async function guardarCapacitacion() {
     if (!d.success) { toast(d.message || 'No se pudo guardar', 'error'); return; }
     toast('Guardado', 'success');
     cerrarModal('modalCapacitacion');
-    switchCapTab(tipo);
+    cargarCapacitaciones();   // conserva la sub-pestaña y la vista (lista/matriz)
   } catch (e) { toast('Error al guardar', 'error'); }
   finally { if (btn) btn.disabled = false; }
 }

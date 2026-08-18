@@ -40,6 +40,13 @@
             </select></div>
           <div class="form-group"><label class="form-label">Buscar</label>
             <input type="text" class="form-control" id="capFiltroQ" placeholder="Título, responsable…" oninput="capBuscarDebounced()"></div>
+          <div class="form-group" id="capVistaToggle" style="display:none;flex:0 0 auto">
+            <label class="form-label">Vista</label>
+            <div style="display:flex;gap:0">
+              <button type="button" class="btn btn-sm btn-primary" id="capVistaLista" onclick="capSetVista('lista')" style="border-top-right-radius:0;border-bottom-right-radius:0"><i class="fas fa-list"></i> Lista</button>
+              <button type="button" class="btn btn-sm btn-outline" id="capVistaMatriz" onclick="capSetVista('matriz')" style="border-top-left-radius:0;border-bottom-left-radius:0"><i class="fas fa-table-cells-large"></i> Matriz</button>
+            </div>
+          </div>
           <button class="btn btn-primary" onclick="nuevaCapacitacion()"><i class="fas fa-plus"></i> <span id="capNuevoLabel">Nuevo</span></button>
         </div>
       </div>
