@@ -115,12 +115,12 @@ function requireCsrf(): void {
 // PERMISOS POR MÓDULO
 // ============================================================
 
-const MODULOS_VALIDOS = ['dashboard', 'inspecciones', 'personal', 'reportes', 'matriz', 'amonestaciones', 'geocercas', 'evaluaciones', 'kpi_analytics', 'epp', 'vehiculos', 'empresas'];
+const MODULOS_VALIDOS = ['dashboard', 'inspecciones', 'personal', 'reportes', 'matriz', 'amonestaciones', 'geocercas', 'evaluaciones', 'capacitaciones', 'kpi_analytics', 'epp', 'vehiculos', 'empresas'];
 
 // Defaults de acceso según rol (cuando el usuario no tiene filas en permisos)
 const ROL_DEFAULTS = [
-    'supervisor' => ['dashboard', 'inspecciones', 'personal', 'reportes', 'matriz', 'amonestaciones', 'geocercas', 'evaluaciones', 'kpi_analytics', 'epp', 'vehiculos', 'empresas'],
-    'inspector'  => ['dashboard', 'inspecciones', 'evaluaciones'],
+    'supervisor' => ['dashboard', 'inspecciones', 'personal', 'reportes', 'matriz', 'amonestaciones', 'geocercas', 'evaluaciones', 'capacitaciones', 'kpi_analytics', 'epp', 'vehiculos', 'empresas'],
+    'inspector'  => ['dashboard', 'inspecciones', 'evaluaciones', 'capacitaciones'],
 ];
 
 function getModulosUsuario(int $userId): array {
@@ -608,6 +608,40 @@ function setupEmpresas(): void {
         }
     } catch (Exception $e) {
         error_log('[setupEmpresas] ' . $e->getMessage());
+    }
+}
+
+// ============================================================
+// AUTO-PROVISIÓN: MÓDULO CAPACITACIONES
+// Programa anual de capacitación (Ley 29783 Art. 35). Tabla unificada con un
+// discriminador `tipo` para los 4 sub-módulos: cronograma anual, semana de
+// seguridad, safety alert (alerta de seguridad) y campañas. Idempotente.
+// ============================================================
+function setupCapacitaciones(): void {
+    try {
+        db()->query("CREATE TABLE IF NOT EXISTS capacitaciones (
+            id            INT AUTO_INCREMENT PRIMARY KEY,
+            tipo          ENUM('cronograma','semana','alerta','campana') NOT NULL DEFAULT 'cronograma',
+            anio          INT NOT NULL,
+            titulo        VARCHAR(200) NOT NULL,
+            subtipo       VARCHAR(60)  NULL,
+            descripcion   TEXT         NULL,
+            dirigido_a    VARCHAR(60)  NULL,
+            responsable   VARCHAR(150) NULL,
+            lugar         VARCHAR(150) NULL,
+            fecha         DATE         NULL,
+            fecha_fin     DATE         NULL,
+            hora          VARCHAR(20)  NULL,
+            horas         DECIMAL(5,1) NULL,
+            participantes INT          NULL,
+            estado        ENUM('programado','en_curso','ejecutado','reprogramado','cancelado') NOT NULL DEFAULT 'programado',
+            imagen        VARCHAR(255) NULL,
+            creado_en     DATETIME     DEFAULT CURRENT_TIMESTAMP,
+            KEY idx_cap_tipo (tipo),
+            KEY idx_cap_anio (anio)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", []);
+    } catch (Exception $e) {
+        error_log('[setupCapacitaciones] ' . $e->getMessage());
     }
 }
 

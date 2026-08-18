@@ -172,10 +172,17 @@ $csrf = csrfToken();
     <?php endif; ?>
 
 
-    <?php if (tieneAccesoModulo('evaluaciones')): ?>
+    <?php if (tieneAccesoModulo('evaluaciones') || tieneAccesoModulo('capacitaciones')): ?>
     <div class="nav-section-title" style="margin-top:12px">Capacitación</div>
+    <?php endif; ?>
+    <?php if (tieneAccesoModulo('evaluaciones')): ?>
     <a class="nav-item" data-page="evaluaciones" onclick="showPage('evaluaciones')">
       <i class="fas fa-clipboard-check"></i> Evaluaciones
+    </a>
+    <?php endif; ?>
+    <?php if (tieneAccesoModulo('capacitaciones')): ?>
+    <a class="nav-item" data-page="capacitaciones" onclick="showPage('capacitaciones')">
+      <i class="fas fa-chalkboard-user"></i> Capacitaciones
     </a>
     <?php endif; ?>
 
@@ -1199,6 +1206,10 @@ $csrf = csrfToken();
   </div><!-- /page-geocercas -->
   <?php endif; ?>
 
+  <?php if (tieneAccesoModulo('capacitaciones')): ?>
+  <?php require_once __DIR__ . '/vistas/capacitaciones.php'; ?>
+  <?php endif; ?>
+
   <?php if (tieneAccesoModulo('evaluaciones')): ?>
   <?php require_once __DIR__ . '/vistas/evaluaciones.php'; ?>
   <?php endif; ?>
@@ -1785,6 +1796,7 @@ $csrf = csrfToken();
             <label class="modulo-check"><input type="checkbox" value="amonestaciones" id="mod_amonestaciones"> <i class="fas fa-file-signature"></i> Amonestaciones</label>
             <label class="modulo-check"><input type="checkbox" value="geocercas" id="mod_geocercas"> <i class="fas fa-draw-polygon"></i> Geocercas</label>
             <label class="modulo-check"><input type="checkbox" value="evaluaciones" id="mod_evaluaciones"> <i class="fas fa-clipboard-check"></i> Evaluaciones</label>
+            <label class="modulo-check"><input type="checkbox" value="capacitaciones" id="mod_capacitaciones"> <i class="fas fa-chalkboard-user"></i> Capacitaciones</label>
             <label class="modulo-check"><input type="checkbox" value="kpi_analytics" id="mod_kpi_analytics"> <i class="fas fa-chart-line"></i> KPI Analytics</label>
             <label class="modulo-check"><input type="checkbox" value="epp" id="mod_epp"> <i class="fas fa-helmet-safety"></i> EPP</label>
             <label class="modulo-check"><input type="checkbox" value="vehiculos" id="mod_vehiculos"> <i class="fas fa-truck"></i> Vehículos</label>
@@ -2051,6 +2063,9 @@ $csrf = csrfToken();
 <?php if ($user['rol'] === 'administrador'): ?>
 <script src="assets/js/modulos/banco_preguntas.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/banco_preguntas.js') ?>"></script>
 <?php endif; ?>
+<?php endif; ?>
+<?php if (tieneAccesoModulo('capacitaciones')): ?>
+<script src="assets/js/modulos/capacitaciones.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/capacitaciones.js') ?>"></script>
 <?php endif; ?>
 <?php if (tieneAccesoModulo('geocercas')): ?>
 <script src="assets/js/modulos/geocercas.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/geocercas.js') ?>"></script>
