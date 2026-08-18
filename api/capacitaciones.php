@@ -13,8 +13,11 @@ requireLogin();
 setupCapacitaciones();
 header('Content-Type: application/json; charset=utf-8');
 
-const CAP_TIPOS   = ['cronograma', 'semana', 'alerta', 'campana'];
-const CAP_ESTADOS = ['programado', 'en_curso', 'ejecutado', 'reprogramado', 'cancelado'];
+const CAP_TIPOS    = ['cronograma', 'semana', 'alerta', 'campana'];
+const CAP_ESTADOS  = ['programado', 'en_curso', 'ejecutado', 'reprogramado', 'cancelado'];
+// Debe declararse ANTES del switch (los const de nivel superior no se hoistean
+// y adjuntoAdd() la usa desde el dispatch).
+const CAP_ADJ_TIPOS = ['material', 'foto', 'asistencia'];
 
 $action = $_GET['action'] ?? $_POST['action'] ?? 'list';
 
@@ -160,8 +163,6 @@ function eliminar() {
 // ============================================================
 // EVIDENCIA / DESPLIEGUE: adjuntos (material/foto/asistencia) + asistentes
 // ============================================================
-const CAP_ADJ_TIPOS = ['material', 'foto', 'asistencia'];
-
 function _capExiste(int $id): array {
     $r = db()->fetchOne("SELECT id, titulo, tipo FROM capacitaciones WHERE id = ?", [$id]);
     if (!$r) jsonResponse(false, 'Capacitación no encontrada.', null, 404);

@@ -168,7 +168,7 @@
           <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
             <strong style="font-size:13px;color:var(--gris-100)"><i class="fas fa-camera" style="color:var(--primary)"></i> Evidencia fotográfica</strong>
             <div style="display:flex;gap:6px;align-items:center">
-              <input type="file" id="capFileFoto" accept="image/*" style="max-width:230px;font-size:12px">
+              <input type="file" id="capFileFoto" accept="image/*" multiple style="max-width:230px;font-size:12px">
               <button class="btn btn-primary btn-sm" onclick="capSubirAdjunto('foto')"><i class="fas fa-upload"></i> Subir</button>
             </div>
           </div>

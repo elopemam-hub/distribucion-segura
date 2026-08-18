@@ -497,19 +497,23 @@ function renderEvAsistentes() {
 async function capSubirAdjunto(tipo) {
   const map = { material: 'capFileMaterial', foto: 'capFileFoto', asistencia: 'capFileAsistencia' };
   const input = document.getElementById(map[tipo]);
-  const file = input ? input.files[0] : null;
-  if (!file) { if (tipo !== 'asistencia') toast('Elige un archivo primero', 'warning'); return; }
-  const fd = new FormData();
-  fd.append('action', 'adjunto_add'); fd.append('csrf_token', CSRF_TOKEN);
-  fd.append('capacitacion_id', _capEvId); fd.append('tipo', tipo); fd.append('archivo', file);
-  try {
-    const r = await fetch('api/capacitaciones.php', { method: 'POST', body: fd });
-    const d = await r.json();
-    if (!d.success) { toast(d.message || 'No se pudo subir', 'error'); return; }
-    toast('Archivo subido', 'success');
-    if (input) input.value = '';
-    cargarEvidencia();
-  } catch (e) { toast('Error al subir', 'error'); }
+  const files = input ? Array.from(input.files || []) : [];
+  if (!files.length) { if (tipo !== 'asistencia') toast('Elige un archivo primero', 'warning'); return; }
+  let ok = 0; const fallos = [];
+  for (const file of files) {
+    const fd = new FormData();
+    fd.append('action', 'adjunto_add'); fd.append('csrf_token', CSRF_TOKEN);
+    fd.append('capacitacion_id', _capEvId); fd.append('tipo', tipo); fd.append('archivo', file);
+    try {
+      const r = await fetch('api/capacitaciones.php', { method: 'POST', body: fd });
+      const d = await r.json();
+      if (d.success) ok++; else fallos.push((file.name || '') + ': ' + (d.message || 'error'));
+    } catch (e) { fallos.push((file.name || '') + ': conexión'); }
+  }
+  if (input) input.value = '';
+  if (ok) toast(ok + (ok === 1 ? ' archivo subido' : ' archivos subidos'), 'success');
+  if (fallos.length) toast('No se subieron: ' + fallos.join(' · '), 'error', 6000);
+  cargarEvidencia();
 }
 
 async function capEliminarAdjunto(id) {
