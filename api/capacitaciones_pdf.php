@@ -54,7 +54,7 @@ if (!empty($cap['hora'])) {
     $horaFin = trim($parts[1] ?? '');
 }
 
-$minRows = 21;
+$minRows = 12;
 $fill = max(0, $minRows - count($asis));
 ?>
 <!DOCTYPE html>
@@ -84,11 +84,11 @@ $fill = max(0, $minRows - count($asis));
   .hl { background: #ffff00; }
   .tema { text-align: center; font-weight: 700; font-size: 13px; }
   .asis th { background: #f2f2f2; font-size: 9px; text-transform: uppercase; text-align: center; }
-  .asis td { height: 20px; font-size: 9px; }
+  .asis td { height: 34px; font-size: 9px; }
   .cnum { width: 4%; text-align: center; } .cdni { width: 11%; text-align: center; }
   .cnom { width: 26%; } .ccargo { width: 20%; } .carea { width: 12%; text-align: center; }
   .cfirma { width: 15%; text-align: center; } .cobs { width: 12%; }
-  .cfirma img { max-height: 18px; max-width: 96%; }
+  .cfirma img { max-height: 30px; max-width: 96%; }
   .foot { font-size: 9px; }
   [contenteditable]:empty { background: #fffef2; }
   @media print { body { background: #fff; } .toolbar { display: none; } .sheet { width: auto; padding: 0; } [contenteditable] { background: transparent !important; } }
@@ -204,7 +204,7 @@ $fill = max(0, $minRows - count($asis));
         <td class="cdni"><?= $h($a['dni']) ?></td>
         <td class="cnom"><?= $h($a['nombre']) ?></td>
         <td class="ccargo"><?= $h($a['cargo']) ?></td>
-        <td class="carea"><span contenteditable="true">&nbsp;</span></td>
+        <td class="carea"><?= $g('ct_area') !== '' ? $h($g('ct_area')) : '<span contenteditable="true">&nbsp;</span>' ?></td>
         <td class="cfirma"><?php if (!empty($a['firma']) && strpos($a['firma'], 'data:image/') === 0): ?><img src="<?= $h($a['firma']) ?>" alt="firma"><?php endif; ?></td>
         <td class="cobs"><span contenteditable="true">&nbsp;</span></td>
       </tr>

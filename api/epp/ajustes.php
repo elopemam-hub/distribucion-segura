@@ -19,7 +19,7 @@ $action = $_GET['action'] ?? $_POST['action'] ?? 'get';
 // Claves permitidas (whitelist). emp_logo se gestiona por archivo (no texto).
 const EPP_CONFIG_KEYS = [
     'emp_razon_social', 'emp_ruc', 'emp_domicilio', 'emp_actividad', 'emp_num_trab', 'emp_responsable',
-    'ct_nombre', 'ct_domicilio', 'ct_responsable', 'ct_num_trab',
+    'ct_nombre', 'ct_domicilio', 'ct_responsable', 'ct_num_trab', 'ct_area',
     'doc_codigo', 'doc_version', 'doc_fecha', 'emp_logo',
     'stock_min_pct', 'stock_max_pct',
 ];

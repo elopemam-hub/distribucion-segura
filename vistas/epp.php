@@ -422,6 +422,10 @@
                 <label class="form-label">N° de trabajadores</label>
                 <input type="text" class="form-control" id="epp_ct_num_trab">
               </div>
+              <div class="form-group">
+                <label class="form-label">Área <span style="font-weight:400;color:var(--gris-400)">· columna "Área" del registro PDF</span></label>
+                <input type="text" class="form-control" id="epp_ct_area" placeholder="Ej: LOGISTICA">
+              </div>
             </div>
 
             <p style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--gris-400);letter-spacing:.06em;margin:14px 0 10px">Control del documento y responsable de registro</p>

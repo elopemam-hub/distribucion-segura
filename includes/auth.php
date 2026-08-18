@@ -311,6 +311,7 @@ function setupEpp(): void {
             ('ct_domicilio',        ''),
             ('ct_responsable',      ''),
             ('ct_num_trab',         ''),
+            ('ct_area',             ''),
             ('doc_codigo',          ''),
             ('doc_version',         ''),
             ('doc_fecha',           ''),

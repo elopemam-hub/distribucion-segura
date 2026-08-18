@@ -966,6 +966,7 @@ async function cargarEppEmpresa() {
   set('epp_ct_domicilio',     c.ct_domicilio);
   set('epp_ct_responsable',   c.ct_responsable);
   set('epp_ct_num_trab',      c.ct_num_trab);
+  set('epp_ct_area',          c.ct_area);
   set('epp_doc_codigo',       c.doc_codigo);
   set('epp_doc_version',      c.doc_version);
   set('epp_doc_fecha',        c.doc_fecha);
@@ -1024,7 +1025,7 @@ async function eppGuardarEmpresa() {
   [['emp_razon_social','epp_emp_razon_social'],['emp_ruc','epp_emp_ruc'],['emp_actividad','epp_emp_actividad'],
    ['emp_num_trab','epp_emp_num_trab'],['emp_domicilio','epp_emp_domicilio'],['emp_responsable','epp_emp_responsable'],
    ['ct_nombre','epp_ct_nombre'],['ct_domicilio','epp_ct_domicilio'],['ct_responsable','epp_ct_responsable'],
-   ['ct_num_trab','epp_ct_num_trab'],['doc_codigo','epp_doc_codigo'],['doc_version','epp_doc_version'],
+   ['ct_num_trab','epp_ct_num_trab'],['ct_area','epp_ct_area'],['doc_codigo','epp_doc_codigo'],['doc_version','epp_doc_version'],
    ['doc_fecha','epp_doc_fecha']].forEach(([k,id]) => fd.append(k, val(id)));
   const logo = document.getElementById('epp_emp_logo')?.files[0];
   if (logo) fd.append('emp_logo', logo);
