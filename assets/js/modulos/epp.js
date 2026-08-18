@@ -98,6 +98,17 @@ async function recargarEppProv() {
     activos.map(p => `<option value="${p.id}">${eppEsc(p.razon_social)}</option>`).join('');
 }
 
+// Siembra el catálogo estándar (5 EPP + tallas) en la empresa activa.
+async function eppSembrarEstandar() {
+  if (!_eppEmp()) { toast('Selecciona una empresa en la barra superior primero.', 'warning'); return; }
+  if (!confirm('¿Agregar el catálogo estándar (Casco, Chaleco, Zapatos, Lentes, Guantes + tallas) a esta empresa?')) return;
+  const j = await eppPost('api/epp/tipos.php?action=seed', {});
+  if (!j.success) { toast(j.message || 'Error', 'error'); return; }
+  toast(j.message, 'success');
+  await Promise.all([recargarEppTipos(), recargarEppTallas()]);
+  cargarEppStock();
+}
+
 // ══════════════ INVENTARIO: stock + kardex ══════════════
 async function cargarEppStock() {
   const cont = document.getElementById('eppStockResumen');

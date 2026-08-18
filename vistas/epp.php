@@ -49,9 +49,14 @@
       <div class="card" style="margin-bottom:18px">
         <div class="card-header">
           <h3><i class="fas fa-warehouse"></i> Stock actual</h3>
-          <button class="btn btn-secondary btn-sm" onclick="abrirModalMovimiento()" title="Corrección de stock (+/−)">
-            <i class="fas fa-sliders"></i> Ajuste de stock
-          </button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-outline btn-sm" onclick="eppSembrarEstandar()" title="Agrega los 5 EPP estándar (Casco, Chaleco, Zapatos, Lentes, Guantes) + tallas a esta empresa">
+              <i class="fas fa-seedling"></i> Sembrar catálogo estándar
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="abrirModalMovimiento()" title="Corrección de stock (+/−)">
+              <i class="fas fa-sliders"></i> Ajuste de stock
+            </button>
+          </div>
         </div>
         <div class="card-body" style="overflow-x:auto">
           <table class="data-table" id="tablaEppStock">

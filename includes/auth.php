@@ -480,34 +480,43 @@ function eppEmpresaFiltro(string $col): array {
     return empresaWhere($col);
 }
 
-// Siembra el catálogo estándar (5 EPP + tallas) para una empresa que aún no lo
-// tiene. Se llama al crear la empresa y de forma perezosa al listar por empresa.
-function eppSeedEmpresa(int $empresaId): void {
-    if ($empresaId <= 0) return;
+// Agrega el catálogo estándar (5 EPP + tallas) a una empresa, solo los que aún
+// no existan (por nombre). Aditivo e idempotente: lo dispara el botón "Sembrar
+// catálogo estándar". Devuelve cuántos EPP y tallas se agregaron.
+function eppSeedEmpresa(int $empresaId): array {
+    if ($empresaId <= 0) return ['tipos' => 0, 'tallas' => 0];
+    $addT = 0; $addS = 0;
     try {
-        $nT = (int)(db()->fetchOne("SELECT COUNT(*) c FROM epp_tipos WHERE empresa_id = ?", [$empresaId])['c'] ?? 0);
-        if ($nT === 0) {
+        $tiposStd = [
+            ['Casco', 'Cabeza', 'ANSI Z89.1', 365, 5, 'unidad'],
+            ['Chaleco reflectivo', 'Alta visibilidad', 'EN ISO 20471', 180, 5, 'unidad'],
+            ['Zapatos de seguridad', 'Pies', 'ISO 20345', 365, 5, 'par'],
+            ['Lentes', 'Ojos', 'ANSI Z87.1', 90, 10, 'unidad'],
+            ['Guantes', 'Manos', 'EN 388', 60, 10, 'par'],
+        ];
+        $exT = array_map(fn($n) => mb_strtolower($n, 'UTF-8'),
+            array_column(db()->fetchAll("SELECT nombre FROM epp_tipos WHERE empresa_id = ?", [$empresaId]), 'nombre'));
+        foreach ($tiposStd as $t) {
+            if (in_array(mb_strtolower($t[0], 'UTF-8'), $exT, true)) continue;
             db()->query(
-                "INSERT INTO epp_tipos (empresa_id, nombre, categoria, norma_tecnica, vida_util_dias, stock_minimo, unidad) VALUES
-                 (?, 'Casco', 'Cabeza', 'ANSI Z89.1', 365, 5, 'unidad'),
-                 (?, 'Chaleco reflectivo', 'Alta visibilidad', 'EN ISO 20471', 180, 5, 'unidad'),
-                 (?, 'Zapatos de seguridad', 'Pies', 'ISO 20345', 365, 5, 'par'),
-                 (?, 'Lentes', 'Ojos', 'ANSI Z87.1', 90, 10, 'unidad'),
-                 (?, 'Guantes', 'Manos', 'EN 388', 60, 10, 'par')",
-                [$empresaId, $empresaId, $empresaId, $empresaId, $empresaId]
+                "INSERT INTO epp_tipos (empresa_id, nombre, categoria, norma_tecnica, vida_util_dias, stock_minimo, unidad)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)",
+                [$empresaId, $t[0], $t[1], $t[2], $t[3], $t[4], $t[5]]
             );
+            $addT++;
         }
-        $nS = (int)(db()->fetchOne("SELECT COUNT(*) c FROM epp_tallas WHERE empresa_id = ?", [$empresaId])['c'] ?? 0);
-        if ($nS === 0) {
-            db()->query(
-                "INSERT INTO epp_tallas (empresa_id, nombre, orden) VALUES
-                 (?, 'Única', 1), (?, 'XS', 2), (?, 'S', 3), (?, 'M', 4), (?, 'L', 5), (?, 'XL', 6), (?, 'XXL', 7)",
-                [$empresaId, $empresaId, $empresaId, $empresaId, $empresaId, $empresaId, $empresaId]
-            );
+        $tallasStd = [['Única', 1], ['XS', 2], ['S', 3], ['M', 4], ['L', 5], ['XL', 6], ['XXL', 7]];
+        $exS = array_map(fn($n) => mb_strtolower($n, 'UTF-8'),
+            array_column(db()->fetchAll("SELECT nombre FROM epp_tallas WHERE empresa_id = ?", [$empresaId]), 'nombre'));
+        foreach ($tallasStd as $s) {
+            if (in_array(mb_strtolower($s[0], 'UTF-8'), $exS, true)) continue;
+            db()->query("INSERT INTO epp_tallas (empresa_id, nombre, orden) VALUES (?, ?, ?)", [$empresaId, $s[0], $s[1]]);
+            $addS++;
         }
     } catch (Exception $e) {
         error_log('[eppSeedEmpresa] ' . $e->getMessage());
     }
+    return ['tipos' => $addT, 'tallas' => $addS];
 }
 
 // ============================================================

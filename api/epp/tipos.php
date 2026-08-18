@@ -17,7 +17,7 @@ header('Content-Type: application/json; charset=utf-8');
 
 $action = $_GET['action'] ?? $_POST['action'] ?? 'list';
 
-$mutaciones = ['save', 'toggle'];
+$mutaciones = ['save', 'toggle', 'seed'];
 if (in_array($action, $mutaciones, true)) {
     requireCsrf();
     $user = getCurrentUser();
@@ -31,6 +31,7 @@ try {
         case 'list':   listar();  break;
         case 'save':   guardar(); break;
         case 'toggle': toggle();  break;
+        case 'seed':   sembrar(); break;
         default: jsonResponse(false, 'Acción no válida.', null, 400);
     }
 } catch (Exception $e) {
@@ -50,10 +51,6 @@ function eppStockPct(): array {
 }
 
 function listar() {
-    // Al entrar a una empresa, siembra su catálogo estándar la primera vez.
-    $emp = eppEmpresaSel();
-    if ($emp > 0 && empresaEsPermitida($emp)) eppSeedEmpresa($emp);
-
     $incluirInactivos = ($_GET['todos'] ?? '') === '1';
     $where = $incluirInactivos ? '1=1' : 'activo = 1';
     [$eSql, $eP] = eppEmpresaFiltro('empresa_id');
@@ -148,6 +145,16 @@ function guardarImagenEpp(): ?string {
         return 'epp/' . $filename;
     }
     return null;
+}
+
+// Siembra el catálogo estándar (5 EPP + tallas) en la empresa activa. Aditivo.
+function sembrar() {
+    $emp = eppRequireEmpresa();
+    $r = eppSeedEmpresa($emp);
+    $msg = ($r['tipos'] || $r['tallas'])
+        ? "Catálogo estándar agregado ({$r['tipos']} EPP, {$r['tallas']} tallas)."
+        : 'La empresa ya tenía el catálogo estándar.';
+    jsonResponse(true, $msg, $r);
 }
 
 // Activa/desactiva (baja lógica; conserva historial de movimientos)

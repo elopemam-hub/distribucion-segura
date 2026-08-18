@@ -39,8 +39,6 @@ try {
 
 // ============================================================
 function listar() {
-    $emp = eppEmpresaSel();
-    if ($emp > 0 && empresaEsPermitida($emp)) eppSeedEmpresa($emp);
     $incluirInactivos = ($_GET['todos'] ?? '') === '1';
     $where = $incluirInactivos ? '1=1' : 'activo = 1';
     [$eSql, $eP] = eppEmpresaFiltro('empresa_id');

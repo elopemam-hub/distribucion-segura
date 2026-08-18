@@ -45,9 +45,6 @@ try {
 // Stock actual = SUM(cantidad) del kardex, por tipo. LEFT JOIN para incluir
 // tipos sin movimientos (stock 0). Marca bajo_minimo cuando aplica.
 function stock() {
-    // Siembra el catálogo estándar la primera vez que se entra a la empresa.
-    $emp = eppEmpresaSel();
-    if ($emp > 0 && empresaEsPermitida($emp)) eppSeedEmpresa($emp);
     [$eSql, $eP] = eppEmpresaFiltro('t.empresa_id');   // stock por empresa (silo)
     $rows = db()->fetchAll(
         "SELECT t.id, t.codigo, t.nombre, t.marca, t.categoria, t.talla, t.consumo_anual,
