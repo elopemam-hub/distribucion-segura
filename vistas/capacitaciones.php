@@ -140,3 +140,100 @@
       </div>
     </div>
   </div>
+
+  <!-- ===== MODAL: EVIDENCIA / DESPLIEGUE ===== -->
+  <div class="modal-overlay" id="modalEvidencia">
+    <div class="modal-box" style="max-width:820px;width:97%">
+      <div class="modal-header">
+        <h3><i class="fas fa-paperclip" style="color:var(--primary)"></i> Evidencia · <span id="capEvTitulo"></span></h3>
+        <button class="modal-close" onclick="cerrarModal('modalEvidencia')"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="capEvId">
+
+        <!-- 1. Material de despliegue -->
+        <div class="card" style="margin-bottom:14px"><div class="card-body" style="padding:14px 16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
+            <strong style="font-size:13px;color:var(--gris-100)"><i class="fas fa-file-arrow-up" style="color:var(--primary)"></i> Material de despliegue</strong>
+            <div style="display:flex;gap:6px;align-items:center">
+              <input type="file" id="capFileMaterial" accept=".pdf,.doc,.docx,.ppt,.pptx,image/*" style="max-width:230px;font-size:12px">
+              <button class="btn btn-primary btn-sm" onclick="capSubirAdjunto('material')"><i class="fas fa-upload"></i> Subir</button>
+            </div>
+          </div>
+          <div id="capEvMaterial" class="muted" style="font-size:12px">—</div>
+        </div></div>
+
+        <!-- 2. Evidencia fotográfica -->
+        <div class="card" style="margin-bottom:14px"><div class="card-body" style="padding:14px 16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
+            <strong style="font-size:13px;color:var(--gris-100)"><i class="fas fa-camera" style="color:var(--primary)"></i> Evidencia fotográfica</strong>
+            <div style="display:flex;gap:6px;align-items:center">
+              <input type="file" id="capFileFoto" accept="image/*" style="max-width:230px;font-size:12px">
+              <button class="btn btn-primary btn-sm" onclick="capSubirAdjunto('foto')"><i class="fas fa-upload"></i> Subir</button>
+            </div>
+          </div>
+          <div id="capEvFotos" style="display:flex;flex-wrap:wrap;gap:8px"><span class="muted" style="font-size:12px">—</span></div>
+        </div></div>
+
+        <!-- 3. Lista de asistencia -->
+        <div class="card"><div class="card-body" style="padding:14px 16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+            <strong style="font-size:13px;color:var(--gris-100)"><i class="fas fa-signature" style="color:var(--primary)"></i> Lista de asistencia <span class="muted" style="font-weight:400">(R.M. 050-2013-TR)</span></strong>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <button class="btn btn-outline btn-sm" onclick="capToggleManual()"><i class="fas fa-user-plus"></i> Manual</button>
+              <label class="btn btn-outline btn-sm" style="margin:0" title="Subir hoja de asistencia firmada (escaneada)">
+                <i class="fas fa-file-import"></i> Subir hoja firmada
+                <input type="file" id="capFileAsistencia" accept=".pdf,image/*" style="display:none" onchange="capSubirAdjunto('asistencia')">
+              </label>
+              <a class="btn btn-primary btn-sm" id="capBtnPdf" href="#" target="_blank" rel="noopener"><i class="fas fa-print"></i> Registro PDF</a>
+            </div>
+          </div>
+
+          <!-- Autocompletar desde Personal -->
+          <div style="position:relative;margin-bottom:8px">
+            <input type="text" class="form-control" id="capAsisBuscar" placeholder="Buscar trabajador por nombre o DNI para agregarlo…" oninput="capBuscarTrab(this.value)" autocomplete="off">
+            <div id="capAsisResultados" style="display:none;position:absolute;z-index:20;left:0;right:0;background:var(--gris-800);border:1px solid var(--gris-600);border-radius:6px;max-height:220px;overflow:auto;box-shadow:0 8px 24px rgba(0,0,0,.35)"></div>
+          </div>
+
+          <!-- Alta manual (oculta) -->
+          <div id="capManualBox" style="display:none;gap:8px;margin-bottom:10px;flex-wrap:wrap" >
+            <input type="text" class="form-control" id="capManualNombre" placeholder="Apellidos y nombres" style="flex:2;min-width:180px">
+            <input type="text" class="form-control" id="capManualDni" placeholder="DNI" style="flex:1;min-width:100px" maxlength="20">
+            <input type="text" class="form-control" id="capManualCargo" placeholder="Cargo" style="flex:1;min-width:120px" maxlength="60">
+            <button class="btn btn-primary btn-sm" onclick="capAgregarManual()"><i class="fas fa-plus"></i> Agregar</button>
+          </div>
+
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th style="width:6%">N°</th><th>Apellidos y nombres</th><th>DNI</th><th>Cargo</th><th style="text-align:center">Firma</th><th style="text-align:right">Acciones</th></tr></thead>
+              <tbody id="capAsisBody"><tr><td colspan="6" class="muted" style="text-align:center;padding:18px">Sin asistentes.</td></tr></tbody>
+            </table>
+          </div>
+        </div></div>
+      </div>
+      <div class="modal-footer" style="display:flex;justify-content:flex-end;padding:14px 20px;border-top:1px solid var(--gris-700)">
+        <button class="btn btn-secondary" onclick="cerrarModal('modalEvidencia')">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: FIRMA DEL ASISTENTE ===== -->
+  <div class="modal-overlay" id="modalFirmaCap">
+    <div class="modal-box" style="max-width:460px;width:94%">
+      <div class="modal-header">
+        <h3><i class="fas fa-pen-nib" style="color:var(--primary)"></i> Firma · <span id="capFirmaNombre"></span></h3>
+        <button class="modal-close" onclick="cerrarModal('modalFirmaCap')"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body" style="text-align:center">
+        <p class="muted" style="font-size:12px;margin-bottom:8px">Firme dentro del recuadro (dedo o mouse).</p>
+        <canvas id="capFirmaCanvas" width="400" height="180" style="border:1px dashed var(--gris-500);border-radius:6px;background:#fff;touch-action:none;max-width:100%"></canvas>
+      </div>
+      <div class="modal-footer" style="display:flex;justify-content:space-between;gap:10px;padding:14px 20px;border-top:1px solid var(--gris-700)">
+        <button class="btn btn-outline btn-sm" onclick="capFirmaLimpiar()"><i class="fas fa-eraser"></i> Limpiar</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-secondary" onclick="cerrarModal('modalFirmaCap')">Cancelar</button>
+          <button class="btn btn-primary" onclick="capFirmaGuardar()"><i class="fas fa-check"></i> Guardar firma</button>
+        </div>
+      </div>
+    </div>
+  </div>

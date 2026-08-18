@@ -640,6 +640,33 @@ function setupCapacitaciones(): void {
             KEY idx_cap_tipo (tipo),
             KEY idx_cap_anio (anio)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", []);
+
+        // Adjuntos de evidencia/despliegue: material difundido, fotos de la
+        // actividad y hoja de asistencia escaneada. Varios por capacitación.
+        db()->query("CREATE TABLE IF NOT EXISTS cap_adjuntos (
+            id              INT AUTO_INCREMENT PRIMARY KEY,
+            capacitacion_id INT NOT NULL,
+            tipo            ENUM('material','foto','asistencia') NOT NULL DEFAULT 'material',
+            archivo         VARCHAR(255) NOT NULL,
+            nombre_original VARCHAR(200) NULL,
+            creado_en       DATETIME DEFAULT CURRENT_TIMESTAMP,
+            KEY idx_capadj (capacitacion_id, tipo)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", []);
+
+        // Lista de asistencia digital (R.M. 050-2013-TR): asistentes con firma.
+        // personal_id enlaza al trabajador; se guarda snapshot de nombre/dni/cargo.
+        db()->query("CREATE TABLE IF NOT EXISTS cap_asistentes (
+            id              INT AUTO_INCREMENT PRIMARY KEY,
+            capacitacion_id INT NOT NULL,
+            personal_id     INT NULL,
+            nombre          VARCHAR(160) NOT NULL,
+            dni             VARCHAR(20)  NULL,
+            cargo           VARCHAR(60)  NULL,
+            firma           MEDIUMTEXT   NULL,
+            presente        TINYINT(1)   NOT NULL DEFAULT 1,
+            creado_en       DATETIME DEFAULT CURRENT_TIMESTAMP,
+            KEY idx_capasis (capacitacion_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", []);
     } catch (Exception $e) {
         error_log('[setupCapacitaciones] ' . $e->getMessage());
     }

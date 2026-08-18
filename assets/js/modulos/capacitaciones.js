@@ -258,6 +258,9 @@ function _capFila(x) {
 
 function _capAcciones(x) {
   let btns = `<button class="btn btn-outline btn-sm" onclick="editarCapacitacion(${x.id})" title="Editar"><i class="fas fa-pen"></i></button> `;
+  if (_capTipo === 'cronograma' || _capTipo === 'semana') {
+    btns += `<button class="btn btn-outline btn-sm" onclick="abrirEvidencia(${x.id}, '${escapeHtml(x.titulo).replace(/'/g, "\\'")}')" title="Evidencia: material, fotos y asistencia"><i class="fas fa-paperclip"></i></button> `;
+  }
   if (_capTipo !== 'alerta' && x.estado !== 'ejecutado') {
     btns += `<button class="btn btn-outline btn-sm" onclick="capMarcarEjecutado(${x.id})" title="Marcar ejecutado"><i class="fas fa-check"></i></button> `;
   }
@@ -392,4 +395,227 @@ async function eliminarCapacitacion(id) {
     toast('Eliminado', 'success');
     cargarCapacitaciones();
   } catch (e) { toast('Error', 'error'); }
+}
+
+// ============================================================
+// EVIDENCIA / DESPLIEGUE: material, fotos y lista de asistencia
+// ============================================================
+let _capEvId = 0;
+let _capEvData = { adjuntos: [], asistentes: [] };
+let _capFirmaTarget = null;      // { asistenteId }
+let _capBuscarTrabTimer = null;
+let _capBuscarTrabResultados = [];
+
+const _UP = () => (typeof UPLOAD_URL !== 'undefined' ? UPLOAD_URL : 'uploads/');
+
+async function abrirEvidencia(id, titulo) {
+  _capEvId = id;
+  document.getElementById('capEvTitulo').textContent = titulo || '';
+  document.getElementById('capEvId').value = id;
+  document.getElementById('capBtnPdf').href = 'api/capacitaciones_pdf.php?id=' + id;
+  ['capFileMaterial', 'capFileFoto', 'capFileAsistencia', 'capAsisBuscar', 'capManualNombre', 'capManualDni', 'capManualCargo'].forEach(i => { const el = document.getElementById(i); if (el) el.value = ''; });
+  document.getElementById('capManualBox').style.display = 'none';
+  document.getElementById('capAsisResultados').style.display = 'none';
+  await cargarEvidencia();
+  abrirModal('modalEvidencia');
+}
+
+async function cargarEvidencia() {
+  try {
+    const r = await fetch('api/capacitaciones.php?action=evidencia&id=' + _capEvId);
+    const d = await r.json();
+    _capEvData = (d && d.success) ? d.data : { adjuntos: [], asistentes: [] };
+  } catch (e) { _capEvData = { adjuntos: [], asistentes: [] }; }
+  renderEvAdjuntos();
+  renderEvAsistentes();
+}
+
+function _capIcono(archivo) {
+  const ext = (archivo.split('.').pop() || '').toLowerCase();
+  if (ext === 'pdf') return 'fa-file-pdf';
+  if (ext === 'doc' || ext === 'docx') return 'fa-file-word';
+  if (ext === 'ppt' || ext === 'pptx') return 'fa-file-powerpoint';
+  if (['jpg', 'jpeg', 'png', 'webp'].includes(ext)) return 'fa-file-image';
+  return 'fa-file';
+}
+function _capEsImagen(archivo) { return ['jpg', 'jpeg', 'png', 'webp'].includes((archivo.split('.').pop() || '').toLowerCase()); }
+
+function renderEvAdjuntos() {
+  const docs = _capEvData.adjuntos.filter(a => a.tipo !== 'foto');
+  const mat = document.getElementById('capEvMaterial');
+  if (mat) {
+    mat.innerHTML = docs.length ? docs.map(a => {
+      const url = _UP() + a.archivo;
+      const tag = a.tipo === 'asistencia' ? '<span class="badge badge-info" style="margin-left:6px">hoja firmada</span>' : '';
+      const ver = (_capEsImagen(a.archivo) || /\.pdf$/i.test(a.archivo))
+        ? 'onclick="verDocumento(\'' + encodeURI(url) + '\');return false;" href="#"'
+        : 'href="' + url + '" target="_blank" rel="noopener"';
+      return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--gris-700)">' +
+        '<i class="fas ' + _capIcono(a.archivo) + '" style="color:var(--primary)"></i>' +
+        '<a ' + ver + ' style="color:var(--gris-100);flex:1;text-decoration:none">' + escapeHtml(a.nombre_original || a.archivo) + '</a>' + tag +
+        '<button class="btn btn-outline btn-sm" onclick="capEliminarAdjunto(' + a.id + ')" title="Quitar"><i class="fas fa-trash" style="color:var(--rojo)"></i></button>' +
+      '</div>';
+    }).join('') : '<span class="muted" style="font-size:12px">Sin material.</span>';
+  }
+  const fotos = _capEvData.adjuntos.filter(a => a.tipo === 'foto');
+  const gal = document.getElementById('capEvFotos');
+  if (gal) {
+    gal.innerHTML = fotos.length ? fotos.map(a => {
+      const url = _UP() + a.archivo;
+      return '<div style="position:relative">' +
+        '<img src="' + url + '" onclick="verDocumento(\'' + encodeURI(url) + '\')" style="width:84px;height:84px;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid var(--gris-600)">' +
+        '<button onclick="capEliminarAdjunto(' + a.id + ')" title="Quitar" style="position:absolute;top:-6px;right:-6px;background:var(--rojo);color:#fff;border:0;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer">&times;</button>' +
+      '</div>';
+    }).join('') : '<span class="muted" style="font-size:12px">Sin fotos.</span>';
+  }
+}
+
+function renderEvAsistentes() {
+  const body = document.getElementById('capAsisBody');
+  if (!body) return;
+  const a = _capEvData.asistentes;
+  if (!a.length) { body.innerHTML = '<tr><td colspan="6" class="muted" style="text-align:center;padding:18px">Sin asistentes.</td></tr>'; return; }
+  body.innerHTML = a.map((x, i) => {
+    const firmado = +x.firmado === 1;
+    const estadoFirma = firmado
+      ? '<span class="badge badge-success"><i class="fas fa-check"></i> Firmado</span>'
+      : '<span class="badge badge-warning">Pendiente</span>';
+    return '<tr>' +
+      '<td class="muted" style="text-align:center">' + (i + 1) + '</td>' +
+      '<td style="font-weight:600;color:var(--gris-100)">' + escapeHtml(x.nombre) + '</td>' +
+      '<td class="muted">' + (x.dni ? escapeHtml(x.dni) : '—') + '</td>' +
+      '<td class="muted">' + (x.cargo ? escapeHtml(x.cargo) : '—') + '</td>' +
+      '<td style="text-align:center">' + estadoFirma + '</td>' +
+      '<td style="text-align:right;white-space:nowrap">' +
+        '<button class="btn btn-outline btn-sm" onclick="capFirmar(' + x.id + ',\'' + escapeHtml(x.nombre).replace(/'/g, "\\'") + '\')" title="Firmar"><i class="fas fa-pen-nib"></i></button> ' +
+        '<button class="btn btn-outline btn-sm" onclick="capEliminarAsistente(' + x.id + ')" title="Quitar"><i class="fas fa-user-minus" style="color:var(--rojo)"></i></button>' +
+      '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+async function capSubirAdjunto(tipo) {
+  const map = { material: 'capFileMaterial', foto: 'capFileFoto', asistencia: 'capFileAsistencia' };
+  const input = document.getElementById(map[tipo]);
+  const file = input ? input.files[0] : null;
+  if (!file) { if (tipo !== 'asistencia') toast('Elige un archivo primero', 'warning'); return; }
+  const fd = new FormData();
+  fd.append('action', 'adjunto_add'); fd.append('csrf_token', CSRF_TOKEN);
+  fd.append('capacitacion_id', _capEvId); fd.append('tipo', tipo); fd.append('archivo', file);
+  try {
+    const r = await fetch('api/capacitaciones.php', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (!d.success) { toast(d.message || 'No se pudo subir', 'error'); return; }
+    toast('Archivo subido', 'success');
+    if (input) input.value = '';
+    cargarEvidencia();
+  } catch (e) { toast('Error al subir', 'error'); }
+}
+
+async function capEliminarAdjunto(id) {
+  if (!confirm('¿Quitar este archivo?')) return;
+  await _capPost({ action: 'adjunto_del', id: id });
+}
+
+function capBuscarTrab(q) {
+  clearTimeout(_capBuscarTrabTimer);
+  const cont = document.getElementById('capAsisResultados');
+  if (q.trim().length < 2) { cont.style.display = 'none'; return; }
+  _capBuscarTrabTimer = setTimeout(async () => {
+    try {
+      const r = await fetch('api/personal.php?action=buscar&q=' + encodeURIComponent(q.trim()));
+      const d = await r.json();
+      _capBuscarTrabResultados = d.success ? (d.data || []) : [];
+    } catch (e) { _capBuscarTrabResultados = []; }
+    if (!_capBuscarTrabResultados.length) { cont.innerHTML = '<div class="muted" style="padding:8px 12px;font-size:12px">Sin resultados.</div>'; cont.style.display = 'block'; return; }
+    cont.innerHTML = _capBuscarTrabResultados.map(p =>
+      '<div onclick="capSeleccionarTrab(' + p.id + ')" style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--gris-700)" onmouseover="this.style.background=\'var(--gris-700)\'" onmouseout="this.style.background=\'\'">' +
+        '<span style="font-weight:600;color:var(--gris-100)">' + escapeHtml(p.nombre) + '</span>' +
+        '<span class="muted" style="font-size:11px;margin-left:6px">' + escapeHtml(p.dni || '') + ' · ' + escapeHtml(p.cargo || '') + '</span>' +
+      '</div>').join('');
+    cont.style.display = 'block';
+  }, 300);
+}
+
+async function capSeleccionarTrab(personalId) {
+  document.getElementById('capAsisResultados').style.display = 'none';
+  document.getElementById('capAsisBuscar').value = '';
+  const r = await _capPost({ action: 'asistente_add', capacitacion_id: _capEvId, personal_id: personalId }, true);
+  if (r && r.success) { toast('Asistente agregado', 'success'); cargarEvidencia(); }
+  else if (r) toast(r.message || 'Error', 'error');
+}
+
+function capToggleManual() {
+  const box = document.getElementById('capManualBox');
+  box.style.display = box.style.display === 'none' ? 'flex' : 'none';
+}
+
+async function capAgregarManual() {
+  const nombre = document.getElementById('capManualNombre').value.trim();
+  if (!nombre) { toast('Ingresa el nombre', 'warning'); return; }
+  const r = await _capPost({
+    action: 'asistente_add', capacitacion_id: _capEvId, nombre: nombre,
+    dni: document.getElementById('capManualDni').value.trim(),
+    cargo: document.getElementById('capManualCargo').value.trim(),
+  }, true);
+  if (r && r.success) {
+    toast('Asistente agregado', 'success');
+    ['capManualNombre', 'capManualDni', 'capManualCargo'].forEach(i => document.getElementById(i).value = '');
+    cargarEvidencia();
+  } else if (r) toast(r.message || 'Error', 'error');
+}
+
+async function capEliminarAsistente(id) {
+  if (!confirm('¿Quitar a este asistente de la lista?')) return;
+  await _capPost({ action: 'asistente_del', id: id });
+}
+
+// ── Firma (canvas) ──
+function _capFirmaCanvas() { return document.getElementById('capFirmaCanvas'); }
+function _capFirmaSetup() {
+  const c = _capFirmaCanvas(); if (!c) return;
+  const ctx = c.getContext('2d');
+  c._ctx = ctx; c._draw = false; c._has = false;
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+  ctx.strokeStyle = '#1565C0'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+  const pos = e => { const r = c.getBoundingClientRect(), s = e.touches ? e.touches[0] : e; return { x: (s.clientX - r.left) * (c.width / r.width), y: (s.clientY - r.top) * (c.height / r.height) }; };
+  c.onmousedown = e => { c._draw = true; const p = pos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); };
+  c.onmouseup = () => c._draw = false; c.onmouseleave = () => c._draw = false;
+  c.onmousemove = e => { if (!c._draw) return; const p = pos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); c._has = true; };
+  c.ontouchstart = e => { e.preventDefault(); c._draw = true; const p = pos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); };
+  c.ontouchend = () => c._draw = false;
+  c.ontouchmove = e => { e.preventDefault(); if (!c._draw) return; const p = pos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); c._has = true; };
+}
+function capFirmaLimpiar() {
+  const c = _capFirmaCanvas(); if (!c || !c._ctx) return;
+  c._ctx.fillStyle = '#fff'; c._ctx.fillRect(0, 0, c.width, c.height); c._has = false;
+}
+function capFirmar(asistenteId, nombre) {
+  _capFirmaTarget = { asistenteId: asistenteId };
+  document.getElementById('capFirmaNombre').textContent = nombre || '';
+  abrirModal('modalFirmaCap');
+  setTimeout(_capFirmaSetup, 60);
+}
+async function capFirmaGuardar() {
+  const c = _capFirmaCanvas();
+  if (!c || !c._has) { toast('Firma en el recuadro primero', 'warning'); return; }
+  const firma = c.toDataURL('image/png');
+  const r = await _capPost({ action: 'asistente_firma', id: _capFirmaTarget.asistenteId, firma: firma }, true);
+  if (r && r.success) { toast('Firma guardada', 'success'); cerrarModal('modalFirmaCap'); cargarEvidencia(); }
+  else if (r) toast(r.message || 'Error', 'error');
+}
+
+// POST helper con FormData. devolver=true → retorna la respuesta; si no, recarga evidencia.
+async function _capPost(campos, devolver) {
+  const fd = new FormData();
+  fd.append('csrf_token', CSRF_TOKEN);
+  Object.entries(campos).forEach(([k, v]) => fd.append(k, v));
+  try {
+    const r = await fetch('api/capacitaciones.php', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (devolver) return d;
+    if (!d.success) { toast(d.message || 'Error', 'error'); return d; }
+    cargarEvidencia();
+    return d;
+  } catch (e) { toast('Error de conexión', 'error'); return null; }
 }
