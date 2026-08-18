@@ -478,16 +478,21 @@ function _capIcono(archivo) {
 }
 function _capEsImagen(archivo) { return ['jpg', 'jpeg', 'png', 'webp'].includes((archivo.split('.').pop() || '').toLowerCase()); }
 
+// Eliminar es solo para administrador (integridad de la evidencia firmada).
+function _capAdmin() { return typeof USER_ROL !== 'undefined' && USER_ROL === 'administrador'; }
+
 // HTML de una fila de documento (material o hoja firmada).
 function _capDocFila(a) {
   const url = _UP() + a.archivo;
   const ver = (_capEsImagen(a.archivo) || /\.pdf$/i.test(a.archivo))
     ? 'onclick="verDocumento(\'' + encodeURI(url) + '\');return false;" href="#"'
     : 'href="' + url + '" target="_blank" rel="noopener"';
+  const del = _capAdmin()
+    ? '<button class="btn btn-outline btn-sm" onclick="capEliminarAdjunto(' + a.id + ')" title="Quitar"><i class="fas fa-trash" style="color:var(--rojo)"></i></button>'
+    : '';
   return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--gris-700)">' +
     '<i class="fas ' + _capIcono(a.archivo) + '" style="color:var(--primary)"></i>' +
-    '<a ' + ver + ' style="color:var(--gris-100);flex:1;text-decoration:none">' + escapeHtml(a.nombre_original || a.archivo) + '</a>' +
-    '<button class="btn btn-outline btn-sm" onclick="capEliminarAdjunto(' + a.id + ')" title="Quitar"><i class="fas fa-trash" style="color:var(--rojo)"></i></button>' +
+    '<a ' + ver + ' style="color:var(--gris-100);flex:1;text-decoration:none">' + escapeHtml(a.nombre_original || a.archivo) + '</a>' + del +
   '</div>';
 }
 
@@ -510,9 +515,11 @@ function renderEvAdjuntos() {
   if (gal) {
     gal.innerHTML = fotos.length ? fotos.map(a => {
       const url = _UP() + a.archivo;
+      const del = _capAdmin()
+        ? '<button onclick="capEliminarAdjunto(' + a.id + ')" title="Quitar" style="position:absolute;top:-6px;right:-6px;background:var(--rojo);color:#fff;border:0;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer">&times;</button>'
+        : '';
       return '<div style="position:relative">' +
-        '<img src="' + url + '" onclick="verDocumento(\'' + encodeURI(url) + '\')" style="width:84px;height:84px;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid var(--gris-600)">' +
-        '<button onclick="capEliminarAdjunto(' + a.id + ')" title="Quitar" style="position:absolute;top:-6px;right:-6px;background:var(--rojo);color:#fff;border:0;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer">&times;</button>' +
+        '<img src="' + url + '" onclick="verDocumento(\'' + encodeURI(url) + '\')" style="width:84px;height:84px;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid var(--gris-600)">' + del +
       '</div>';
     }).join('') : '<span class="muted" style="font-size:12px">Sin fotos.</span>';
   }
@@ -536,7 +543,7 @@ function renderEvAsistentes() {
       '<td style="text-align:center">' + estadoFirma + '</td>' +
       '<td style="text-align:right;white-space:nowrap">' +
         '<button class="btn btn-outline btn-sm" onclick="capFirmar(' + x.id + ',\'' + escapeHtml(x.nombre).replace(/'/g, "\\'") + '\')" title="Firmar"><i class="fas fa-pen-nib"></i></button> ' +
-        '<button class="btn btn-outline btn-sm" onclick="capEliminarAsistente(' + x.id + ')" title="Quitar"><i class="fas fa-user-minus" style="color:var(--rojo)"></i></button>' +
+        (_capAdmin() ? '<button class="btn btn-outline btn-sm" onclick="capEliminarAsistente(' + x.id + ')" title="Quitar"><i class="fas fa-user-minus" style="color:var(--rojo)"></i></button>' : '') +
       '</td>' +
     '</tr>';
   }).join('');

@@ -28,9 +28,9 @@ if (in_array($action, $mutaciones, true)) {
     if (!in_array($user['rol'], ['administrador', 'supervisor'])) {
         jsonResponse(false, 'No tienes permisos.', null, 403);
     }
-    // Eliminar registros es exclusivo del administrador.
-    if ($action === 'delete' && $user['rol'] !== 'administrador') {
-        jsonResponse(false, 'Solo un administrador puede eliminar registros.', null, 403);
+    // Eliminar (registros, adjuntos, asistentes) es exclusivo del administrador.
+    if (in_array($action, ['delete', 'adjunto_del', 'asistente_del'], true) && $user['rol'] !== 'administrador') {
+        jsonResponse(false, 'Solo un administrador puede eliminar.', null, 403);
     }
 }
 
