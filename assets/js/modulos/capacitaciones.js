@@ -260,7 +260,7 @@ function _capAcciones(x) {
   let btns = `<button class="btn btn-outline btn-sm" onclick="editarCapacitacion(${x.id})" title="Editar"><i class="fas fa-pen"></i></button> `;
   // Evidencia (material/fotos/asistencia) disponible en todos los sub-módulos.
   btns += `<button class="btn btn-outline btn-sm" onclick="abrirEvidencia(${x.id}, '${escapeHtml(x.titulo).replace(/'/g, "\\'")}')" title="Evidencia: material, fotos y asistencia"><i class="fas fa-paperclip"></i></button> `;
-  if (_capTipo !== 'alerta' && x.estado !== 'ejecutado') {
+  if (x.estado !== 'ejecutado') {
     btns += `<button class="btn btn-outline btn-sm" onclick="capMarcarEjecutado(${x.id})" title="Marcar ejecutado"><i class="fas fa-check"></i></button> `;
   }
   btns += `<button class="btn btn-outline btn-sm" onclick="eliminarCapacitacion(${x.id})" title="Eliminar"><i class="fas fa-trash" style="color:var(--rojo)"></i></button>`;
