@@ -86,8 +86,20 @@
           <!-- Subtipo: alerta -->
           <div class="form-group cap-for-alerta"><label class="form-label">Tipo de alerta</label>
             <select class="form-control" id="cap_subtipo_alerta">
-              <option value="">—</option><option>Incidente</option><option>Casi accidente</option>
-              <option>Condición insegura</option><option>Acto inseguro</option><option>Lección aprendida</option>
+              <option value="">—</option>
+              <optgroup label="Clasificación SIF (pirámide)">
+                <option>FAT (Fatalidad)</option>
+                <option>LTI (Días Perdidos)</option>
+                <option>MDI (Modificación de la Tarea)</option>
+                <option>MTI (Tratamiento Médico)</option>
+                <option>FAI (Primeros Auxilios)</option>
+                <option>SIO (Incidente Sin Lesión)</option>
+                <option>SHO (Actos y Condiciones)</option>
+              </optgroup>
+              <optgroup label="Otros">
+                <option>Incidente</option><option>Casi accidente</option>
+                <option>Condición insegura</option><option>Acto inseguro</option><option>Lección aprendida</option>
+              </optgroup>
             </select></div>
         </div>
 
