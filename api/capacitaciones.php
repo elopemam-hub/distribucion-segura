@@ -34,6 +34,10 @@ if (in_array($action, $mutaciones, true)) {
     }
 }
 
+// Ya validamos auth/CSRF: libera el lock de sesión para no serializar las
+// peticiones (subidas en paralelo, navegación fluida mientras se sube).
+liberarSesion();
+
 try {
     switch ($action) {
         case 'list':           listar();        break;

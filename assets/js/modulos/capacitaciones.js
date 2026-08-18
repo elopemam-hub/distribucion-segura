@@ -648,17 +648,20 @@ async function capSubirAdjunto(tipo) {
   const input = document.getElementById(map[tipo]);
   const files = input ? Array.from(input.files || []) : [];
   if (!files.length) { if (tipo !== 'asistencia') toast('Elige un archivo primero', 'warning'); return; }
-  let ok = 0; const fallos = [];
-  for (const file of files) {
+  // Subida en paralelo (la sesión ya no bloquea en el servidor).
+  const subirUno = async (file) => {
     const fd = new FormData();
     fd.append('action', 'adjunto_add'); fd.append('csrf_token', CSRF_TOKEN);
     fd.append('capacitacion_id', _capEvId); fd.append('tipo', tipo); fd.append('archivo', file);
     try {
       const r = await fetch('api/capacitaciones.php', { method: 'POST', body: fd });
       const d = await r.json();
-      if (d.success) ok++; else fallos.push((file.name || '') + ': ' + (d.message || 'error'));
-    } catch (e) { fallos.push((file.name || '') + ': conexión'); }
-  }
+      return d.success ? { ok: true } : { ok: false, msg: (file.name || '') + ': ' + (d.message || 'error') };
+    } catch (e) { return { ok: false, msg: (file.name || '') + ': conexión' }; }
+  };
+  const res = await Promise.all(files.map(subirUno));
+  const ok = res.filter(r => r.ok).length;
+  const fallos = res.filter(r => !r.ok).map(r => r.msg);
   if (input) input.value = '';
   if (ok) toast(ok + (ok === 1 ? ' archivo subido' : ' archivos subidos'), 'success');
   if (fallos.length) toast('No se subieron: ' + fallos.join(' · '), 'error', 6000);

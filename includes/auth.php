@@ -22,6 +22,13 @@ function isLoggedIn(): bool {
     return isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
 }
 
+// Libera el bloqueo de escritura de la sesión (tras leer usuario/CSRF). Permite
+// que otras peticiones del mismo usuario corran en paralelo (p.ej. subir varios
+// archivos) sin quedar en cola por el lock de la sesión. $_SESSION sigue legible.
+function liberarSesion(): void {
+    if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
+}
+
 function requireLogin(): void {
     if (!isLoggedIn()) {
         header('Location: ' . BASE_URL . '/login.php');
