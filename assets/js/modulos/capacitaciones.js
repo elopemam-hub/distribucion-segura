@@ -534,6 +534,80 @@ function capImprimirRegistro() {
   catch (e) { window.open(f.src, '_blank'); }
 }
 
+// ── Agregar asistentes masivo (selección múltiple desde Personal) ──
+let _capMasData = [];
+let _capMasSel = new Set();
+
+async function abrirMasivo() {
+  _capMasSel = new Set();
+  document.getElementById('capMasBuscar').value = '';
+  document.getElementById('capMasCargo').value = '';
+  document.getElementById('capMasTodos').checked = false;
+  const cont = document.getElementById('capMasLista');
+  cont.innerHTML = '<p class="muted" style="text-align:center;padding:20px">Cargando…</p>';
+  abrirModal('modalCapMasivo');
+  try {
+    const r = await fetch('api/personal.php?action=list&activo=1&limit=500');
+    const d = await r.json();
+    const todos = (d && d.success && d.data && d.data.personal) ? d.data.personal : [];
+    // Excluye a los que ya están en la lista de asistencia.
+    const yaAgregados = new Set((_capEvData.asistentes || []).filter(a => a.personal_id).map(a => +a.personal_id));
+    _capMasData = todos.filter(p => !yaAgregados.has(+p.id));
+  } catch (e) { _capMasData = []; }
+  renderMasivo();
+}
+
+function _capMasVisibles() {
+  const q = (document.getElementById('capMasBuscar')?.value || '').trim().toLowerCase();
+  const cargo = document.getElementById('capMasCargo')?.value || '';
+  return _capMasData.filter(p => {
+    if (cargo && p.cargo !== cargo) return false;
+    if (q && !((p.nombre || '').toLowerCase().includes(q) || String(p.dni || '').includes(q))) return false;
+    return true;
+  });
+}
+
+function renderMasivo() {
+  const cont = document.getElementById('capMasLista');
+  if (!cont) return;
+  const vis = _capMasVisibles();
+  if (!_capMasData.length) { cont.innerHTML = '<p class="muted" style="text-align:center;padding:20px">Todo el personal activo ya está en la lista.</p>'; }
+  else if (!vis.length) { cont.innerHTML = '<p class="muted" style="text-align:center;padding:20px">Sin resultados.</p>'; }
+  else {
+    cont.innerHTML = vis.map(p =>
+      '<label style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--gris-700);cursor:pointer">' +
+        '<input type="checkbox" class="cap-mas-chk" value="' + p.id + '" ' + (_capMasSel.has(+p.id) ? 'checked' : '') + ' onchange="capMasToggle(' + p.id + ',this.checked)" style="width:16px;height:16px;accent-color:var(--primary)">' +
+        '<span style="flex:1"><span style="font-weight:600;color:var(--gris-100)">' + escapeHtml(p.nombre) + '</span>' +
+        '<span class="muted" style="font-size:11px;margin-left:6px">' + escapeHtml(p.dni || '') + ' · ' + escapeHtml(p.cargo || '') + '</span></span>' +
+      '</label>').join('');
+  }
+  _capMasActualizarContador();
+}
+
+function capMasToggle(id, on) { if (on) _capMasSel.add(+id); else _capMasSel.delete(+id); _capMasActualizarContador(); }
+
+function capMasSelTodos(on) {
+  const vis = _capMasVisibles();
+  vis.forEach(p => { if (on) _capMasSel.add(+p.id); else _capMasSel.delete(+p.id); });
+  document.querySelectorAll('.cap-mas-chk').forEach(c => { c.checked = on; });
+  _capMasActualizarContador();
+}
+
+function _capMasActualizarContador() {
+  const el = document.getElementById('capMasCount');
+  if (el) el.textContent = _capMasSel.size;
+}
+
+async function capAgregarMasivo() {
+  if (!_capMasSel.size) { toast('Selecciona al menos un trabajador', 'warning'); return; }
+  const btn = document.getElementById('capMasBtn');
+  if (btn) btn.disabled = true;
+  const r = await _capPost({ action: 'asistente_masivo', capacitacion_id: _capEvId, personal_ids: JSON.stringify(Array.from(_capMasSel)) }, true);
+  if (btn) btn.disabled = false;
+  if (r && r.success) { toast(r.message, 'success'); cerrarModal('modalCapMasivo'); cargarEvidencia(); }
+  else if (r) toast(r.message || 'Error', 'error');
+}
+
 function capBuscarTrab(q) {
   clearTimeout(_capBuscarTrabTimer);
   const cont = document.getElementById('capAsisResultados');

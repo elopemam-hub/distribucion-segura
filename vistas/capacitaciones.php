@@ -180,6 +180,7 @@
           <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
             <strong style="font-size:13px;color:var(--gris-100)"><i class="fas fa-signature" style="color:var(--primary)"></i> Lista de asistencia <span class="muted" style="font-weight:400">(R.M. 050-2013-TR)</span></strong>
             <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <button class="btn btn-outline btn-sm" onclick="abrirMasivo()"><i class="fas fa-users"></i> Agregar masivo</button>
               <button class="btn btn-outline btn-sm" onclick="capToggleManual()"><i class="fas fa-user-plus"></i> Manual</button>
               <label class="btn btn-outline btn-sm" style="margin:0" title="Subir hoja de asistencia firmada (escaneada)">
                 <i class="fas fa-file-import"></i> Subir hoja firmada
@@ -251,6 +252,38 @@
       </div>
       <div class="modal-body" style="padding:0;background:#525659;min-height:74vh">
         <iframe id="capPdfFrame" title="Registro" style="width:100%;height:74vh;border:0;background:#fff"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: AGREGAR ASISTENTES MASIVO ===== -->
+  <div class="modal-overlay" id="modalCapMasivo" style="z-index:1200">
+    <div class="modal-box" style="max-width:640px;width:96%">
+      <div class="modal-header">
+        <h3><i class="fas fa-users" style="color:var(--primary)"></i> Agregar asistentes</h3>
+        <button class="modal-close" onclick="cerrarModal('modalCapMasivo')"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="filter-bar" style="margin-bottom:10px">
+          <div class="form-group"><label class="form-label">Buscar</label>
+            <input type="text" class="form-control" id="capMasBuscar" placeholder="Nombre o DNI" oninput="renderMasivo()"></div>
+          <div class="form-group"><label class="form-label">Cargo</label>
+            <select class="form-control" id="capMasCargo" onchange="renderMasivo()">
+              <option value="">Todos</option><option value="conductor">Conductor</option><option value="reparto">Reparto</option>
+              <option value="auxiliar">Auxiliar</option><option value="supervisor">Supervisor</option><option value="otro">Otro</option>
+            </select></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <label class="modulo-check" style="margin:0"><input type="checkbox" id="capMasTodos" onclick="capMasSelTodos(this.checked)"> <span>Seleccionar todos (visibles)</span></label>
+          <span class="muted" style="font-size:12px"><span id="capMasCount">0</span> seleccionados</span>
+        </div>
+        <div class="tbl-scroll" id="capMasLista" style="max-height:46vh;border:1px solid var(--gris-700);border-radius:6px">
+          <p class="muted" style="text-align:center;padding:20px">Cargando…</p>
+        </div>
+      </div>
+      <div class="modal-footer" style="display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--gris-700)">
+        <button class="btn btn-secondary" onclick="cerrarModal('modalCapMasivo')">Cancelar</button>
+        <button class="btn btn-primary" id="capMasBtn" onclick="capAgregarMasivo()"><i class="fas fa-user-check"></i> Agregar seleccionados</button>
       </div>
     </div>
   </div>

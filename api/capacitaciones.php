@@ -21,7 +21,7 @@ const CAP_ADJ_TIPOS = ['material', 'foto', 'asistencia'];
 
 $action = $_GET['action'] ?? $_POST['action'] ?? 'list';
 
-$mutaciones = ['save', 'delete', 'estado', 'adjunto_add', 'adjunto_del', 'asistente_add', 'asistente_firma', 'asistente_del'];
+$mutaciones = ['save', 'delete', 'estado', 'adjunto_add', 'adjunto_del', 'asistente_add', 'asistente_masivo', 'asistente_firma', 'asistente_del'];
 if (in_array($action, $mutaciones, true)) {
     requireCsrf();
     $user = getCurrentUser();
@@ -41,6 +41,7 @@ try {
         case 'adjunto_add':    adjuntoAdd();    break;
         case 'adjunto_del':    adjuntoDel();    break;
         case 'asistente_add':  asistenteAdd();  break;
+        case 'asistente_masivo': asistenteMasivo(); break;
         case 'asistente_firma':asistenteFirma();break;
         case 'asistente_del':  asistenteDel();  break;
         default: jsonResponse(false, 'Acción no válida.', null, 400);
@@ -233,6 +234,34 @@ function asistenteAdd() {
          VALUES (?, ?, ?, ?, ?, ?, 1)",
         [$id, $personalId ?: null, $nombre, $dni ?: null, $cargo ?: null, $firmaVal]);
     jsonResponse(true, 'Asistente agregado.', ['id' => db()->lastInsertId()]);
+}
+
+// Alta masiva: recibe personal_ids (JSON) y agrega los que falten (sin duplicar).
+function asistenteMasivo() {
+    $id = (int)($_POST['capacitacion_id'] ?? 0);
+    if ($id <= 0) jsonResponse(false, 'ID inválido.', null, 422);
+    _capExiste($id);
+    $ids = json_decode($_POST['personal_ids'] ?? '[]', true);
+    $ids = is_array($ids) ? array_values(array_unique(array_map('intval', $ids))) : [];
+    $ids = array_filter($ids, fn($v) => $v > 0);
+    if (!count($ids)) jsonResponse(false, 'Selecciona al menos un trabajador.', null, 422);
+
+    // Ya presentes en la actividad (para no duplicar).
+    $ya = array_map('intval', array_column(
+        db()->fetchAll("SELECT personal_id FROM cap_asistentes WHERE capacitacion_id = ? AND personal_id IS NOT NULL", [$id]), 'personal_id'));
+
+    $add = 0;
+    foreach ($ids as $pid) {
+        if (in_array($pid, $ya, true)) continue;
+        $p = db()->fetchOne("SELECT nombre, dni, cargo FROM personal WHERE id = ?", [$pid]);
+        if (!$p) continue;
+        db()->query(
+            "INSERT INTO cap_asistentes (capacitacion_id, personal_id, nombre, dni, cargo, presente)
+             VALUES (?, ?, ?, ?, ?, 1)",
+            [$id, $pid, mb_strtoupper($p['nombre'], 'UTF-8'), $p['dni'] ?: null, $p['cargo'] ?: null]);
+        $add++;
+    }
+    jsonResponse(true, $add . ' trabajador(es) agregado(s).', ['agregados' => $add]);
 }
 
 function asistenteFirma() {
