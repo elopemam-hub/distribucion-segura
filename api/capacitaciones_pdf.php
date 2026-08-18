@@ -174,7 +174,7 @@ $fill = max(0, $minRows - count($asis));
         <td class="lbl" style="width:14%">Tema:</td>
         <td class="tema" colspan="3"><?= $h($cap['titulo']) ?></td>
         <td class="lbl" style="width:10%">Fecha:</td>
-        <td class="val" style="width:14%"><?= $h($fmt($cap['fecha'])) ?></td>
+        <td class="val" style="width:14%" contenteditable="true"><?= $h($fmt($cap['fecha'])) ?: '&nbsp;' ?></td>
       </tr>
       <tr>
         <td class="lbl">Nombre del Capacitador:</td>
@@ -228,7 +228,7 @@ $fill = max(0, $minRows - count($asis));
         <td class="lbl">Cargo:</td>
         <td class="val"><span contenteditable="true">&nbsp;</span></td>
         <td class="lbl">Fecha:</td>
-        <td class="val"><?= $h($fmt($cap['fecha'])) ?></td>
+        <td class="val" contenteditable="true"><?= $h($fmt($cap['fecha'])) ?: '&nbsp;' ?></td>
       </tr>
     </table>
 
