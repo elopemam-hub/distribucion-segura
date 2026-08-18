@@ -127,7 +127,7 @@ function renderPaginacionPersonal() {
 
 function renderPersonalTabla() {
   const tb=document.getElementById('tablaPersonalBody');
-  if (!personalData.length) { tb.innerHTML='<tr><td colspan="17" style="text-align:center;padding:32px;color:var(--gris-400)">Sin resultados</td></tr>'; renderPaginacionPersonal(); return; }
+  if (!personalData.length) { tb.innerHTML='<tr><td colspan="15" style="text-align:center;padding:32px;color:var(--gris-400)">Sin resultados</td></tr>'; renderPaginacionPersonal(); return; }
   const filas = personalData.slice((personalPagina-1)*PERSONAL_PAGE_SIZE, personalPagina*PERSONAL_PAGE_SIZE);
   renderPaginacionPersonal();
   tb.innerHTML=filas.map(p=>{
@@ -139,7 +139,6 @@ function renderPersonalTabla() {
       <td style="font-size:12px">${escapeHtml(p.fecha_nacimiento)||'—'}</td>
       <td><strong>${escapeHtml(p.nombre)}</strong></td>
       <td><span class="badge">${escapeHtml(p.cargo)}</span></td>
-      <td style="font-size:12px">${escapeHtml(p.empresa||'—')}</td>
       <td>${escapeHtml(p.telefono)||'—'}</td>
       <td style="font-size:12px">${escapeHtml(p.fecha_ingreso)||'—'}</td>
       <td style="font-size:12px">${escapeHtml(p.dni_vencimiento)||'—'}</td>
@@ -594,25 +593,11 @@ function switchPersonalTab(tab) {
   document.querySelectorAll('.personal-tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('personal-panel-' + tab)?.classList.add('active');
   document.getElementById('personal-btn-' + tab)?.classList.add('active');
-  if (tab === 'cumplimiento') cargarResumenPersonal(() => { _llenarSelectEmpresasResumen(); renderCumplimiento(); });
-  if (tab === 'cumpleanos')   cargarResumenPersonal(() => { _llenarSelectEmpresasResumen(); renderCumpleanos(); });
+  if (tab === 'cumplimiento') cargarResumenPersonal(renderCumplimiento);
+  if (tab === 'cumpleanos')   cargarResumenPersonal(renderCumpleanos);
 }
 
-// Llena los <select> de empresa de Cumplimiento y Cumpleaños con las empresas
-// presentes en el resumen (deriva del propio _resumenData, sin otra llamada).
-function _llenarSelectEmpresasResumen() {
-  const mapa = new Map();
-  _resumenData.forEach(p => { if (p.empresa_id && p.empresa_nombre) mapa.set(String(p.empresa_id), p.empresa_nombre); });
-  const opts = '<option value="">Todas</option>' +
-    Array.from(mapa.entries()).sort((a, b) => a[1].localeCompare(b[1]))
-      .map(([id, nom]) => '<option value="' + id + '">' + escapeHtml(nom) + '</option>').join('');
-  ['cumpEmpresa', 'cumpleEmpresa'].forEach(sid => {
-    const sel = document.getElementById(sid);
-    if (sel) { const prev = sel.value; sel.innerHTML = opts; sel.value = prev; }
-  });
-}
-
-// Carga TODOS los activos (respeta el selector global de empresa si hay uno).
+// Carga TODOS los activos.
 async function cargarResumenPersonal(cb) {
   const empG = (typeof getEmpresaGlobal === 'function') ? getEmpresaGlobal() : '';
   const params = new URLSearchParams({ action: 'list', activo: '1', limit: '500' });
@@ -632,10 +617,8 @@ function renderCumplimiento() {
   const q      = (document.getElementById('cumpBuscar')?.value || '').trim().toLowerCase();
   const cargo  = document.getElementById('cumpCargo')?.value || '';
   const estado = document.getElementById('cumpEstado')?.value || '';
-  const emp    = document.getElementById('cumpEmpresa')?.value || '';
 
   let filas = _resumenData.map(p => ({ p, ev: _cumpEval(p) }));
-  if (emp)   filas = filas.filter(f => String(f.p.empresa_id) === emp);
   if (cargo) filas = filas.filter(f => f.p.cargo === cargo);
   if (q)     filas = filas.filter(f => (f.p.nombre || '').toLowerCase().includes(q) || String(f.p.dni || '').includes(q));
   if (estado === 'completo')   filas = filas.filter(f => f.ev.pct === 100);
@@ -721,11 +704,9 @@ function renderCumpleanos() {
   if (!body) return;
   const rango = document.getElementById('cumpleRango')?.value || '30';
   const q = (document.getElementById('cumpleBuscar')?.value || '').trim().toLowerCase();
-  const emp = document.getElementById('cumpleEmpresa')?.value || '';
   const mesActual = new Date().getMonth() + 1;
 
   let items = _resumenData.map(p => ({ p: p, c: _proxCumple(p.fecha_nacimiento) })).filter(x => x.c);
-  if (emp) items = items.filter(x => String(x.p.empresa_id) === emp);
   if (q) items = items.filter(x => (x.p.nombre || '').toLowerCase().includes(q));
   let filtrados = items;
   if (rango === '30')      filtrados = items.filter(x => x.c.dias <= 30);

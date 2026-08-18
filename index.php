@@ -739,7 +739,6 @@ $csrf = csrfToken();
                 <th>F. Nacimiento</th>
                 <th>Nombre</th>
                 <th>Cargo</th>
-                <th>Empresa</th>
                 <th>Teléfono</th>
                 <th>Ingreso</th>
                 <th>Venc. DNI</th>
@@ -753,7 +752,7 @@ $csrf = csrfToken();
               </tr>
             </thead>
             <tbody id="tablaPersonalBody">
-              <tr><td colspan="16" style="text-align:center;padding:32px;color:var(--gris-400)"><div class="spinner"></div> Cargando...</td></tr>
+              <tr><td colspan="15" style="text-align:center;padding:32px;color:var(--gris-400)"><div class="spinner"></div> Cargando...</td></tr>
             </tbody>
           </table>
         </div>
@@ -773,8 +772,6 @@ $csrf = csrfToken();
           <div class="filter-bar">
             <div class="form-group"><label class="form-label">Buscar</label>
               <input type="text" class="form-control" id="cumpBuscar" placeholder="Nombre o DNI" oninput="_cumpPag=1;renderCumplimiento()"></div>
-            <div class="form-group"><label class="form-label">Empresa</label>
-              <select class="form-control" id="cumpEmpresa" onchange="_cumpPag=1;renderCumplimiento()"><option value="">Todas</option></select></div>
             <div class="form-group"><label class="form-label">Cargo</label>
               <select class="form-control" id="cumpCargo" onchange="_cumpPag=1;renderCumplimiento()">
                 <option value="">Todos</option><option value="conductor">Conductor</option><option value="reparto">Reparto</option>
@@ -806,8 +803,6 @@ $csrf = csrfToken();
                 <option value="mes">Este mes</option>
                 <option value="todos">Todo el año</option>
               </select></div>
-            <div class="form-group"><label class="form-label">Empresa</label>
-              <select class="form-control" id="cumpleEmpresa" onchange="_cumplePag=1;renderCumpleanos()"><option value="">Todas</option></select></div>
             <div class="form-group"><label class="form-label">Buscar</label>
               <input type="text" class="form-control" id="cumpleBuscar" placeholder="Nombre" oninput="_cumplePag=1;renderCumpleanos()"></div>
           </div>
