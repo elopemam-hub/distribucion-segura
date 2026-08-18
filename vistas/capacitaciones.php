@@ -18,6 +18,7 @@
       <button class="tab-btn cap-tab-btn" id="cap-btn-semana" onclick="switchCapTab('semana')"><i class="fas fa-helmet-safety"></i> Semana de seguridad</button>
       <button class="tab-btn cap-tab-btn" id="cap-btn-alerta" onclick="switchCapTab('alerta')"><i class="fas fa-triangle-exclamation"></i> Safety Alert</button>
       <button class="tab-btn cap-tab-btn" id="cap-btn-campana" onclick="switchCapTab('campana')"><i class="fas fa-bullhorn"></i> Campañas</button>
+      <button class="tab-btn cap-tab-btn" id="cap-btn-resumen" onclick="switchCapTab('resumen')"><i class="fas fa-table-list"></i> Resumen</button>
     </div>
 
     <!-- KPIs (comunes, se recalculan por sub-pestaña) -->
@@ -29,7 +30,7 @@
         <div class="filter-bar">
           <div class="form-group"><label class="form-label">Año</label>
             <select class="form-control" id="capFiltroAnio" onchange="cargarCapacitaciones()"><option value="">Todos</option></select></div>
-          <div class="form-group"><label class="form-label">Estado</label>
+          <div class="form-group" id="capEstadoWrap"><label class="form-label">Estado</label>
             <select class="form-control" id="capFiltroEstado" onchange="cargarCapacitaciones()">
               <option value="">Todos</option>
               <option value="programado">Programado</option>
@@ -37,6 +38,11 @@
               <option value="ejecutado">Ejecutado</option>
               <option value="reprogramado">Reprogramado</option>
               <option value="cancelado">Cancelado</option>
+            </select></div>
+          <div class="form-group" id="capCargoWrap" style="display:none"><label class="form-label">Cargo</label>
+            <select class="form-control" id="capFiltroCargo" onchange="_capResumenPag=1;renderResumen()">
+              <option value="">Todos</option><option value="conductor">Conductor</option><option value="reparto">Reparto</option>
+              <option value="auxiliar">Auxiliar</option><option value="supervisor">Supervisor</option><option value="otro">Otro</option>
             </select></div>
           <div class="form-group"><label class="form-label">Buscar</label>
             <input type="text" class="form-control" id="capFiltroQ" placeholder="Título, responsable…" oninput="capBuscarDebounced()"></div>
@@ -47,7 +53,7 @@
               <button type="button" class="btn btn-sm btn-outline" id="capVistaMatriz" onclick="capSetVista('matriz')" style="border-top-left-radius:0;border-bottom-left-radius:0"><i class="fas fa-table-cells-large"></i> Matriz</button>
             </div>
           </div>
-          <button class="btn btn-primary" onclick="nuevaCapacitacion()"><i class="fas fa-plus"></i> <span id="capNuevoLabel">Nuevo</span></button>
+          <button class="btn btn-primary" id="capBtnNuevo" onclick="nuevaCapacitacion()"><i class="fas fa-plus"></i> <span id="capNuevoLabel">Nuevo</span></button>
         </div>
       </div>
     </div>

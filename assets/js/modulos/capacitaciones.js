@@ -11,6 +11,11 @@ let _capVista = 'lista';   // solo cronograma: 'lista' | 'matriz'
 let _capPag = 1;
 const CAP_PAGE_SIZE = 20;
 function irCapPagina(n) { _capPag = n; renderCapTabla(); }
+// Resumen (matriz trabajadores × capacitaciones).
+let _capResumenData = { capacitaciones: [], personal: [], asistencia: [], anio: 0 };
+let _capResumenPag = 1;
+const RESUMEN_CAP_PAGE = 20;
+function irResumenPagina(n) { _capResumenPag = n; renderResumen(); }
 
 // Barra de paginación (mismas clases que el resto del sistema).
 function _capPagBar(total, pagina, porPag, fnName) {
@@ -74,13 +79,22 @@ function initCapacitaciones() {
 function switchCapTab(tipo) {
   _capTipo = tipo;
   _capVista = 'lista';
+  _capPag = 1; _capResumenPag = 1;
   document.querySelectorAll('.cap-tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('cap-btn-' + tipo)?.classList.add('active');
+
+  const esResumen = tipo === 'resumen';
+  const show = (id, on) => { const el = document.getElementById(id); if (el) el.style.display = on ? '' : 'none'; };
+  // Controles que NO aplican al resumen (es una matriz, no registros).
+  show('capBtnNuevo', !esResumen);
+  show('capEstadoWrap', !esResumen);
+  show('capCargoWrap', esResumen);
+  show('capVistaToggle', !esResumen && tipo === 'cronograma');
+
+  if (esResumen) { cargarResumen(); return; }
+
   const lbl = document.getElementById('capNuevoLabel');
   if (lbl) lbl.textContent = CAP_META[tipo].nuevo;
-  // El toggle Lista/Matriz solo aplica al cronograma anual.
-  const tog = document.getElementById('capVistaToggle');
-  if (tog) tog.style.display = tipo === 'cronograma' ? '' : 'none';
   _capActualizarToggle();
   cargarCapacitaciones();
 }
@@ -104,10 +118,15 @@ function _capActualizarToggle() {
 
 function capBuscarDebounced() {
   clearTimeout(_capBuscarTimer);
-  _capBuscarTimer = setTimeout(cargarCapacitaciones, 350);
+  // En resumen la búsqueda es cliente-side (no re-consulta).
+  _capBuscarTimer = setTimeout(() => {
+    if (_capTipo === 'resumen') { _capResumenPag = 1; renderResumen(); }
+    else cargarCapacitaciones();
+  }, 300);
 }
 
 async function cargarCapacitaciones() {
+  if (_capTipo === 'resumen') { cargarResumen(); return; }
   const wrap = document.getElementById('capTablaWrap');
   const anio   = document.getElementById('capFiltroAnio')?.value || '';
   const estado = document.getElementById('capFiltroEstado')?.value || '';
@@ -254,6 +273,81 @@ function renderCapMatriz() {
 
   wrap.innerHTML = leyenda +
     `<table class="data-table" style="min-width:820px"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
+}
+
+// ── Resumen: matriz trabajadores × capacitaciones (asistencia) ──
+async function cargarResumen() {
+  _capResumenPag = 1;
+  const anio = document.getElementById('capFiltroAnio')?.value || '';
+  const wrap = document.getElementById('capTablaWrap');
+  if (wrap) wrap.innerHTML = '<p class="muted" style="text-align:center;padding:28px">Cargando…</p>';
+  try {
+    const r = await fetch('api/capacitaciones.php?action=resumen' + (anio ? '&anio=' + anio : ''));
+    const d = await r.json();
+    _capResumenData = (d && d.success) ? d.data : { capacitaciones: [], personal: [], asistencia: [], anio: 0 };
+    _capLlenarAnios(d && d.success ? (d.data.anios || []) : []);
+    const sa = document.getElementById('capFiltroAnio');
+    if (sa && _capResumenData.anio) sa.value = String(_capResumenData.anio);
+  } catch (e) { _capResumenData = { capacitaciones: [], personal: [], asistencia: [], anio: 0 }; }
+  renderResumen();
+}
+
+function renderResumen() {
+  const wrap = document.getElementById('capTablaWrap');
+  const pag = document.getElementById('capPagWrap');
+  if (!wrap) return;
+  const caps = _capResumenData.capacitaciones || [];
+  const anio = _capResumenData.anio || parseInt(document.getElementById('capFiltroAnio')?.value, 10) || new Date().getFullYear();
+  const cargo = document.getElementById('capFiltroCargo')?.value || '';
+  const q = (document.getElementById('capFiltroQ')?.value || '').trim().toLowerCase();
+
+  let personal = (_capResumenData.personal || []);
+  if (cargo) personal = personal.filter(p => p.cargo === cargo);
+  if (q) personal = personal.filter(p => (p.nombre || '').toLowerCase().includes(q) || String(p.dni || '').includes(q));
+
+  const asisSet = new Set((_capResumenData.asistencia || []).map(a => a[0] + '_' + a[1]));
+  const nCaps = caps.length, nTrab = personal.length;
+  const promedio = (nTrab && nCaps) ? Math.round(personal.reduce((acc, p) => {
+    const c = caps.reduce((s, cap) => s + (asisSet.has(cap.id + '_' + p.id) ? 1 : 0), 0);
+    return acc + c / nCaps;
+  }, 0) / nTrab * 100) : 0;
+
+  const kpis = document.getElementById('capKpis');
+  if (kpis) kpis.innerHTML =
+    _kpi('azul', 'fa-users', 'Trabajadores', nTrab, 'activos') +
+    _kpi('naranja', 'fa-chalkboard-user', 'Capacitaciones', nCaps, 'en ' + anio) +
+    _kpi(promedio >= 80 ? 'verde' : 'amarillo', 'fa-chart-pie', 'Asistencia promedio', promedio + '%', 'del personal');
+
+  if (!nCaps) { wrap.innerHTML = '<p class="muted" style="text-align:center;padding:28px">No hay capacitaciones registradas en ' + anio + '.</p>'; if (pag) pag.innerHTML = ''; return; }
+  if (!nTrab) { wrap.innerHTML = '<p class="muted" style="text-align:center;padding:28px">Sin trabajadores.</p>'; if (pag) pag.innerHTML = ''; return; }
+
+  const totalPags = Math.max(1, Math.ceil(nTrab / RESUMEN_CAP_PAGE));
+  if (_capResumenPag > totalPags) _capResumenPag = totalPags;
+  if (_capResumenPag < 1) _capResumenPag = 1;
+  const rows = personal.slice((_capResumenPag - 1) * RESUMEN_CAP_PAGE, _capResumenPag * RESUMEN_CAP_PAGE);
+
+  const head = '<th style="position:sticky;left:0;top:0;background:var(--gris-800);z-index:6;min-width:190px">Trabajador</th>' +
+    caps.map(c => `<th style="text-align:center;font-size:9px;white-space:nowrap" title="${escapeHtml(c.titulo)} · ${_capFecha(c.fecha)}">${escapeHtml((c.titulo || '').slice(0, 14))}${(c.titulo || '').length > 14 ? '…' : ''}</th>`).join('') +
+    '<th style="text-align:right">%</th>';
+  const body = rows.map(p => {
+    let ok = 0;
+    const celdas = caps.map(c => {
+      const has = asisSet.has(c.id + '_' + p.id);
+      if (has) ok++;
+      return '<td style="text-align:center">' + (has ? '<i class="fas fa-check" style="color:var(--verde)"></i>' : '<i class="fas fa-xmark" style="color:var(--rojo)"></i>') + '</td>';
+    }).join('');
+    const pct = Math.round(ok / nCaps * 100);
+    const col = pct === 100 ? 'var(--verde)' : pct >= 60 ? 'var(--naranja)' : 'var(--rojo)';
+    return '<tr>' +
+      '<td style="position:sticky;left:0;background:var(--gris-800);z-index:1">' +
+        '<div style="font-weight:600;color:var(--gris-100)">' + escapeHtml(p.nombre) + '</div>' +
+        '<div class="muted" style="font-size:11px">' + escapeHtml(p.dni || '') + ' · ' + escapeHtml(p.cargo || '') + '</div>' +
+      '</td>' + celdas +
+      '<td style="text-align:right;font-weight:700;color:' + col + ';font-variant-numeric:tabular-nums">' + pct + '%</td>' +
+    '</tr>';
+  }).join('');
+  wrap.innerHTML = '<table class="data-table" style="min-width:' + (250 + caps.length * 64) + 'px"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table>';
+  if (pag) pag.innerHTML = _capPagBar(nTrab, _capResumenPag, RESUMEN_CAP_PAGE, 'irResumenPagina');
 }
 
 function _capFila(x) {
