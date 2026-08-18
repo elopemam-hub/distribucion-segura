@@ -300,7 +300,10 @@ function _capAcciones(x) {
   if (x.estado !== 'ejecutado') {
     btns += `<button class="btn btn-outline btn-sm" onclick="capMarcarEjecutado(${x.id})" title="Marcar ejecutado"><i class="fas fa-check"></i></button> `;
   }
-  btns += `<button class="btn btn-outline btn-sm" onclick="eliminarCapacitacion(${x.id})" title="Eliminar"><i class="fas fa-trash" style="color:var(--rojo)"></i></button>`;
+  // Eliminar: solo administradores.
+  if (typeof USER_ROL !== 'undefined' && USER_ROL === 'administrador') {
+    btns += `<button class="btn btn-outline btn-sm" onclick="eliminarCapacitacion(${x.id})" title="Eliminar"><i class="fas fa-trash" style="color:var(--rojo)"></i></button>`;
+  }
   return btns;
 }
 
