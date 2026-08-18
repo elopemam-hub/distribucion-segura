@@ -8,6 +8,32 @@ let _capTipo = 'cronograma';
 let _capData = [];
 let _capBuscarTimer = null;
 let _capVista = 'lista';   // solo cronograma: 'lista' | 'matriz'
+let _capPag = 1;
+const CAP_PAGE_SIZE = 20;
+function irCapPagina(n) { _capPag = n; renderCapTabla(); }
+
+// Barra de paginación (mismas clases que el resto del sistema).
+function _capPagBar(total, pagina, porPag, fnName) {
+  const totalPags = Math.max(1, Math.ceil(total / porPag));
+  const desde = total ? (pagina - 1) * porPag + 1 : 0;
+  const hasta = Math.min(pagina * porPag, total);
+  let pags = [];
+  if (totalPags <= 7) pags = Array.from({ length: totalPags }, (_, i) => i + 1);
+  else {
+    pags = [1];
+    if (pagina > 3) pags.push('…');
+    for (let p = Math.max(2, pagina - 1); p <= Math.min(totalPags - 1, pagina + 1); p++) pags.push(p);
+    if (pagina < totalPags - 2) pags.push('…');
+    pags.push(totalPags);
+  }
+  const btns = `<button onclick="${fnName}(${pagina - 1})" ${pagina === 1 ? 'disabled' : ''}>&#8249;</button>` +
+    pags.map(p => p === '…' ? '<button disabled style="border:none;background:none;cursor:default">…</button>'
+      : `<button class="${p === pagina ? 'active' : ''}" onclick="${fnName}(${p})">${p}</button>`).join('') +
+    `<button onclick="${fnName}(${pagina + 1})" ${pagina === totalPags ? 'disabled' : ''}>&#8250;</button>`;
+  return '<div class="amon-pag-bar"><span class="amon-pag-info">' +
+    (total ? `Mostrando ${desde}–${hasta} de ${total}` : '') +
+    '</span><div class="amon-pag-btns">' + (totalPags > 1 ? btns : '') + '</div></div>';
+}
 
 // Textos y columnas por sub-módulo.
 const CAP_META = {
@@ -97,6 +123,7 @@ async function cargarCapacitaciones() {
     _capData = (d && d.success && d.data && d.data.items) ? d.data.items : [];
     _capLlenarAnios(d && d.success ? (d.data.anios || []) : []);
   } catch (e) { _capData = []; }
+  _capPag = 1;   // vuelve a la primera página al recargar/filtrar
   renderCapKpis();
   renderCapTabla();
 }
@@ -156,17 +183,27 @@ const CAP_ESTADO_COLOR = {
 };
 
 function renderCapTabla() {
-  if (_capTipo === 'cronograma' && _capVista === 'matriz') { renderCapMatriz(); return; }
+  const pag = document.getElementById('capPagWrap');
+  if (_capTipo === 'cronograma' && _capVista === 'matriz') { if (pag) pag.innerHTML = ''; renderCapMatriz(); return; }
   const wrap = document.getElementById('capTablaWrap');
   if (!wrap) return;
   const meta = CAP_META[_capTipo];
   if (!_capData.length) {
     wrap.innerHTML = '<p class="muted" style="text-align:center;padding:28px">Sin registros. Crea el primero con “' + meta.nuevo + '”.</p>';
+    if (pag) pag.innerHTML = '';
     return;
   }
+  // Paginación (20 por página).
+  const total = _capData.length;
+  const totalPags = Math.max(1, Math.ceil(total / CAP_PAGE_SIZE));
+  if (_capPag > totalPags) _capPag = totalPags;
+  if (_capPag < 1) _capPag = 1;
+  const pageRows = _capData.slice((_capPag - 1) * CAP_PAGE_SIZE, _capPag * CAP_PAGE_SIZE);
+
   const head = meta.cols.map(c => `<th>${c}</th>`).join('') + '<th style="text-align:right">Acciones</th>';
-  const body = _capData.map(x => `<tr>${_capFila(x)}<td style="text-align:right;white-space:nowrap">${_capAcciones(x)}</td></tr>`).join('');
+  const body = pageRows.map(x => `<tr>${_capFila(x)}<td style="text-align:right;white-space:nowrap">${_capAcciones(x)}</td></tr>`).join('');
   wrap.innerHTML = `<table class="data-table" style="min-width:760px"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
+  if (pag) pag.innerHTML = _capPagBar(total, _capPag, CAP_PAGE_SIZE, 'irCapPagina');
 }
 
 // Matriz mensual del cronograma anual: temas (filas) × 12 meses (columnas).

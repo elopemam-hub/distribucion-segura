@@ -53,9 +53,12 @@
     </div>
 
     <!-- Tabla (una por sub-pestaña; el JS rellena la que corresponde) -->
-    <div class="card"><div class="card-body" style="padding:0"><div class="tbl-scroll" id="capTablaWrap">
-      <p class="muted" style="text-align:center;padding:28px">Cargando…</p>
-    </div></div></div>
+    <div class="card"><div class="card-body" style="padding:0">
+      <div class="tbl-scroll" id="capTablaWrap">
+        <p class="muted" style="text-align:center;padding:28px">Cargando…</p>
+      </div>
+      <div id="capPagWrap"></div>
+    </div></div>
   </div>
 
   <!-- ===== MODAL: CAPACITACIÓN ===== -->
