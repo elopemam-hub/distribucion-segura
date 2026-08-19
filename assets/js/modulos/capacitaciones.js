@@ -298,10 +298,11 @@ async function cargarResumen() {
 function _capEvidCompleta(x) {
   return (+x.n_material > 0) && (+x.n_foto > 0) && ((+x.n_asis > 0) || (+x.n_hoja > 0));
 }
+// ✓ + cantidad si está cargado; ✗ rojo si falta.
 function _capChip(n, colorOK) {
   return +n > 0
-    ? '<span style="font-weight:700;color:' + (colorOK || 'var(--verde)') + '">' + n + '</span>'
-    : '<span style="color:var(--gris-500)">—</span>';
+    ? '<i class="fas fa-check" style="color:var(--verde);font-size:11px"></i> <span style="font-weight:700;color:' + (colorOK || 'var(--verde)') + '">' + n + '</span>'
+    : '<i class="fas fa-xmark" style="color:var(--rojo)"></i>';
 }
 
 function renderResumen() {
@@ -349,8 +350,8 @@ function renderResumen() {
       : '<span class="badge badge-warning">Incompleta</span>';
     const hoja = +x.n_hoja > 0 ? '<i class="fas fa-check" style="color:var(--verde)"></i>' : '<i class="fas fa-xmark" style="color:var(--rojo)"></i>';
     const asisTxt = +x.n_asis > 0
-      ? '<span style="font-weight:700;color:var(--verde)">' + x.n_asis + '</span><span class="muted" style="font-size:10px"> · ' + x.n_firmados + ' firm.</span>'
-      : '<span style="color:var(--gris-500)">—</span>';
+      ? '<i class="fas fa-check" style="color:var(--verde);font-size:11px"></i> <span style="font-weight:700;color:var(--verde)">' + x.n_asis + '</span><span class="muted" style="font-size:10px"> · ' + x.n_firmados + ' firm.</span>'
+      : '<i class="fas fa-xmark" style="color:var(--rojo)"></i>';
     const tituloEsc = escapeHtml(x.titulo).replace(/'/g, "\\'");
     return '<tr>' +
       '<td style="position:sticky;left:0;background:var(--gris-800);z-index:1">' +
