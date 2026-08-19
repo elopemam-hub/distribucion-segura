@@ -137,7 +137,7 @@
             <input type="number" class="form-control" id="cap_participantes" min="0"></div>
           <div class="form-group"><label class="form-label">Responsable / Facilitador</label>
             <input type="text" class="form-control" id="cap_responsable" maxlength="150"></div>
-          <div class="form-group cap-for-cronograma cap-for-semana cap-for-campana"><label class="form-label">Estado</label>
+          <div class="form-group cap-for-cronograma cap-for-semana cap-for-alerta cap-for-campana"><label class="form-label">Estado</label>
             <select class="form-control" id="cap_estado">
               <option value="programado">Programado</option><option value="en_curso">En curso</option>
               <option value="ejecutado">Ejecutado</option><option value="reprogramado">Reprogramado</option>
