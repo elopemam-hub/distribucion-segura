@@ -4,7 +4,7 @@
 // Archivo: api/checklist.php
 // Normas SST: Ley 29783, NTP 350.043 (extintores), R.M. 050-2013-TR (EPP),
 // R.M. 1275-2021-SA (botiquín).
-// Acciones: componentes, list, get, save, delete, resumen,
+// Acciones: componentes, list, get, save, delete, cumplimiento,
 //           comp_save, comp_toggle, item_save, item_toggle, item_del
 // ============================================================
 
@@ -41,7 +41,7 @@ try {
         case 'delete':      eliminar();     break;
         case 'foto_add':    fotoAdd();      break;
         case 'foto_del':    fotoDel();      break;
-        case 'resumen':     resumen();      break;
+        case 'cumplimiento': cumplimiento(); break;
         case 'comp_save':   compSave();     break;
         case 'comp_toggle': compToggle();   break;
         case 'item_save':   itemSave();     break;
@@ -210,20 +210,58 @@ function eliminar() {
     jsonResponse(true, 'Inspección eliminada.');
 }
 
-// Resumen mensual: por unidad inspeccionada, estado y conformidad.
-function resumen() {
+// Matriz de cumplimiento: filas = placas de unidades, columnas = equipos.
+// Marca qué equipos ya se inspeccionaron en el mes por cada unidad y cuáles faltan.
+function cumplimiento() {
     $periodo = trim($_GET['periodo'] ?? '');
     if (!preg_match('/^\d{4}-\d{2}$/', $periodo)) $periodo = date('Y-m');
-    $rows = db()->fetchAll(
-        "SELECT i.id, i.placa, c.nombre AS equipo, i.fecha, i.inspector_nombre, i.estado,
-                (SELECT COUNT(*) FROM chk_resultados r WHERE r.inspeccion_id = i.id) AS total,
-                (SELECT COUNT(*) FROM chk_resultados r WHERE r.inspeccion_id = i.id AND r.resultado = 'conforme') AS conformes,
-                (SELECT COUNT(*) FROM chk_resultados r WHERE r.inspeccion_id = i.id AND r.resultado = 'na') AS na,
-                (SELECT COUNT(*) FROM chk_resultados r WHERE r.inspeccion_id = i.id AND r.resultado = 'no_conforme') AS no_conformes
-           FROM chk_inspecciones i LEFT JOIN chk_componentes c ON c.id = i.componente_id
-          WHERE i.periodo = ? ORDER BY i.placa ASC, c.nombre ASC", [$periodo]);
+    $tipo = trim($_GET['tipo'] ?? '');
+
+    // Columnas: equipos / formularios activos.
+    $componentes = db()->fetchAll(
+        "SELECT id, nombre FROM chk_componentes WHERE activo = 1 ORDER BY orden ASC, id ASC");
+
+    // Filas: placas desde la BD de vigilancia (misma fuente que la inspección).
+    $placas = [];
+    $tipos  = [];
+    $vig = dbVigilancia();
+    if ($vig) {
+        try {
+            $sql = "SELECT placa, tipo, marca, modelo FROM vehiculos WHERE placa <> ''";
+            $params = [];
+            if ($tipo !== '') { $sql .= " AND tipo = ?"; $params[] = $tipo; }
+            $sql .= " ORDER BY placa ASC LIMIT 500";
+            $st = $vig->prepare($sql); $st->execute($params);
+            $placas = $st->fetchAll();
+            $st2 = $vig->query("SELECT DISTINCT tipo FROM vehiculos WHERE tipo IS NOT NULL AND tipo <> '' ORDER BY tipo");
+            $tipos = array_column($st2->fetchAll(), 'tipo');
+        } catch (Throwable $e) { error_log('[checklist:cumplimiento] ' . $e->getMessage()); }
+    }
+    // Degradación segura: si no hay catálogo de vehículos, usa las placas ya inspeccionadas.
+    if (!$placas) {
+        foreach (db()->fetchAll("SELECT DISTINCT placa FROM chk_inspecciones WHERE placa <> '' ORDER BY placa ASC") as $r) {
+            $placas[] = ['placa' => $r['placa'], 'tipo' => '', 'marca' => '', 'modelo' => ''];
+        }
+    }
+
+    // Inspecciones del mes: mapa placa (mayúsculas) => [componente_id => estado].
+    $insp = db()->fetchAll(
+        "SELECT placa, componente_id, estado FROM chk_inspecciones WHERE periodo = ?", [$periodo]);
+    $mapa = [];
+    foreach ($insp as $x) {
+        $mapa[strtoupper($x['placa'])][(int)$x['componente_id']] = $x['estado'];
+    }
+
     $periodos = array_column(db()->fetchAll("SELECT DISTINCT periodo FROM chk_inspecciones ORDER BY periodo DESC"), 'periodo');
-    jsonResponse(true, '', ['periodo' => $periodo, 'items' => $rows, 'periodos' => $periodos]);
+    jsonResponse(true, '', [
+        'periodo'      => $periodo,
+        'tipo'         => $tipo,
+        'tipos'        => $tipos,
+        'componentes'  => $componentes,
+        'placas'       => $placas,
+        'inspecciones' => $mapa,
+        'periodos'     => $periodos,
+    ]);
 }
 
 // ── Configuración: componentes e ítems ──

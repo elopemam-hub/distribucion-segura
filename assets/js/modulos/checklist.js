@@ -52,14 +52,16 @@ function switchChkTab(tab) {
   document.querySelectorAll('.chk-tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('chk-btn-' + tab)?.classList.add('active');
   const show = (id, on) => { const el = document.getElementById(id); if (el) el.style.display = on ? '' : 'none'; };
-  show('chkFiltros', tab === 'inspecciones' || tab === 'resumen');
-  show('chkKpis', tab === 'resumen');
+  show('chkFiltros', tab === 'inspecciones' || tab === 'cumplimiento');
+  show('chkKpis', tab === 'cumplimiento');
   show('chkBtnNueva', tab === 'inspecciones');
   show('chkFiltroEstadoWrap', tab === 'inspecciones');
   show('chkFiltroEquipoWrap', tab === 'inspecciones');
+  show('chkFiltroQWrap', tab === 'inspecciones');
+  show('chkFiltroTipoWrap', tab === 'cumplimiento');
   if (tab === 'formularios') renderFormularios();
   else if (tab === 'inspecciones') cargarChecklist();
-  else if (tab === 'resumen') cargarChkResumen();
+  else if (tab === 'cumplimiento') cargarChkCumplimiento();
   else renderChkConfig();
 }
 
@@ -89,7 +91,7 @@ async function renderFormularios() {
     }).join('') + '</div>';
 }
 
-function chkRecargar() { if (_chkTab === 'resumen') cargarChkResumen(); else cargarChecklist(); }
+function chkRecargar() { if (_chkTab === 'cumplimiento') cargarChkCumplimiento(); else cargarChecklist(); }
 function chkBuscarDebounced() { clearTimeout(_chkBuscarTimer); _chkBuscarTimer = setTimeout(cargarChecklist, 300); }
 
 // ── Inspecciones ──
@@ -147,51 +149,94 @@ function renderChecklist() {
   if (pag) pag.innerHTML = _chkPagBar(total, _chkPag, CHK_PAGE, 'irChkPagina');
 }
 
-// ── Resumen mensual ──
-async function cargarChkResumen() {
+// ── Cumplimiento: matriz placas × equipos ──
+let _chkCumpTipoInit = false;   // preselecciona "camión" una sola vez
+async function cargarChkCumplimiento() {
   const per = document.getElementById('chkFiltroPeriodo')?.value || '';
+  const tipo = document.getElementById('chkFiltroTipo')?.value || '';
   const wrap = document.getElementById('chkTablaWrap');
   if (wrap) wrap.innerHTML = '<p class="muted" style="text-align:center;padding:28px">Cargando…</p>';
-  let data = { items: [], periodo: per };
+  let data = { componentes: [], placas: [], inspecciones: {}, tipos: [], periodo: per };
   try {
-    const r = await fetch('api/checklist.php?action=resumen' + (per ? '&periodo=' + per : ''));
+    const qs = 'action=cumplimiento' + (per ? '&periodo=' + per : '') + (tipo ? '&tipo=' + encodeURIComponent(tipo) : '');
+    const r = await fetch('api/checklist.php?' + qs);
     const d = await r.json();
     if (d && d.success) data = d.data;
   } catch (e) {}
-  renderChkResumen(data);
+  if (_chkLlenarTipos(data.tipos || [], data.tipo || '')) return;   // se disparó una recarga con el tipo por defecto
+  renderChkCumplimiento(data);
 }
-function renderChkResumen(data) {
+
+// Rellena el filtro "Tipo de unidad" y, la primera vez, preselecciona camión.
+// Devuelve true si preseleccionó un tipo y disparó una nueva carga (evita render doble).
+function _chkLlenarTipos(tipos, actual) {
+  const sel = document.getElementById('chkFiltroTipo');
+  if (!sel) return false;
+  if (sel.options.length <= 1 && tipos.length) {
+    sel.innerHTML = '<option value="">Todos</option>' + tipos.map(t => `<option value="${_chkEsc(t)}">${_chkEsc(t)}</option>`).join('');
+    if (!_chkCumpTipoInit && !actual) {
+      const cam = tipos.find(t => /cami[oó]n/i.test(t));
+      if (cam) { sel.value = cam; _chkCumpTipoInit = true; cargarChkCumplimiento(); return true; }
+    }
+  }
+  if (actual) sel.value = actual;
+  _chkCumpTipoInit = true;
+  return false;
+}
+
+function renderChkCumplimiento(data) {
   const wrap = document.getElementById('chkTablaWrap'), pag = document.getElementById('chkPagWrap');
   const kpis = document.getElementById('chkKpis');
-  const items = data.items || [];
-  const total = items.length;
-  const aptas = items.filter(x => x.estado === 'apto').length;
-  const conNC = items.filter(x => +x.no_conformes > 0).length;
-  if (kpis) kpis.innerHTML =
-    _chkKpi('azul', 'fa-truck', 'Unidades inspeccionadas', total, 'en ' + (data.periodo || '')) +
-    _chkKpi(total && aptas === total ? 'verde' : 'amarillo', 'fa-circle-check', 'Aptas', aptas, total ? Math.round(aptas / total * 100) + '%' : '0%') +
-    _chkKpi(conNC ? 'rojo' : 'verde', 'fa-triangle-exclamation', 'Con no conformidad', conNC, 'requieren acción');
   if (pag) pag.innerHTML = '';
-  if (!total) { wrap.innerHTML = '<p class="muted" style="text-align:center;padding:28px">Sin inspecciones en ' + (data.periodo || 'el mes') + '.</p>'; return; }
-  const body = items.map(x => {
-    const est = CHK_EST[x.estado] || ['badge-secondary', x.estado];
-    const evaluados = (+x.total) - (+x.na);
-    const pct = evaluados > 0 ? Math.round(+x.conformes / evaluados * 100) : (+x.total ? 100 : 0);
-    const col = pct === 100 ? 'var(--verde)' : pct >= 80 ? 'var(--naranja)' : 'var(--rojo)';
+  const comps = data.componentes || [], placas = data.placas || [], mapa = data.inspecciones || {};
+  const totalUnid = placas.length, totalEquipos = comps.length;
+
+  let completas = 0, hechas = 0;
+  placas.forEach(p => {
+    const m = mapa[(p.placa || '').toUpperCase()] || {};
+    const n = comps.filter(c => m[c.id] !== undefined).length;
+    hechas += n;
+    if (totalEquipos && n === totalEquipos) completas++;
+  });
+  const totalCeldas = totalUnid * totalEquipos;
+  const cobertura = totalCeldas ? Math.round(hechas / totalCeldas * 100) : 0;
+
+  if (kpis) kpis.innerHTML =
+    _chkKpi('azul', 'fa-truck', 'Unidades', totalUnid, 'en ' + (data.periodo || '')) +
+    _chkKpi(completas === totalUnid && totalUnid ? 'verde' : 'amarillo', 'fa-circle-check', 'Completas', completas, 'con todos los equipos') +
+    _chkKpi(cobertura === 100 ? 'verde' : cobertura >= 60 ? 'amarillo' : 'rojo', 'fa-list-check', 'Cobertura', cobertura + '%', hechas + ' de ' + totalCeldas + ' inspecciones');
+
+  if (!totalEquipos) { wrap.innerHTML = '<p class="muted" style="text-align:center;padding:28px">No hay equipos activos. Créalos en Configuración.</p>'; return; }
+  if (!totalUnid) { wrap.innerHTML = '<p class="muted" style="text-align:center;padding:28px">No hay unidades para mostrar.</p>'; return; }
+
+  const th = comps.map(c => `<th style="text-align:center;min-width:64px"><span style="writing-mode:horizontal-tb;font-size:11px;font-weight:700;color:var(--gris-200)">${_chkEsc(c.nombre)}</span></th>`).join('');
+  const body = placas.map(p => {
+    const placa = (p.placa || '').toString();
+    const m = mapa[placa.toUpperCase()] || {};
+    const cells = comps.map(c => {
+      const est = m[c.id];
+      if (est === undefined)
+        return '<td style="text-align:center"><i class="fas fa-xmark" style="color:var(--rojo);opacity:.55" title="Falta inspeccionar"></i></td>';
+      const col = est === 'no_apto' ? 'var(--rojo)' : est === 'observado' ? 'var(--naranja)' : 'var(--verde)';
+      const lbl = (CHK_EST[est] || ['', est])[1];
+      return `<td style="text-align:center"><i class="fas fa-circle-check" style="color:${col}" title="Inspeccionado · ${lbl}"></i></td>`;
+    }).join('');
+    const n = comps.filter(c => m[c.id] !== undefined).length;
+    const avCol = n === totalEquipos ? 'var(--verde)' : n === 0 ? 'var(--rojo)' : 'var(--naranja)';
+    const extra = [p.marca, p.modelo].filter(Boolean).join(' ');
     return `<tr>
-      <td style="font-weight:700;color:var(--gris-100)">${_chkEsc(x.placa)}</td>
-      <td><span class="badge badge-info">${_chkEsc(x.equipo || '—')}</span></td>
-      <td class="muted">${_chkFecha(x.fecha)}</td>
-      <td class="muted">${_chkEsc(x.inspector_nombre || '—')}</td>
-      <td style="text-align:right;font-variant-numeric:tabular-nums;color:${col};font-weight:700">${pct}%</td>
-      <td style="text-align:center">${+x.no_conformes > 0 ? '<span class="badge badge-danger">' + x.no_conformes + '</span>' : '—'}</td>
-      <td><span class="badge ${est[0]}">${est[1]}</span></td>
-      <td style="text-align:right"><button class="btn btn-outline btn-sm" onclick="chkVerPdf(${x.id})" title="Registro PDF"><i class="fas fa-print"></i></button></td>
-      </tr>`;
+      <td style="position:sticky;left:0;background:var(--surface);z-index:1">
+        <div style="font-weight:700;color:var(--gris-100)">${_chkEsc(placa)}</div>
+        ${extra ? '<div class="muted" style="font-size:11px">' + _chkEsc(extra) + '</div>' : ''}
+      </td>
+      ${cells}
+      <td style="text-align:center;font-weight:700;font-variant-numeric:tabular-nums;color:${avCol}">${n}/${totalEquipos}</td>
+    </tr>`;
   }).join('');
-  wrap.innerHTML = `<table class="data-table" style="min-width:760px"><thead><tr>
-    <th>Unidad</th><th>Equipo</th><th>Fecha</th><th>Inspector</th><th style="text-align:right">Conformidad</th><th style="text-align:center">No conf.</th><th>Estado</th><th></th>
-    </tr></thead><tbody>${body}</tbody></table>`;
+
+  wrap.innerHTML = `<table class="data-table" style="min-width:${260 + totalEquipos * 64}px">
+    <thead><tr><th style="position:sticky;left:0;background:var(--surface);z-index:2">Unidad</th>${th}<th style="text-align:center">Avance</th></tr></thead>
+    <tbody>${body}</tbody></table>`;
 }
 function _chkKpi(color, icon, label, value, sub) {
   return `<div class="kpi-card ${color}"><div class="kpi-label">${label}</div><div class="kpi-value ${color}">${value}</div><div class="kpi-sub">${sub}</div><i class="fas ${icon} kpi-icon"></i></div>`;

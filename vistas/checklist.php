@@ -15,7 +15,7 @@
     <div class="tabs" style="margin-bottom:18px">
       <button class="tab-btn chk-tab-btn active" id="chk-btn-formularios" onclick="switchChkTab('formularios')"><i class="fas fa-table-cells-large"></i> Formularios</button>
       <button class="tab-btn chk-tab-btn" id="chk-btn-inspecciones" onclick="switchChkTab('inspecciones')"><i class="fas fa-list-check"></i> Inspecciones</button>
-      <button class="tab-btn chk-tab-btn" id="chk-btn-resumen" onclick="switchChkTab('resumen')"><i class="fas fa-table-list"></i> Resumen mensual</button>
+      <button class="tab-btn chk-tab-btn" id="chk-btn-cumplimiento" onclick="switchChkTab('cumplimiento')"><i class="fas fa-table-cells"></i> Cumplimiento</button>
       <button class="tab-btn chk-tab-btn" id="chk-btn-config" onclick="switchChkTab('config')"><i class="fas fa-sliders"></i> Configuración</button>
     </div>
 
@@ -28,12 +28,14 @@
           <input type="month" class="form-control" id="chkFiltroPeriodo" onchange="chkRecargar()"></div>
         <div class="form-group" id="chkFiltroEquipoWrap"><label class="form-label">Equipo</label>
           <select class="form-control" id="chkFiltroEquipo" onchange="cargarChecklist()"><option value="">Todos</option></select></div>
+        <div class="form-group" id="chkFiltroTipoWrap" style="display:none"><label class="form-label">Tipo de unidad</label>
+          <select class="form-control" id="chkFiltroTipo" onchange="cargarChkCumplimiento()"><option value="">Todos</option></select></div>
         <div class="form-group" id="chkFiltroEstadoWrap"><label class="form-label">Estado</label>
           <select class="form-control" id="chkFiltroEstado" onchange="cargarChecklist()">
             <option value="">Todos</option><option value="apto">Apto</option>
             <option value="observado">Observado</option><option value="no_apto">No apto</option>
           </select></div>
-        <div class="form-group"><label class="form-label">Buscar</label>
+        <div class="form-group" id="chkFiltroQWrap"><label class="form-label">Buscar</label>
           <input type="text" class="form-control" id="chkFiltroQ" placeholder="Placa o inspector…" oninput="chkBuscarDebounced()"></div>
         <button class="btn btn-primary" id="chkBtnNueva" onclick="nuevaInspeccion()"><i class="fas fa-plus"></i> Nueva inspección</button>
       </div>
