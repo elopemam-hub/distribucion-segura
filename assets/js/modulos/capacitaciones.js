@@ -641,8 +641,12 @@ function renderEvAdjuntos() {
       const del = _capAdmin()
         ? '<button onclick="capEliminarAdjunto(' + a.id + ')" title="Quitar" style="position:absolute;top:-6px;right:-6px;background:var(--rojo);color:#fff;border:0;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer">&times;</button>'
         : '';
+      const nom = (a.nombre_original || a.archivo).replace(/"/g, '');
+      const desc = '<a href="' + encodeURI(url) + '" download="' + escapeHtml(nom) + '" title="Descargar" ' +
+        'style="position:absolute;bottom:3px;right:3px;background:rgba(0,0,0,.62);color:#fff;border-radius:4px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;text-decoration:none">' +
+        '<i class="fas fa-download"></i></a>';
       return '<div style="position:relative">' +
-        '<img src="' + url + '" onclick="verDocumento(\'' + encodeURI(url) + '\')" style="width:84px;height:84px;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid var(--gris-600)">' + del +
+        '<img src="' + url + '" onclick="verDocumento(\'' + encodeURI(url) + '\')" style="width:84px;height:84px;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid var(--gris-600)">' + desc + del +
       '</div>';
     }).join('') : '<span class="muted" style="font-size:12px">Sin fotos.</span>';
   }
