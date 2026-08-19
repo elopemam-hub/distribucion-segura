@@ -42,6 +42,7 @@ try {
         case 'foto_add':    fotoAdd();      break;
         case 'foto_del':    fotoDel();      break;
         case 'cumplimiento': cumplimiento(); break;
+        case 'dashboard':    dashboard();    break;
         case 'comp_save':   compSave();     break;
         case 'comp_toggle': compToggle();   break;
         case 'item_save':   itemSave();     break;
@@ -210,20 +211,11 @@ function eliminar() {
     jsonResponse(true, 'Inspección eliminada.');
 }
 
-// Matriz de cumplimiento: filas = placas de unidades, columnas = equipos.
-// Marca qué equipos ya se inspeccionaron en el mes por cada unidad y cuáles faltan.
-function cumplimiento() {
-    $periodo = trim($_GET['periodo'] ?? '');
-    if (!preg_match('/^\d{4}-\d{2}$/', $periodo)) $periodo = date('Y-m');
-    $tipo = trim($_GET['tipo'] ?? '');
-
-    // Columnas: equipos / formularios activos.
-    $componentes = db()->fetchAll(
-        "SELECT id, nombre FROM chk_componentes WHERE activo = 1 ORDER BY orden ASC, id ASC");
-
-    // Filas: placas desde la BD de vigilancia (misma fuente que la inspección).
-    $placas = [];
-    $tipos  = [];
+// Flota (filas): placas desde la BD de vigilancia, con degradación segura a las
+// placas ya inspeccionadas si el catálogo de vehículos no está disponible.
+// Devuelve ['placas' => [...], 'tipos' => [...]].
+function _chkFlota(string $tipo = ''): array {
+    $placas = []; $tipos = [];
     $vig = dbVigilancia();
     if ($vig) {
         try {
@@ -235,32 +227,227 @@ function cumplimiento() {
             $placas = $st->fetchAll();
             $st2 = $vig->query("SELECT DISTINCT tipo FROM vehiculos WHERE tipo IS NOT NULL AND tipo <> '' ORDER BY tipo");
             $tipos = array_column($st2->fetchAll(), 'tipo');
-        } catch (Throwable $e) { error_log('[checklist:cumplimiento] ' . $e->getMessage()); }
+        } catch (Throwable $e) { error_log('[checklist:_chkFlota] ' . $e->getMessage()); }
     }
-    // Degradación segura: si no hay catálogo de vehículos, usa las placas ya inspeccionadas.
     if (!$placas) {
         foreach (db()->fetchAll("SELECT DISTINCT placa FROM chk_inspecciones WHERE placa <> '' ORDER BY placa ASC") as $r) {
             $placas[] = ['placa' => $r['placa'], 'tipo' => '', 'marca' => '', 'modelo' => ''];
         }
     }
+    return ['placas' => $placas, 'tipos' => $tipos];
+}
 
-    // Inspecciones del mes: mapa placa (mayúsculas) => [componente_id => estado].
-    $insp = db()->fetchAll(
-        "SELECT placa, componente_id, estado FROM chk_inspecciones WHERE periodo = ?", [$periodo]);
+// Mapa placa (mayúsculas) => [componente_id => estado] para un periodo.
+function _chkMapaMes(string $periodo): array {
     $mapa = [];
-    foreach ($insp as $x) {
+    foreach (db()->fetchAll("SELECT placa, componente_id, estado FROM chk_inspecciones WHERE periodo = ?", [$periodo]) as $x) {
         $mapa[strtoupper($x['placa'])][(int)$x['componente_id']] = $x['estado'];
     }
+    return $mapa;
+}
+
+// Matriz de cumplimiento: filas = placas de unidades, columnas = equipos.
+// Marca qué equipos ya se inspeccionaron en el mes por cada unidad y cuáles faltan.
+function cumplimiento() {
+    $periodo = trim($_GET['periodo'] ?? '');
+    if (!preg_match('/^\d{4}-\d{2}$/', $periodo)) $periodo = date('Y-m');
+    $tipo = trim($_GET['tipo'] ?? '');
+
+    $componentes = db()->fetchAll(
+        "SELECT id, nombre FROM chk_componentes WHERE activo = 1 ORDER BY orden ASC, id ASC");
+    $flota = _chkFlota($tipo);
+    $mapa  = _chkMapaMes($periodo);
 
     $periodos = array_column(db()->fetchAll("SELECT DISTINCT periodo FROM chk_inspecciones ORDER BY periodo DESC"), 'periodo');
     jsonResponse(true, '', [
         'periodo'      => $periodo,
         'tipo'         => $tipo,
-        'tipos'        => $tipos,
+        'tipos'        => $flota['tipos'],
         'componentes'  => $componentes,
-        'placas'       => $placas,
+        'placas'       => $flota['placas'],
         'inspecciones' => $mapa,
         'periodos'     => $periodos,
+    ]);
+}
+
+// Dashboard de inspección de equipos: KPIs, tendencia, estado de flota,
+// cumplimiento por equipo, top de no conformidades y listas accionables.
+function dashboard() {
+    $periodo = trim($_GET['periodo'] ?? '');
+    if (!preg_match('/^\d{4}-\d{2}$/', $periodo)) $periodo = date('Y-m');
+    $tipo = trim($_GET['tipo'] ?? '');
+    $comp = (int)($_GET['componente_id'] ?? 0);
+    $prev = date('Y-m', strtotime($periodo . '-01 -1 month'));
+
+    // Catálogo de equipos (para columnas / filtro).
+    $componentes = db()->fetchAll(
+        "SELECT id, nombre FROM chk_componentes WHERE activo = 1 ORDER BY orden ASC, id ASC");
+    $compActivos = $comp > 0 ? array_values(array_filter($componentes, fn($c) => (int)$c['id'] === $comp)) : $componentes;
+    $equiposTotal = count($compActivos);
+    $compIds = array_map(fn($c) => (int)$c['id'], $compActivos);
+
+    // Flota (denominador de cobertura).
+    $flota   = _chkFlota($tipo);
+    $placas  = $flota['placas'];
+    $unidTotal = count($placas);
+    $placasUp  = array_map(fn($p) => strtoupper($p['placa']), $placas);
+    $placasSet = array_flip($placasUp);
+
+    // Filtro de equipo para las consultas basadas en inspecciones.
+    $compSql = $comp > 0 ? ' AND i.componente_id = ?' : '';
+
+    // ── KPIs por unidad a partir del mapa del mes ──
+    $mapa = _chkMapaMes($periodo);
+    $celdasHechas = 0; $aptas = 0; $noAptas = 0; $sinInsp = [];
+    foreach ($placas as $p) {
+        $m = $mapa[strtoupper($p['placa'])] ?? [];
+        $hechos = 0; $tieneNoApto = false; $todoApto = true;
+        foreach ($compIds as $cid) {
+            if (isset($m[$cid])) {
+                $hechos++;
+                if ($m[$cid] === 'no_apto') $tieneNoApto = true;
+                if ($m[$cid] !== 'apto')    $todoApto = false;
+            } else { $todoApto = false; }
+        }
+        $celdasHechas += $hechos;
+        if ($tieneNoApto) $noAptas++;
+        if ($hechos === 0) $sinInsp[] = $p['placa'];
+        elseif ($equiposTotal && $hechos === $equiposTotal && $todoApto) $aptas++;
+    }
+    $celdasTotal = $unidTotal * $equiposTotal;
+    $cobertura   = $celdasTotal ? round($celdasHechas / $celdasTotal * 100) : 0;
+
+    // No conformidades del mes.
+    $ncMes = (int)(db()->fetchOne(
+        "SELECT COUNT(*) n FROM chk_resultados r JOIN chk_inspecciones i ON i.id = r.inspeccion_id
+          WHERE i.periodo = ? AND r.resultado = 'no_conforme'" . $compSql,
+        $comp > 0 ? [$periodo, $comp] : [$periodo])['n'] ?? 0);
+
+    // ── KPIs mes anterior (para deltas) ──
+    $mapaAnt = _chkMapaMes($prev);
+    $celdasAnt = 0; $noAptasAnt = 0;
+    foreach ($placas as $p) {
+        $m = $mapaAnt[strtoupper($p['placa'])] ?? [];
+        $na = false;
+        foreach ($compIds as $cid) { if (isset($m[$cid])) { $celdasAnt++; if ($m[$cid] === 'no_apto') $na = true; } }
+        if ($na) $noAptasAnt++;
+    }
+    $coberturaAnt = $celdasTotal ? round($celdasAnt / $celdasTotal * 100) : 0;
+    $ncAnt = (int)(db()->fetchOne(
+        "SELECT COUNT(*) n FROM chk_resultados r JOIN chk_inspecciones i ON i.id = r.inspeccion_id
+          WHERE i.periodo = ? AND r.resultado = 'no_conforme'" . $compSql,
+        $comp > 0 ? [$prev, $comp] : [$prev])['n'] ?? 0);
+
+    // ── Estado de la flota (dona): inspecciones del mes por estado ──
+    $estRows = db()->fetchAll(
+        "SELECT i.estado, COUNT(*) n FROM chk_inspecciones i WHERE i.periodo = ?" . $compSql . " GROUP BY i.estado",
+        $comp > 0 ? [$periodo, $comp] : [$periodo]);
+    $estado = ['apto' => 0, 'observado' => 0, 'no_apto' => 0];
+    foreach ($estRows as $r) { $estado[$r['estado']] = (int)$r['n']; }
+
+    // ── Cumplimiento por equipo (barras) ──
+    $porEqRaw = [];
+    foreach (db()->fetchAll(
+        "SELECT i.componente_id, COUNT(DISTINCT i.placa) hechas,
+                SUM(i.estado = 'no_apto') no_apto
+           FROM chk_inspecciones i WHERE i.periodo = ? GROUP BY i.componente_id", [$periodo]) as $r) {
+        $porEqRaw[(int)$r['componente_id']] = $r;
+    }
+    $porEquipo = [];
+    foreach ($compActivos as $c) {
+        $r = $porEqRaw[(int)$c['id']] ?? null;
+        $hechas = $r ? (int)$r['hechas'] : 0;
+        $porEquipo[] = [
+            'nombre'  => $c['nombre'],
+            'hechas'  => $hechas,
+            'total'   => $unidTotal,
+            'pct'     => $unidTotal ? round($hechas / $unidTotal * 100) : 0,
+            'no_apto' => $r ? (int)$r['no_apto'] : 0,
+        ];
+    }
+
+    // ── Top no conformidades (ítems con más "no conforme") ──
+    $topNc = db()->fetchAll(
+        "SELECT it.texto AS item, c.nombre AS equipo, COUNT(*) n
+           FROM chk_resultados r
+           JOIN chk_inspecciones i ON i.id = r.inspeccion_id AND i.periodo = ?
+           LEFT JOIN chk_items it ON it.id = r.item_id
+           LEFT JOIN chk_componentes c ON c.id = r.componente_id
+          WHERE r.resultado = 'no_conforme'" . $compSql . "
+          GROUP BY r.item_id, it.texto, c.nombre ORDER BY n DESC LIMIT 10",
+        $comp > 0 ? [$periodo, $comp] : [$periodo]);
+
+    // ── Tendencia de cobertura (últimos 6 meses) ──
+    $labels = [];
+    for ($i = 5; $i >= 0; $i--) $labels[] = date('Y-m', strtotime($periodo . '-01 -' . $i . ' month'));
+    $desde = $labels[0];
+    $tendRaw = [];
+    foreach (db()->fetchAll(
+        "SELECT periodo, COUNT(DISTINCT CONCAT(placa,'|',componente_id)) celdas, COUNT(*) inspecciones
+           FROM chk_inspecciones WHERE periodo >= ?" . ($comp > 0 ? ' AND componente_id = ?' : '') . "
+          GROUP BY periodo",
+        $comp > 0 ? [$desde, $comp] : [$desde]) as $r) {
+        $tendRaw[$r['periodo']] = $r;
+    }
+    $tendencia = array_map(function ($p) use ($tendRaw, $celdasTotal) {
+        $celdas = isset($tendRaw[$p]) ? (int)$tendRaw[$p]['celdas'] : 0;
+        return [
+            'periodo'      => $p,
+            'cobertura'    => $celdasTotal ? round($celdas / $celdasTotal * 100) : 0,
+            'inspecciones' => isset($tendRaw[$p]) ? (int)$tendRaw[$p]['inspecciones'] : 0,
+        ];
+    }, $labels);
+
+    // ── Listas accionables ──
+    $noAptasList = db()->fetchAll(
+        "SELECT i.id, i.placa, c.nombre AS equipo, i.fecha, i.inspector_nombre
+           FROM chk_inspecciones i LEFT JOIN chk_componentes c ON c.id = i.componente_id
+          WHERE i.periodo = ? AND i.estado = 'no_apto'" . $compSql . "
+          ORDER BY i.fecha DESC LIMIT 50",
+        $comp > 0 ? [$periodo, $comp] : [$periodo]);
+
+    $ncList = db()->fetchAll(
+        "SELECT i.id, i.placa, c.nombre AS equipo, it.texto AS item, r.observacion AS obs
+           FROM chk_resultados r
+           JOIN chk_inspecciones i ON i.id = r.inspeccion_id AND i.periodo = ?
+           LEFT JOIN chk_items it ON it.id = r.item_id
+           LEFT JOIN chk_componentes c ON c.id = r.componente_id
+          WHERE r.resultado = 'no_conforme'" . $compSql . "
+          ORDER BY i.fecha DESC LIMIT 50",
+        $comp > 0 ? [$periodo, $comp] : [$periodo]);
+
+    $periodos = array_column(db()->fetchAll("SELECT DISTINCT periodo FROM chk_inspecciones ORDER BY periodo DESC"), 'periodo');
+
+    jsonResponse(true, '', [
+        'periodo' => $periodo,
+        'tipo'    => $tipo,
+        'tipos'   => $flota['tipos'],
+        'componentes'  => $componentes,
+        'componente_id' => $comp,
+        'kpis' => [
+            'unidades'         => $unidTotal,
+            'equipos'          => $equiposTotal,
+            'celdas_total'     => $celdasTotal,
+            'inspecciones'     => $celdasHechas,
+            'cobertura'        => $cobertura,
+            'aptas'            => $aptas,
+            'no_aptas'         => $noAptas,
+            'no_conformidades' => $ncMes,
+            'sin_inspeccion'   => count($sinInsp),
+        ],
+        'kpisAnt' => [
+            'cobertura'        => $coberturaAnt,
+            'no_aptas'         => $noAptasAnt,
+            'no_conformidades' => $ncAnt,
+        ],
+        'estado'        => $estado,
+        'por_equipo'    => $porEquipo,
+        'top_nc'        => $topNc,
+        'tendencia'     => $tendencia,
+        'no_aptas_list' => $noAptasList,
+        'nc_list'       => $ncList,
+        'sin_inspeccion'=> $sinInsp,
+        'periodos'      => $periodos,
     ]);
 }
 

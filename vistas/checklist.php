@@ -13,7 +13,8 @@
     </div>
 
     <div class="tabs" style="margin-bottom:18px">
-      <button class="tab-btn chk-tab-btn active" id="chk-btn-formularios" onclick="switchChkTab('formularios')"><i class="fas fa-table-cells-large"></i> Formularios</button>
+      <button class="tab-btn chk-tab-btn active" id="chk-btn-dashboard" onclick="switchChkTab('dashboard')"><i class="fas fa-gauge-high"></i> Dashboard</button>
+      <button class="tab-btn chk-tab-btn" id="chk-btn-formularios" onclick="switchChkTab('formularios')"><i class="fas fa-table-cells-large"></i> Formularios</button>
       <button class="tab-btn chk-tab-btn" id="chk-btn-inspecciones" onclick="switchChkTab('inspecciones')"><i class="fas fa-list-check"></i> Inspecciones</button>
       <button class="tab-btn chk-tab-btn" id="chk-btn-cumplimiento" onclick="switchChkTab('cumplimiento')"><i class="fas fa-table-cells"></i> Cumplimiento</button>
       <button class="tab-btn chk-tab-btn" id="chk-btn-config" onclick="switchChkTab('config')"><i class="fas fa-sliders"></i> Configuración</button>
@@ -41,10 +42,71 @@
       </div>
     </div></div>
 
-    <div class="card"><div class="card-body" style="padding:0">
+    <div class="card" id="chkTablaCard"><div class="card-body" style="padding:0">
       <div class="tbl-scroll" id="chkTablaWrap"><p class="muted" style="text-align:center;padding:28px">Cargando…</p></div>
       <div id="chkPagWrap"></div>
     </div></div>
+
+    <!-- ===== DASHBOARD DE INSPECCIÓN DE EQUIPOS ===== -->
+    <div id="chkDashboard" style="display:none">
+      <div class="card" style="margin-bottom:16px"><div class="card-body" style="padding:12px 18px">
+        <div class="filter-bar">
+          <div class="form-group"><label class="form-label">Mes</label>
+            <input type="month" class="form-control" id="chkDashMes" onchange="cargarChkDashboard()"></div>
+          <div class="form-group"><label class="form-label">Tipo de unidad</label>
+            <select class="form-control" id="chkDashTipo" onchange="cargarChkDashboard()"><option value="">Todos</option></select></div>
+          <div class="form-group"><label class="form-label">Equipo</label>
+            <select class="form-control" id="chkDashEquipo" onchange="cargarChkDashboard()"><option value="">Todos</option></select></div>
+        </div>
+      </div></div>
+
+      <!-- KPIs -->
+      <div id="chkDashKpis" class="dash-kpi-grid" style="margin-bottom:18px"></div>
+
+      <!-- Tendencia + Estado de flota -->
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:18px;margin-bottom:18px" class="charts-row">
+        <div class="card"><div class="card-header">
+          <h3><i class="fas fa-chart-line"></i> Tendencia de cobertura (6 meses)</h3>
+          <div id="chkDashTendLeg" style="display:flex;gap:14px;font-size:11px;color:var(--gris-400)"></div>
+        </div><div class="card-body" style="padding-bottom:14px"><canvas id="chkChartTend" height="200"></canvas></div></div>
+        <div class="card"><div class="card-header"><h3><i class="fas fa-chart-pie"></i> Estado de la flota</h3></div>
+          <div class="card-body" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px">
+            <div style="position:relative;width:160px;height:160px">
+              <canvas id="chkChartEstado" width="160" height="160"></canvas>
+              <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none">
+                <div style="font-family:var(--font-display);font-size:26px;font-weight:900;color:var(--gris-100)" id="chkEstadoPct">—</div>
+                <div style="font-size:10px;color:var(--gris-400);text-transform:uppercase;letter-spacing:.5px">aptas</div>
+              </div>
+            </div>
+            <div id="chkEstadoLeg" style="margin-top:16px;width:100%;display:flex;flex-direction:column;gap:6px"></div>
+          </div></div>
+      </div>
+
+      <!-- Cumplimiento por equipo + Top no conformidades -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px" class="charts-row">
+        <div class="card"><div class="card-header"><h3><i class="fas fa-list-check"></i> Cumplimiento por equipo</h3>
+          <span style="font-size:11px;color:var(--gris-400)">% unidades inspeccionadas</span></div>
+          <div class="card-body" style="padding:14px 18px"><canvas id="chkChartEquipo" height="240"></canvas></div></div>
+        <div class="card"><div class="card-header"><h3><i class="fas fa-triangle-exclamation"></i> Top no conformidades</h3>
+          <span style="font-size:11px;color:var(--gris-400)">fallas recurrentes</span></div>
+          <div class="card-body" id="chkTopNc" style="max-height:300px;overflow-y:auto;padding:12px 18px"></div></div>
+      </div>
+
+      <!-- Unidades no aptas + No conformidades -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px" class="charts-row">
+        <div class="card"><div class="card-header"><h3 style="color:var(--rojo)"><i class="fas fa-ban"></i> Unidades NO aptas</h3>
+          <span id="chkNoAptasBadge" style="font-size:11px;color:var(--gris-400)"></span></div>
+          <div class="card-body" id="chkNoAptasList" style="max-height:300px;overflow-y:auto;padding:6px 18px"></div></div>
+        <div class="card"><div class="card-header"><h3><i class="fas fa-clipboard-list"></i> No conformidades del mes</h3>
+          <span id="chkNcBadge" style="font-size:11px;color:var(--gris-400)"></span></div>
+          <div class="card-body" id="chkNcList" style="max-height:300px;overflow-y:auto;padding:6px 18px"></div></div>
+      </div>
+
+      <!-- Unidades sin inspeccionar -->
+      <div class="card"><div class="card-header"><h3><i class="fas fa-circle-question"></i> Unidades sin inspeccionar este mes</h3>
+        <span id="chkSinInspBadge" style="font-size:11px;color:var(--gris-400)"></span></div>
+        <div class="card-body" id="chkSinInspList" style="padding:14px 18px"></div></div>
+    </div>
   </div>
 
   <!-- ===== MODAL: INSPECCIÓN ===== -->

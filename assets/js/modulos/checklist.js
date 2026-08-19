@@ -35,8 +35,10 @@ function irChkPagina(n) { _chkPag = n; renderChecklist(); }
 function initChecklist() {
   const p = document.getElementById('chkFiltroPeriodo');
   if (p && !p.value) p.value = new Date().toISOString().slice(0, 7);
+  const dm = document.getElementById('chkDashMes');
+  if (dm && !dm.value) dm.value = new Date().toISOString().slice(0, 7);
   // Carga el catálogo de componentes una vez.
-  _chkCargarComponentes().then(() => { _chkLlenarSelects(); switchChkTab('formularios'); });
+  _chkCargarComponentes().then(() => { _chkLlenarSelects(); switchChkTab('dashboard'); });
 }
 
 async function _chkCargarComponentes(todos) {
@@ -59,7 +61,10 @@ function switchChkTab(tab) {
   show('chkFiltroEquipoWrap', tab === 'inspecciones');
   show('chkFiltroQWrap', tab === 'inspecciones');
   show('chkFiltroTipoWrap', tab === 'cumplimiento');
-  if (tab === 'formularios') renderFormularios();
+  show('chkDashboard', tab === 'dashboard');
+  show('chkTablaCard', tab !== 'dashboard');
+  if (tab === 'dashboard') cargarChkDashboard();
+  else if (tab === 'formularios') renderFormularios();
   else if (tab === 'inspecciones') cargarChecklist();
   else if (tab === 'cumplimiento') cargarChkCumplimiento();
   else renderChkConfig();
@@ -240,6 +245,199 @@ function renderChkCumplimiento(data) {
 }
 function _chkKpi(color, icon, label, value, sub) {
   return `<div class="kpi-card ${color}"><div class="kpi-label">${label}</div><div class="kpi-value ${color}">${value}</div><div class="kpi-sub">${sub}</div><i class="fas ${icon} kpi-icon"></i></div>`;
+}
+
+// ── Dashboard de inspección de equipos ──
+const CHK_COL = { verde: '#2EB85C', rojo: '#E55353', amarillo: '#F9B115', naranja: '#F9B115', azul: '#1565C0', gris: 'rgba(150,150,150,.5)' };
+let _chkChartTend = null, _chkChartEstado = null, _chkChartEquipo = null;
+let _chkDashSelInit = false;
+
+async function cargarChkDashboard() {
+  const mes = document.getElementById('chkDashMes')?.value || new Date().toISOString().slice(0, 7);
+  const tipo = document.getElementById('chkDashTipo')?.value || '';
+  const comp = document.getElementById('chkDashEquipo')?.value || '';
+  const kpiG = document.getElementById('chkDashKpis');
+  if (kpiG) kpiG.innerHTML = Array(6).fill('<div class="dash-kpi-skeleton"></div>').join('');
+  let d = null;
+  try {
+    const qs = 'action=dashboard&periodo=' + mes + (tipo ? '&tipo=' + encodeURIComponent(tipo) : '') + (comp ? '&componente_id=' + comp : '') + '&_t=' + Date.now();
+    const r = await fetch('api/checklist.php?' + qs);
+    const j = await r.json();
+    if (j && j.success) d = j.data;
+  } catch (e) { console.error(e); }
+  if (!d) { if (kpiG) kpiG.innerHTML = '<p class="muted" style="padding:20px">No se pudo cargar el dashboard.</p>'; return; }
+  _chkDashLlenarSelects(d);
+  renderChkDashKpis(d);
+  renderChkDashTend(d.tendencia || []);
+  renderChkDashEstado(d.estado || {});
+  renderChkDashEquipo(d.por_equipo || []);
+  renderChkDashTopNc(d.top_nc || []);
+  renderChkDashNoAptas(d.no_aptas_list || []);
+  renderChkDashNc(d.nc_list || []);
+  renderChkDashSinInsp(d.sin_inspeccion || []);
+}
+
+function _chkDashLlenarSelects(d) {
+  if (_chkDashSelInit) return;
+  const st = document.getElementById('chkDashTipo');
+  if (st && (d.tipos || []).length) st.innerHTML = '<option value="">Todos</option>' + d.tipos.map(t => `<option value="${_chkEsc(t)}">${_chkEsc(t)}</option>`).join('');
+  const se = document.getElementById('chkDashEquipo');
+  if (se && (d.componentes || []).length) se.innerHTML = '<option value="">Todos</option>' + d.componentes.map(c => `<option value="${c.id}">${_chkEsc(c.nombre)}</option>`).join('');
+  _chkDashSelInit = true;
+}
+
+// Tarjeta KPI (estilo dashboard general). worseUp: true si subir es malo.
+function _chkDashKpi(icon, color, label, value, sub, delta, suf, worseUp) {
+  let dh = '';
+  if (delta !== null && delta !== undefined && !isNaN(delta)) {
+    const up = delta > 0, down = delta < 0;
+    const bueno = worseUp ? down : up;
+    const cls = delta === 0 ? 'neutro' : (bueno ? 'positivo' : 'negativo');
+    dh = `<span class="dash-kpi-delta ${cls}"><i class="fas fa-caret-${up ? 'up' : down ? 'down' : 'right'}"></i> ${up ? '+' : ''}${delta}${suf || ''} vs mes ant.</span>`;
+  }
+  return `<div class="dash-kpi-card">
+    <div class="dash-kpi-top"><span class="dash-kpi-label">${label}</span><i class="${icon} dash-kpi-icon ${color}"></i></div>
+    <div class="dash-kpi-value ${color}">${value}</div>
+    <div class="dash-kpi-sub">${sub}</div>${dh}</div>`;
+}
+
+function renderChkDashKpis(d) {
+  const k = d.kpis || {}, a = d.kpisAnt || {};
+  const cob = +k.cobertura || 0, cobA = +a.cobertura || 0;
+  const na = +k.no_aptas || 0, naA = +a.no_aptas || 0;
+  const nc = +k.no_conformidades || 0, ncA = +a.no_conformidades || 0;
+  const unid = +k.unidades || 0, aptas = +k.aptas || 0;
+  const aptaPct = unid ? Math.round(aptas / unid * 100) : 0;
+  const cards =
+    _chkDashKpi('fas fa-list-check', cob >= 95 ? 'verde' : cob >= 60 ? 'naranja' : 'rojo', 'Cobertura mensual', cob + '%',
+      `${k.inspecciones || 0} de ${k.celdas_total || 0} inspecciones`, cobA ? cob - cobA : null, 'pp', false) +
+    _chkDashKpi('fas fa-circle-check', aptaPct >= 80 ? 'verde' : aptaPct >= 60 ? 'naranja' : 'rojo', 'Flota apta', aptaPct + '%',
+      `${aptas} de ${unid} unidades`, null, '', false) +
+    _chkDashKpi('fas fa-ban', na > 0 ? 'rojo' : 'verde', 'Unidades no aptas', na,
+      'requieren acción', naA !== undefined ? na - naA : null, '', true) +
+    _chkDashKpi('fas fa-triangle-exclamation', nc > 0 ? 'naranja' : 'verde', 'No conformidades', nc,
+      'ítems no conformes', ncA !== undefined ? nc - ncA : null, '', true) +
+    _chkDashKpi('fas fa-circle-question', (+k.sin_inspeccion || 0) > 0 ? 'rojo' : 'verde', 'Sin inspeccionar', +k.sin_inspeccion || 0,
+      'unidades este mes', null, '', true) +
+    _chkDashKpi('fas fa-truck', 'azul', 'Unidades', unid, `${k.equipos || 0} equipos activos`, null, '', false);
+  document.getElementById('chkDashKpis').innerHTML = cards;
+}
+
+function _chkDashTheme() {
+  const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+  return { grid: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)', tick: isDark ? '#888' : '#999' };
+}
+function _chkPerLabel(p) { const m = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Set', 'Oct', 'Nov', 'Dic']; const s = String(p).split('-'); return s.length === 2 ? m[+s[1] - 1] + ' ' + s[0].slice(2) : p; }
+
+function renderChkDashTend(tend) {
+  const ctx = document.getElementById('chkChartTend')?.getContext('2d'); if (!ctx) return;
+  if (_chkChartTend) { _chkChartTend.destroy(); _chkChartTend = null; }
+  const t = _chkDashTheme();
+  _chkChartTend = new Chart(ctx, {
+    data: {
+      labels: tend.map(x => _chkPerLabel(x.periodo)),
+      datasets: [
+        { type: 'bar', label: 'Inspecciones', data: tend.map(x => +x.inspecciones || 0), backgroundColor: 'rgba(21,101,192,0.5)', borderColor: CHK_COL.azul, borderWidth: 1, borderRadius: 4, yAxisID: 'y' },
+        { type: 'line', label: 'Cobertura %', data: tend.map(x => +x.cobertura || 0), borderColor: CHK_COL.verde, backgroundColor: 'rgba(46,184,92,0.08)', tension: 0.4, fill: true, pointBackgroundColor: CHK_COL.verde, pointRadius: 3, yAxisID: 'y1' },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => c.dataset.yAxisID === 'y1' ? ` ${c.raw}% cobertura` : ` ${c.raw} inspección${c.raw !== 1 ? 'es' : ''}` } } },
+      scales: {
+        x: { ticks: { color: t.tick, font: { size: 11 } }, grid: { color: t.grid } },
+        y: { min: 0, ticks: { color: t.tick, stepSize: 1, font: { size: 11 } }, grid: { color: t.grid } },
+        y1: { position: 'right', min: 0, max: 100, ticks: { color: CHK_COL.verde, callback: v => v + '%', font: { size: 11 } }, grid: { display: false } },
+      }
+    }
+  });
+  const leg = document.getElementById('chkDashTendLeg');
+  if (leg) leg.innerHTML = `<span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;background:${CHK_COL.azul};border-radius:2px"></span>Inspecciones</span>
+    <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:3px;background:${CHK_COL.verde};border-radius:2px"></span>Cobertura</span>`;
+}
+
+function renderChkDashEstado(est) {
+  const ctx = document.getElementById('chkChartEstado')?.getContext('2d'); if (!ctx) return;
+  if (_chkChartEstado) { _chkChartEstado.destroy(); _chkChartEstado = null; }
+  const apto = +est.apto || 0, obs = +est.observado || 0, noApto = +est.no_apto || 0;
+  const tot = apto + obs + noApto;
+  document.getElementById('chkEstadoPct').textContent = (tot ? Math.round(apto / tot * 100) : 0) + '%';
+  _chkChartEstado = new Chart(ctx, {
+    type: 'doughnut',
+    data: { labels: ['Apto', 'Observado', 'No apto'], datasets: [{ data: tot ? [apto, obs, noApto] : [1], backgroundColor: tot ? [CHK_COL.verde, CHK_COL.naranja, CHK_COL.rojo] : ['rgba(150,150,150,.15)'], borderWidth: 0, hoverOffset: 6 }] },
+    options: { cutout: '72%', plugins: { legend: { display: false }, tooltip: { enabled: tot > 0, callbacks: { label: c => ` ${c.label}: ${c.raw}` } } }, animation: { animateRotate: true, duration: 600 } }
+  });
+  const leg = document.getElementById('chkEstadoLeg');
+  if (leg) leg.innerHTML = [
+    { c: CHK_COL.verde, l: 'Apto', n: apto }, { c: CHK_COL.naranja, l: 'Observado', n: obs }, { c: CHK_COL.rojo, l: 'No apto', n: noApto },
+  ].map(r => `<div style="display:flex;align-items:center;justify-content:space-between;font-size:12px">
+    <span style="display:flex;align-items:center;gap:7px"><span style="width:10px;height:10px;border-radius:50%;background:${r.c}"></span><span style="color:var(--gris-300)">${r.l}</span></span>
+    <strong style="color:var(--gris-100)">${r.n}</strong></div>`).join('');
+}
+
+function renderChkDashEquipo(rows) {
+  const ctx = document.getElementById('chkChartEquipo')?.getContext('2d'); if (!ctx) return;
+  if (_chkChartEquipo) { _chkChartEquipo.destroy(); _chkChartEquipo = null; }
+  const t = _chkDashTheme();
+  const colores = rows.map(r => { const p = +r.pct || 0; return p >= 95 ? CHK_COL.verde : p >= 60 ? CHK_COL.naranja : CHK_COL.rojo; });
+  _chkChartEquipo = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: rows.map(r => r.nombre), datasets: [{ label: '% cobertura', data: rows.map(r => +r.pct || 0), backgroundColor: colores, borderRadius: 4, barThickness: 'flex', maxBarThickness: 22 }] },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => { const r = rows[c.dataIndex]; return ` ${r.pct}% · ${r.hechas}/${r.total} unidades` + (r.no_apto ? ` · ${r.no_apto} no apto` : ''); } } } },
+      scales: { x: { min: 0, max: 100, ticks: { color: t.tick, callback: v => v + '%', font: { size: 11 } }, grid: { color: t.grid } }, y: { ticks: { color: t.tick, font: { size: 11 } }, grid: { display: false } } }
+    }
+  });
+}
+
+function renderChkDashTopNc(rows) {
+  const c = document.getElementById('chkTopNc');
+  if (!rows.length) { c.innerHTML = '<p class="muted" style="font-size:13px;padding:8px 0">Sin no conformidades este mes 🎉</p>'; return; }
+  const max = Math.max(...rows.map(r => +r.n || 0), 1);
+  c.innerHTML = rows.map(r => {
+    const n = +r.n || 0, w = Math.round(n / max * 100);
+    return `<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:4px">
+        <span style="font-size:12px;color:var(--gris-100)">${_chkEsc(r.item || '—')}</span>
+        <strong style="color:var(--rojo);font-variant-numeric:tabular-nums">${n}</strong></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="badge badge-info" style="font-size:10px">${_chkEsc(r.equipo || '—')}</span>
+        <div style="flex:1;height:6px;background:var(--gris-600);border-radius:3px;overflow:hidden"><div style="height:100%;width:${w}%;background:${CHK_COL.rojo};border-radius:3px"></div></div></div>
+    </div>`;
+  }).join('');
+}
+
+function renderChkDashNoAptas(rows) {
+  const c = document.getElementById('chkNoAptasList'), b = document.getElementById('chkNoAptasBadge');
+  if (b) b.textContent = rows.length ? rows.length + ' registro' + (rows.length !== 1 ? 's' : '') : '';
+  if (!rows.length) { c.innerHTML = '<p class="muted" style="font-size:13px;padding:8px 0">Ninguna unidad no apta 👍</p>'; return; }
+  c.innerHTML = rows.map(x => `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+    <div style="flex:1;min-width:0">
+      <div style="font-weight:700;color:var(--gris-100)">${_chkEsc(x.placa)} <span class="badge badge-danger" style="font-size:10px">${_chkEsc(x.equipo || '—')}</span></div>
+      <div class="muted" style="font-size:11px">${_chkFecha(x.fecha)}${x.inspector_nombre ? ' · ' + _chkEsc(x.inspector_nombre) : ''}</div></div>
+    <button class="btn btn-outline btn-sm" onclick="chkVerPdf(${x.id})" title="Registro PDF"><i class="fas fa-print"></i></button>
+  </div>`).join('');
+}
+
+function renderChkDashNc(rows) {
+  const c = document.getElementById('chkNcList'), b = document.getElementById('chkNcBadge');
+  if (b) b.textContent = rows.length ? rows.length + ' ítem' + (rows.length !== 1 ? 's' : '') : '';
+  if (!rows.length) { c.innerHTML = '<p class="muted" style="font-size:13px;padding:8px 0">Sin no conformidades este mes 🎉</p>'; return; }
+  c.innerHTML = rows.map(x => `<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+    <div style="display:flex;justify-content:space-between;gap:8px"><span style="font-weight:700;color:var(--gris-100)">${_chkEsc(x.placa)}</span>
+      <span class="badge badge-info" style="font-size:10px">${_chkEsc(x.equipo || '—')}</span></div>
+    <div style="font-size:12px;color:var(--gris-200);margin-top:2px">${_chkEsc(x.item || '—')}</div>
+    ${x.obs ? '<div class="muted" style="font-size:11px;margin-top:2px"><i class="fas fa-comment-dots"></i> ' + _chkEsc(x.obs) + '</div>' : ''}
+  </div>`).join('');
+}
+
+function renderChkDashSinInsp(placas) {
+  const c = document.getElementById('chkSinInspList'), b = document.getElementById('chkSinInspBadge');
+  if (b) b.textContent = placas.length ? placas.length + ' unidad' + (placas.length !== 1 ? 'es' : '') : '';
+  if (!placas.length) { c.innerHTML = '<p class="muted" style="font-size:13px">Todas las unidades tienen al menos una inspección este mes 👍</p>'; return; }
+  c.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:6px">' + placas.map(p =>
+    `<span class="badge badge-secondary" style="font-size:12px;padding:4px 10px"><i class="fas fa-truck" style="opacity:.6"></i> ${_chkEsc(p)}</span>`).join('') + '</div>';
 }
 
 // ── Configuración (componentes + ítems) ──

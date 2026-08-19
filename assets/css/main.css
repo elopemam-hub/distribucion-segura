@@ -275,6 +275,9 @@ body {
   animation: pulse 1.5s ease-in-out infinite;
 }
 
+/* Filas de gráficos: colapsan a una columna en pantallas angostas. */
+@media (max-width: 900px) { .charts-row { grid-template-columns: 1fr !important; } }
+
 /* ======================== KPI CARDS (legacy) ======================== */
 .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; margin-bottom: 22px; }
 
