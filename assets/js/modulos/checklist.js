@@ -180,7 +180,7 @@ function _chkLlenarTipos(tipos, actual) {
   if (sel.options.length <= 1 && tipos.length) {
     sel.innerHTML = '<option value="">Todos</option>' + tipos.map(t => `<option value="${_chkEsc(t)}">${_chkEsc(t)}</option>`).join('');
     if (!_chkCumpTipoInit && !actual) {
-      const cam = tipos.find(t => /cami[oó]n/i.test(t));
+      const cam = tipos.find(t => /cami[oó]n(?!eta)/i.test(t));
       if (cam) { sel.value = cam; _chkCumpTipoInit = true; cargarChkCumplimiento(); return true; }
     }
   }
@@ -266,7 +266,7 @@ async function cargarChkDashboard() {
     if (j && j.success) d = j.data;
   } catch (e) { console.error(e); }
   if (!d) { if (kpiG) kpiG.innerHTML = '<p class="muted" style="padding:20px">No se pudo cargar el dashboard.</p>'; return; }
-  _chkDashLlenarSelects(d);
+  if (_chkDashLlenarSelects(d)) return;   // se autoseleccionó camión y disparó recarga
   renderChkDashKpis(d);
   renderChkDashTend(d.tendencia || []);
   renderChkDashEstado(d.estado || {});
@@ -277,13 +277,22 @@ async function cargarChkDashboard() {
   renderChkDashSinInsp(d.sin_inspeccion || []);
 }
 
+// Llena los filtros y, la primera vez, preselecciona camión.
+// Devuelve true si preseleccionó camión y disparó una nueva carga (evita render doble).
 function _chkDashLlenarSelects(d) {
-  if (_chkDashSelInit) return;
   const st = document.getElementById('chkDashTipo');
-  if (st && (d.tipos || []).length) st.innerHTML = '<option value="">Todos</option>' + d.tipos.map(t => `<option value="${_chkEsc(t)}">${_chkEsc(t)}</option>`).join('');
   const se = document.getElementById('chkDashEquipo');
-  if (se && (d.componentes || []).length) se.innerHTML = '<option value="">Todos</option>' + d.componentes.map(c => `<option value="${c.id}">${_chkEsc(c.nombre)}</option>`).join('');
-  _chkDashSelInit = true;
+  if (!_chkDashSelInit) {
+    if (st && (d.tipos || []).length) st.innerHTML = '<option value="">Todos</option>' + d.tipos.map(t => `<option value="${_chkEsc(t)}">${_chkEsc(t)}</option>`).join('');
+    if (se && (d.componentes || []).length) se.innerHTML = '<option value="">Todos</option>' + d.componentes.map(c => `<option value="${c.id}">${_chkEsc(c.nombre)}</option>`).join('');
+    if (st && !d.tipo) {
+      const cam = (d.tipos || []).find(t => /cami[oó]n(?!eta)/i.test(t));
+      if (cam) { st.value = cam; _chkDashSelInit = true; cargarChkDashboard(); return true; }
+    }
+    _chkDashSelInit = true;
+  }
+  if (d.tipo && st) st.value = d.tipo;
+  return false;
 }
 
 // Tarjeta KPI (estilo dashboard general). worseUp: true si subir es malo.
@@ -325,7 +334,7 @@ function renderChkDashKpis(d) {
 
 function _chkDashTheme() {
   const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
-  return { grid: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)', tick: isDark ? '#888' : '#999' };
+  return { grid: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)', tick: isDark ? '#888' : '#999', txt: isDark ? '#e8e8e8' : '#333' };
 }
 function _chkPerLabel(p) { const m = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Set', 'Oct', 'Nov', 'Dic']; const s = String(p).split('-'); return s.length === 2 ? m[+s[1] - 1] + ' ' + s[0].slice(2) : p; }
 
@@ -333,7 +342,29 @@ function renderChkDashTend(tend) {
   const ctx = document.getElementById('chkChartTend')?.getContext('2d'); if (!ctx) return;
   if (_chkChartTend) { _chkChartTend.destroy(); _chkChartTend = null; }
   const t = _chkDashTheme();
+  const pluginTend = {
+    id: 'chkTendLabels',
+    afterDatasetsDraw(chart) {
+      const { ctx } = chart;
+      ctx.save();
+      ctx.font = '700 11px sans-serif'; ctx.textAlign = 'center';
+      // Cobertura % sobre la línea
+      chart.getDatasetMeta(1).data.forEach((pt, i) => {
+        const v = chart.data.datasets[1].data[i]; if (v == null) return;
+        ctx.fillStyle = CHK_COL.verde; ctx.textBaseline = 'bottom';
+        ctx.fillText(v + '%', pt.x, pt.y - 6);
+      });
+      // Inspecciones sobre las barras
+      chart.getDatasetMeta(0).data.forEach((bar, i) => {
+        const v = chart.data.datasets[0].data[i]; if (!v) return;
+        ctx.fillStyle = t.txt; ctx.textBaseline = 'bottom';
+        ctx.fillText(v, bar.x, bar.y - 3);
+      });
+      ctx.restore();
+    }
+  };
   _chkChartTend = new Chart(ctx, {
+    plugins: [pluginTend],
     data: {
       labels: tend.map(x => _chkPerLabel(x.periodo)),
       datasets: [
@@ -362,8 +393,23 @@ function renderChkDashEstado(est) {
   const apto = +est.apto || 0, obs = +est.observado || 0, noApto = +est.no_apto || 0;
   const tot = apto + obs + noApto;
   document.getElementById('chkEstadoPct').textContent = (tot ? Math.round(apto / tot * 100) : 0) + '%';
+  const pluginEstado = {
+    id: 'chkEstadoLabels',
+    afterDatasetsDraw(chart) {
+      if (!tot) return;
+      const { ctx } = chart;
+      ctx.save(); ctx.font = '700 12px sans-serif'; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      chart.getDatasetMeta(0).data.forEach((arc, i) => {
+        const v = chart.data.datasets[0].data[i]; if (!v) return;
+        const p = arc.getCenterPoint();
+        ctx.fillText(v, p.x, p.y);
+      });
+      ctx.restore();
+    }
+  };
   _chkChartEstado = new Chart(ctx, {
     type: 'doughnut',
+    plugins: [pluginEstado],
     data: { labels: ['Apto', 'Observado', 'No apto'], datasets: [{ data: tot ? [apto, obs, noApto] : [1], backgroundColor: tot ? [CHK_COL.verde, CHK_COL.naranja, CHK_COL.rojo] : ['rgba(150,150,150,.15)'], borderWidth: 0, hoverOffset: 6 }] },
     options: { cutout: '72%', plugins: { legend: { display: false }, tooltip: { enabled: tot > 0, callbacks: { label: c => ` ${c.label}: ${c.raw}` } } }, animation: { animateRotate: true, duration: 600 } }
   });
@@ -380,8 +426,23 @@ function renderChkDashEquipo(rows) {
   if (_chkChartEquipo) { _chkChartEquipo.destroy(); _chkChartEquipo = null; }
   const t = _chkDashTheme();
   const colores = rows.map(r => { const p = +r.pct || 0; return p >= 95 ? CHK_COL.verde : p >= 60 ? CHK_COL.naranja : CHK_COL.rojo; });
+  const pluginEq = {
+    id: 'chkEquipoLabels',
+    afterDatasetsDraw(chart) {
+      const { ctx } = chart;
+      ctx.save(); ctx.font = '700 11px sans-serif'; ctx.textBaseline = 'middle';
+      chart.getDatasetMeta(0).data.forEach((bar, i) => {
+        const r = rows[i]; const v = +r.pct || 0;
+        const txt = v + '%  ' + (r.hechas || 0) + '/' + (r.total || 0);
+        if (v >= 55) { ctx.fillStyle = '#fff'; ctx.textAlign = 'right'; ctx.fillText(txt, bar.x - 8, bar.y); }
+        else { ctx.fillStyle = t.txt; ctx.textAlign = 'left'; ctx.fillText(txt, bar.x + 6, bar.y); }
+      });
+      ctx.restore();
+    }
+  };
   _chkChartEquipo = new Chart(ctx, {
     type: 'bar',
+    plugins: [pluginEq],
     data: { labels: rows.map(r => r.nombre), datasets: [{ label: '% cobertura', data: rows.map(r => +r.pct || 0), backgroundColor: colores, borderRadius: 4, barThickness: 'flex', maxBarThickness: 22 }] },
     options: {
       indexAxis: 'y', responsive: true, maintainAspectRatio: false,
