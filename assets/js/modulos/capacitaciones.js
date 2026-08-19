@@ -306,16 +306,15 @@ function _capAlerta(color, bg, icon, html) {
     '<i class="fas ' + icon + '" style="color:' + color + ';font-size:16px"></i><span>' + html + '</span></div>';
 }
 
-// Alertas de evidencia sobre las actividades EJECUTADAS (las que deben sustentar).
+// Alertas: cualquier actividad con evidencia incompleta.
 function _capRenderAlertas(items) {
   const box = document.getElementById('capAlertas');
   if (!box) return;
-  const ejec = items.filter(x => x.estado === 'ejecutado');
-  const inc = ejec.filter(x => !_capEvidCompleta(x));
+  const inc = items.filter(x => !_capEvidCompleta(x));
   let html = '';
   if (inc.length) {
     html += _capAlerta('#e74c3c', 'rgba(231,76,60,.12)', 'fa-triangle-exclamation',
-      '<strong>' + inc.length + '</strong> capacitación(es) ejecutada(s) <strong>sin evidencia completa</strong>. Regulariza el sustento (Ley 29783 · R.M. 050-2013-TR).');
+      '<strong>' + inc.length + '</strong> actividad(es) con <strong>evidencia incompleta</strong>. Completa el sustento (Ley 29783 · R.M. 050-2013-TR).');
     const sm = inc.filter(x => +x.n_material === 0).length;
     const sf = inc.filter(x => +x.n_foto === 0).length;
     const sa = inc.filter(x => +x.n_asis === 0 && +x.n_hoja === 0).length;
@@ -324,9 +323,13 @@ function _capRenderAlertas(items) {
     if (sf) partes.push('<strong>' + sf + '</strong> sin fotos');
     if (sa) partes.push('<strong>' + sa + '</strong> sin lista de asistencia');
     if (partes.length) html += _capAlerta('#f39c12', 'rgba(243,156,18,.12)', 'fa-list-check', 'Detalle: ' + partes.join(' · ') + '.');
-  } else if (ejec.length) {
+    // Lista breve de las actividades incompletas (hasta 6).
+    const nombres = inc.slice(0, 6).map(x => escapeHtml(x.titulo)).join(' · ');
+    html += _capAlerta('#95a5a6', 'rgba(149,165,166,.12)', 'fa-circle-info',
+      'Incompletas: ' + nombres + (inc.length > 6 ? ' … (+' + (inc.length - 6) + ')' : '') + '.');
+  } else if (items.length) {
     html += _capAlerta('#27ae60', 'rgba(39,174,96,.12)', 'fa-circle-check',
-      'Todas las capacitaciones ejecutadas (<strong>' + ejec.length + '</strong>) tienen su evidencia completa.');
+      'Todas las actividades (<strong>' + items.length + '</strong>) tienen su evidencia completa.');
   }
   box.innerHTML = html;
 }
