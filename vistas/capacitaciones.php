@@ -39,10 +39,10 @@
               <option value="reprogramado">Reprogramado</option>
               <option value="cancelado">Cancelado</option>
             </select></div>
-          <div class="form-group" id="capCargoWrap" style="display:none"><label class="form-label">Cargo</label>
-            <select class="form-control" id="capFiltroCargo" onchange="_capResumenPag=1;renderResumen()">
-              <option value="">Todos</option><option value="conductor">Conductor</option><option value="reparto">Reparto</option>
-              <option value="auxiliar">Auxiliar</option><option value="supervisor">Supervisor</option><option value="otro">Otro</option>
+          <div class="form-group" id="capCargoWrap" style="display:none"><label class="form-label">Tipo</label>
+            <select class="form-control" id="capFiltroTipo" onchange="_capResumenPag=1;renderResumen()">
+              <option value="">Todos</option><option value="cronograma">Cronograma</option><option value="semana">Semana de seguridad</option>
+              <option value="alerta">Safety Alert</option><option value="campana">Campañas</option>
             </select></div>
           <div class="form-group"><label class="form-label">Buscar</label>
             <input type="text" class="form-control" id="capFiltroQ" placeholder="Título, responsable…" oninput="capBuscarDebounced()"></div>

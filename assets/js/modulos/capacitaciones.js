@@ -12,7 +12,7 @@ let _capPag = 1;
 const CAP_PAGE_SIZE = 20;
 function irCapPagina(n) { _capPag = n; renderCapTabla(); }
 // Resumen (matriz trabajadores × capacitaciones).
-let _capResumenData = { capacitaciones: [], personal: [], asistencia: [], anio: 0 };
+let _capResumenData = { items: [], anio: 0 };
 let _capResumenPag = 1;
 const RESUMEN_CAP_PAGE = 20;
 function irResumenPagina(n) { _capResumenPag = n; renderResumen(); }
@@ -275,7 +275,9 @@ function renderCapMatriz() {
     `<table class="data-table" style="min-width:820px"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
 }
 
-// ── Resumen: matriz trabajadores × capacitaciones (asistencia) ──
+// ── Resumen de evidencia por actividad ──
+const CAP_TIPO_LABEL = { cronograma: 'Cronograma', semana: 'Semana', alerta: 'Safety Alert', campana: 'Campaña' };
+
 async function cargarResumen() {
   _capResumenPag = 1;
   const anio = document.getElementById('capFiltroAnio')?.value || '';
@@ -284,71 +286,97 @@ async function cargarResumen() {
   try {
     const r = await fetch('api/capacitaciones.php?action=resumen' + (anio ? '&anio=' + anio : ''));
     const d = await r.json();
-    _capResumenData = (d && d.success) ? d.data : { capacitaciones: [], personal: [], asistencia: [], anio: 0 };
+    _capResumenData = (d && d.success) ? d.data : { items: [], anio: 0 };
     _capLlenarAnios(d && d.success ? (d.data.anios || []) : []);
     const sa = document.getElementById('capFiltroAnio');
     if (sa && _capResumenData.anio) sa.value = String(_capResumenData.anio);
-  } catch (e) { _capResumenData = { capacitaciones: [], personal: [], asistencia: [], anio: 0 }; }
+  } catch (e) { _capResumenData = { items: [], anio: 0 }; }
   renderResumen();
+}
+
+// Evidencia "completa": material + fotos + (asistentes o hoja firmada).
+function _capEvidCompleta(x) {
+  return (+x.n_material > 0) && (+x.n_foto > 0) && ((+x.n_asis > 0) || (+x.n_hoja > 0));
+}
+function _capChip(n, colorOK) {
+  return +n > 0
+    ? '<span style="font-weight:700;color:' + (colorOK || 'var(--verde)') + '">' + n + '</span>'
+    : '<span style="color:var(--gris-500)">—</span>';
 }
 
 function renderResumen() {
   const wrap = document.getElementById('capTablaWrap');
   const pag = document.getElementById('capPagWrap');
   if (!wrap) return;
-  const caps = _capResumenData.capacitaciones || [];
   const anio = _capResumenData.anio || parseInt(document.getElementById('capFiltroAnio')?.value, 10) || new Date().getFullYear();
-  const cargo = document.getElementById('capFiltroCargo')?.value || '';
+  const tipo = document.getElementById('capFiltroTipo')?.value || '';
   const q = (document.getElementById('capFiltroQ')?.value || '').trim().toLowerCase();
 
-  let personal = (_capResumenData.personal || []);
-  if (cargo) personal = personal.filter(p => p.cargo === cargo);
-  if (q) personal = personal.filter(p => (p.nombre || '').toLowerCase().includes(q) || String(p.dni || '').includes(q));
+  let items = (_capResumenData.items || []);
+  if (tipo) items = items.filter(x => x.tipo === tipo);
+  if (q) items = items.filter(x => (x.titulo || '').toLowerCase().includes(q) || (x.responsable || '').toLowerCase().includes(q));
 
-  const asisSet = new Set((_capResumenData.asistencia || []).map(a => a[0] + '_' + a[1]));
-  const nCaps = caps.length, nTrab = personal.length;
-  const promedio = (nTrab && nCaps) ? Math.round(personal.reduce((acc, p) => {
-    const c = caps.reduce((s, cap) => s + (asisSet.has(cap.id + '_' + p.id) ? 1 : 0), 0);
-    return acc + c / nCaps;
-  }, 0) / nTrab * 100) : 0;
+  const total = items.length;
+  const completas = items.filter(_capEvidCompleta).length;
+  const fotos = items.reduce((a, x) => a + (+x.n_foto || 0), 0);
+  const asis = items.reduce((a, x) => a + (+x.n_asis || 0), 0);
+  const pctComp = total ? Math.round(completas / total * 100) : 0;
 
   const kpis = document.getElementById('capKpis');
   if (kpis) kpis.innerHTML =
-    _kpi('azul', 'fa-users', 'Trabajadores', nTrab, 'activos') +
-    _kpi('naranja', 'fa-chalkboard-user', 'Capacitaciones', nCaps, 'en ' + anio) +
-    _kpi(promedio >= 80 ? 'verde' : 'amarillo', 'fa-chart-pie', 'Asistencia promedio', promedio + '%', 'del personal');
+    _kpi('azul', 'fa-list-check', 'Actividades', total, 'en ' + anio) +
+    _kpi(pctComp >= 80 ? 'verde' : 'amarillo', 'fa-clipboard-check', 'Evidencia completa', completas + ' (' + pctComp + '%)', 'material+fotos+asistencia') +
+    _kpi('naranja', 'fa-camera', 'Fotos', fotos, 'de evidencia') +
+    _kpi('purpura', 'fa-users', 'Asistentes', asis, 'registrados');
 
-  if (!nCaps) { wrap.innerHTML = '<p class="muted" style="text-align:center;padding:28px">No hay capacitaciones registradas en ' + anio + '.</p>'; if (pag) pag.innerHTML = ''; return; }
-  if (!nTrab) { wrap.innerHTML = '<p class="muted" style="text-align:center;padding:28px">Sin trabajadores.</p>'; if (pag) pag.innerHTML = ''; return; }
+  if (!total) { wrap.innerHTML = '<p class="muted" style="text-align:center;padding:28px">Sin actividades en ' + anio + '.</p>'; if (pag) pag.innerHTML = ''; return; }
 
-  const totalPags = Math.max(1, Math.ceil(nTrab / RESUMEN_CAP_PAGE));
+  const totalPags = Math.max(1, Math.ceil(total / RESUMEN_CAP_PAGE));
   if (_capResumenPag > totalPags) _capResumenPag = totalPags;
   if (_capResumenPag < 1) _capResumenPag = 1;
-  const rows = personal.slice((_capResumenPag - 1) * RESUMEN_CAP_PAGE, _capResumenPag * RESUMEN_CAP_PAGE);
+  const rows = items.slice((_capResumenPag - 1) * RESUMEN_CAP_PAGE, _capResumenPag * RESUMEN_CAP_PAGE);
 
-  const head = '<th style="position:sticky;left:0;top:0;background:var(--gris-800);z-index:6;min-width:190px">Trabajador</th>' +
-    caps.map(c => `<th style="text-align:center;font-size:9px;white-space:nowrap" title="${escapeHtml(c.titulo)} · ${_capFecha(c.fecha)}">${escapeHtml((c.titulo || '').slice(0, 14))}${(c.titulo || '').length > 14 ? '…' : ''}</th>`).join('') +
-    '<th style="text-align:right">%</th>';
-  const body = rows.map(p => {
-    let ok = 0;
-    const celdas = caps.map(c => {
-      const has = asisSet.has(c.id + '_' + p.id);
-      if (has) ok++;
-      return '<td style="text-align:center">' + (has ? '<i class="fas fa-check" style="color:var(--verde)"></i>' : '<i class="fas fa-xmark" style="color:var(--rojo)"></i>') + '</td>';
-    }).join('');
-    const pct = Math.round(ok / nCaps * 100);
-    const col = pct === 100 ? 'var(--verde)' : pct >= 60 ? 'var(--naranja)' : 'var(--rojo)';
+  const head = '<th style="position:sticky;left:0;background:var(--gris-800);z-index:6;min-width:210px">Actividad</th>' +
+    '<th>Tipo</th><th>Fecha</th>' +
+    '<th style="text-align:center">Material</th><th style="text-align:center">Fotos</th>' +
+    '<th style="text-align:center">Asistentes</th><th style="text-align:center">Hoja</th>' +
+    '<th style="text-align:center">Evidencia</th><th style="text-align:right">Acciones</th>';
+
+  const body = rows.map(x => {
+    const comp = _capEvidCompleta(x);
+    const evBadge = comp
+      ? '<span class="badge badge-success"><i class="fas fa-check"></i> Completa</span>'
+      : '<span class="badge badge-warning">Incompleta</span>';
+    const hoja = +x.n_hoja > 0 ? '<i class="fas fa-check" style="color:var(--verde)"></i>' : '<i class="fas fa-xmark" style="color:var(--rojo)"></i>';
+    const asisTxt = +x.n_asis > 0
+      ? '<span style="font-weight:700;color:var(--verde)">' + x.n_asis + '</span><span class="muted" style="font-size:10px"> · ' + x.n_firmados + ' firm.</span>'
+      : '<span style="color:var(--gris-500)">—</span>';
+    const tituloEsc = escapeHtml(x.titulo).replace(/'/g, "\\'");
     return '<tr>' +
       '<td style="position:sticky;left:0;background:var(--gris-800);z-index:1">' +
-        '<div style="font-weight:600;color:var(--gris-100)">' + escapeHtml(p.nombre) + '</div>' +
-        '<div class="muted" style="font-size:11px">' + escapeHtml(p.dni || '') + ' · ' + escapeHtml(p.cargo || '') + '</div>' +
-      '</td>' + celdas +
-      '<td style="text-align:right;font-weight:700;color:' + col + ';font-variant-numeric:tabular-nums">' + pct + '%</td>' +
+        '<div style="font-weight:600;color:var(--gris-100)">' + escapeHtml(x.titulo) + '</div>' +
+        (x.subtipo ? '<div class="muted" style="font-size:11px">' + escapeHtml(x.subtipo) + '</div>' : '') +
+      '</td>' +
+      '<td><span class="badge badge-info">' + (CAP_TIPO_LABEL[x.tipo] || x.tipo) + '</span></td>' +
+      '<td class="muted">' + _capFecha(x.fecha) + '</td>' +
+      '<td style="text-align:center">' + _capChip(x.n_material, 'var(--primary)') + '</td>' +
+      '<td style="text-align:center">' + _capChip(x.n_foto, 'var(--naranja)') + '</td>' +
+      '<td style="text-align:center">' + asisTxt + '</td>' +
+      '<td style="text-align:center">' + hoja + '</td>' +
+      '<td style="text-align:center">' + evBadge + '</td>' +
+      '<td style="text-align:right;white-space:nowrap">' +
+        '<button class="btn btn-outline btn-sm" onclick="abrirEvidencia(' + x.id + ",'" + tituloEsc + "')\" title=\"Ver evidencia\"><i class=\"fas fa-paperclip\"></i></button> " +
+        '<button class="btn btn-outline btn-sm" onclick="capVerPdf(' + x.id + ')" title="Registro PDF"><i class="fas fa-print"></i></button>' +
+      '</td>' +
     '</tr>';
   }).join('');
-  wrap.innerHTML = '<table class="data-table" style="min-width:' + (250 + caps.length * 64) + 'px"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table>';
-  if (pag) pag.innerHTML = _capPagBar(nTrab, _capResumenPag, RESUMEN_CAP_PAGE, 'irResumenPagina');
+
+  wrap.innerHTML = '<table class="data-table" style="min-width:900px"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table>';
+  if (pag) pag.innerHTML = _capPagBar(total, _capResumenPag, RESUMEN_CAP_PAGE, 'irResumenPagina');
 }
+
+// Abre el visor del Registro PDF directamente para una actividad del resumen.
+function capVerPdf(id) { _capEvId = id; abrirRegistroPdf(); }
 
 function _capFila(x) {
   const t = e => escapeHtml(x[e] || '') || '<span class="muted">—</span>';

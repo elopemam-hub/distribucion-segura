@@ -88,36 +88,27 @@ function listar() {
     jsonResponse(true, '', ['items' => $rows, 'anios' => $anios]);
 }
 
-// Matriz de resumen: trabajadores × capacitaciones (del año) con la asistencia.
+// Resumen de evidencia por actividad: cada capacitación con el conteo de su
+// evidencia (material, fotos, asistentes/firmados, hoja firmada).
 function resumen() {
     $anio = (int)($_GET['anio'] ?? 0);
     if ($anio < 2000) $anio = (int)date('Y');
 
-    $caps = db()->fetchAll(
-        "SELECT id, titulo, tipo, subtipo, fecha FROM capacitaciones
-          WHERE anio = ? ORDER BY COALESCE(fecha, CONCAT(anio,'-01-01')) ASC, id ASC", [$anio]);
-
-    $personal = db()->fetchAll(
-        "SELECT id, nombre, dni, cargo FROM personal WHERE activo = 1 ORDER BY nombre ASC");
-
-    // Pares (capacitacion_id, personal_id) de los que asistieron.
-    $asis = [];
-    if ($caps) {
-        $ids = implode(',', array_map(fn($c) => (int)$c['id'], $caps));
-        foreach (db()->fetchAll(
-            "SELECT DISTINCT capacitacion_id, personal_id FROM cap_asistentes
-              WHERE personal_id IS NOT NULL AND capacitacion_id IN ($ids)") as $r) {
-            $asis[] = [(int)$r['capacitacion_id'], (int)$r['personal_id']];
-        }
-    }
+    $rows = db()->fetchAll(
+        "SELECT c.id, c.tipo, c.titulo, c.subtipo, c.fecha, c.responsable, c.estado,
+                (SELECT COUNT(*) FROM cap_adjuntos a WHERE a.capacitacion_id = c.id AND a.tipo = 'material')    AS n_material,
+                (SELECT COUNT(*) FROM cap_adjuntos a WHERE a.capacitacion_id = c.id AND a.tipo = 'foto')        AS n_foto,
+                (SELECT COUNT(*) FROM cap_adjuntos a WHERE a.capacitacion_id = c.id AND a.tipo = 'asistencia')  AS n_hoja,
+                (SELECT COUNT(*) FROM cap_asistentes s WHERE s.capacitacion_id = c.id)                          AS n_asis,
+                (SELECT COUNT(*) FROM cap_asistentes s WHERE s.capacitacion_id = c.id AND s.firma IS NOT NULL AND s.firma <> '') AS n_firmados
+           FROM capacitaciones c
+          WHERE c.anio = ?
+          ORDER BY COALESCE(c.fecha, CONCAT(c.anio,'-01-01')) DESC, c.id DESC", [$anio]);
 
     $anios = array_map('intval', array_column(
         db()->fetchAll("SELECT DISTINCT anio FROM capacitaciones ORDER BY anio DESC"), 'anio'));
 
-    jsonResponse(true, '', [
-        'anio' => $anio, 'capacitaciones' => $caps, 'personal' => $personal,
-        'asistencia' => $asis, 'anios' => $anios,
-    ]);
+    jsonResponse(true, '', ['anio' => $anio, 'items' => $rows, 'anios' => $anios]);
 }
 
 function obtener() {
