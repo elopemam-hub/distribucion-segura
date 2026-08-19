@@ -21,6 +21,9 @@
       <button class="tab-btn cap-tab-btn" id="cap-btn-resumen" onclick="switchCapTab('resumen')"><i class="fas fa-table-list"></i> Resumen</button>
     </div>
 
+    <!-- Alertas de evidencia (solo en Resumen) -->
+    <div id="capAlertas"></div>
+
     <!-- KPIs (comunes, se recalculan por sub-pestaña) -->
     <div class="kpi-grid" id="capKpis" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin-bottom:16px"></div>
 

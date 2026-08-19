@@ -202,6 +202,7 @@ const CAP_ESTADO_COLOR = {
 };
 
 function renderCapTabla() {
+  const al = document.getElementById('capAlertas'); if (al) al.innerHTML = '';   // alertas solo en Resumen
   const pag = document.getElementById('capPagWrap');
   if (_capTipo === 'cronograma' && _capVista === 'matriz') { if (pag) pag.innerHTML = ''; renderCapMatriz(); return; }
   const wrap = document.getElementById('capTablaWrap');
@@ -298,6 +299,37 @@ async function cargarResumen() {
 function _capEvidCompleta(x) {
   return (+x.n_material > 0) && (+x.n_foto > 0) && ((+x.n_asis > 0) || (+x.n_hoja > 0));
 }
+
+// Banner de alerta (funciona en tema claro/oscuro con fondo translúcido).
+function _capAlerta(color, bg, icon, html) {
+  return '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;margin-bottom:10px;border-radius:8px;border-left:4px solid ' + color + ';background:' + bg + ';color:var(--gris-100);font-size:13px">' +
+    '<i class="fas ' + icon + '" style="color:' + color + ';font-size:16px"></i><span>' + html + '</span></div>';
+}
+
+// Alertas de evidencia sobre las actividades EJECUTADAS (las que deben sustentar).
+function _capRenderAlertas(items) {
+  const box = document.getElementById('capAlertas');
+  if (!box) return;
+  const ejec = items.filter(x => x.estado === 'ejecutado');
+  const inc = ejec.filter(x => !_capEvidCompleta(x));
+  let html = '';
+  if (inc.length) {
+    html += _capAlerta('#e74c3c', 'rgba(231,76,60,.12)', 'fa-triangle-exclamation',
+      '<strong>' + inc.length + '</strong> capacitación(es) ejecutada(s) <strong>sin evidencia completa</strong>. Regulariza el sustento (Ley 29783 · R.M. 050-2013-TR).');
+    const sm = inc.filter(x => +x.n_material === 0).length;
+    const sf = inc.filter(x => +x.n_foto === 0).length;
+    const sa = inc.filter(x => +x.n_asis === 0 && +x.n_hoja === 0).length;
+    const partes = [];
+    if (sm) partes.push('<strong>' + sm + '</strong> sin material');
+    if (sf) partes.push('<strong>' + sf + '</strong> sin fotos');
+    if (sa) partes.push('<strong>' + sa + '</strong> sin lista de asistencia');
+    if (partes.length) html += _capAlerta('#f39c12', 'rgba(243,156,18,.12)', 'fa-list-check', 'Detalle: ' + partes.join(' · ') + '.');
+  } else if (ejec.length) {
+    html += _capAlerta('#27ae60', 'rgba(39,174,96,.12)', 'fa-circle-check',
+      'Todas las capacitaciones ejecutadas (<strong>' + ejec.length + '</strong>) tienen su evidencia completa.');
+  }
+  box.innerHTML = html;
+}
 // ✓ + cantidad si está cargado; ✗ rojo si falta.
 function _capChip(n, colorOK) {
   return +n > 0
@@ -322,6 +354,8 @@ function renderResumen() {
   const fotos = items.reduce((a, x) => a + (+x.n_foto || 0), 0);
   const asis = items.reduce((a, x) => a + (+x.n_asis || 0), 0);
   const pctComp = total ? Math.round(completas / total * 100) : 0;
+
+  _capRenderAlertas(items);
 
   const kpis = document.getElementById('capKpis');
   if (kpis) kpis.innerHTML =
