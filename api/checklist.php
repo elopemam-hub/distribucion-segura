@@ -73,19 +73,24 @@ function listar() {
     $estado  = trim($_GET['estado'] ?? '');
     $q       = trim($_GET['q'] ?? '');
 
+    $comp = (int)($_GET['componente_id'] ?? 0);
     $where = ['1=1']; $params = [];
     if (preg_match('/^\d{4}-\d{2}$/', $periodo)) { $where[] = 'i.periodo = ?'; $params[] = $periodo; }
     if ($placa !== '')  { $where[] = 'i.placa LIKE ?'; $params[] = "%$placa%"; }
+    if ($comp > 0)      { $where[] = 'i.componente_id = ?'; $params[] = $comp; }
     if (in_array($estado, CHK_ESTADOS, true)) { $where[] = 'i.estado = ?'; $params[] = $estado; }
     if ($q !== '')      { $where[] = '(i.placa LIKE ? OR i.inspector_nombre LIKE ?)'; $params[] = "%$q%"; $params[] = "%$q%"; }
     $whereSql = implode(' AND ', $where);
 
     $rows = db()->fetchAll(
-        "SELECT i.id, i.placa, i.periodo, i.fecha, i.inspector_nombre, i.estado, i.observacion,
+        "SELECT i.id, i.placa, i.componente_id, c.nombre AS equipo, i.periodo, i.fecha, i.inspector_nombre, i.estado, i.observacion,
                 (SELECT COUNT(*) FROM chk_resultados r WHERE r.inspeccion_id = i.id AND r.resultado = 'no_conforme') AS no_conformes,
+                (SELECT COUNT(*) FROM chk_resultados r WHERE r.inspeccion_id = i.id AND r.resultado = 'conforme')    AS conformes,
+                (SELECT COUNT(*) FROM chk_resultados r WHERE r.inspeccion_id = i.id AND r.resultado = 'na')          AS na,
                 (SELECT COUNT(*) FROM chk_resultados r WHERE r.inspeccion_id = i.id) AS total_items
-           FROM chk_inspecciones i WHERE $whereSql
-          ORDER BY i.fecha DESC, i.id DESC LIMIT 1000", $params);
+           FROM chk_inspecciones i
+           LEFT JOIN chk_componentes c ON c.id = i.componente_id
+          WHERE $whereSql ORDER BY i.fecha DESC, i.id DESC LIMIT 1000", $params);
 
     $periodos = array_column(db()->fetchAll("SELECT DISTINCT periodo FROM chk_inspecciones ORDER BY periodo DESC"), 'periodo');
     jsonResponse(true, '', ['items' => $rows, 'periodos' => $periodos]);
@@ -103,6 +108,7 @@ function obtener() {
 
 function guardar() {
     $id      = (int)($_POST['id'] ?? 0);
+    $compId  = (int)($_POST['componente_id'] ?? 0);
     $placa   = strtoupper(trim($_POST['placa'] ?? ''));
     $periodo = trim($_POST['periodo'] ?? '');
     $fecha   = trim($_POST['fecha'] ?? date('Y-m-d'));
@@ -111,6 +117,7 @@ function guardar() {
     $firma   = trim($_POST['firma'] ?? '');
     $items   = json_decode($_POST['resultados'] ?? '[]', true);
 
+    if ($compId <= 0) jsonResponse(false, 'Selecciona el equipo a inspeccionar.', null, 422);
     if ($placa === '') jsonResponse(false, 'La placa (unidad) es obligatoria.', null, 422);
     if (!preg_match('/^\d{4}-\d{2}$/', $periodo)) jsonResponse(false, 'Periodo inválido (YYYY-MM).', null, 422);
     if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha)) $fecha = date('Y-m-d');
@@ -124,17 +131,17 @@ function guardar() {
         db()->beginTransaction();
         if ($id > 0) {
             db()->query(
-                "UPDATE chk_inspecciones SET placa=?, periodo=?, fecha=?, estado=?, observacion=?"
+                "UPDATE chk_inspecciones SET componente_id=?, placa=?, periodo=?, fecha=?, estado=?, observacion=?"
                 . ($firmaVal ? ", firma=?" : "") . " WHERE id=?",
-                $firmaVal ? [$placa, $periodo, $fecha, $estado, $obs ?: null, $firmaVal, $id]
-                          : [$placa, $periodo, $fecha, $estado, $obs ?: null, $id]);
+                $firmaVal ? [$compId, $placa, $periodo, $fecha, $estado, $obs ?: null, $firmaVal, $id]
+                          : [$compId, $placa, $periodo, $fecha, $estado, $obs ?: null, $id]);
             db()->query("DELETE FROM chk_resultados WHERE inspeccion_id = ?", [$id]);
             $inspId = $id;
         } else {
             db()->query(
-                "INSERT INTO chk_inspecciones (placa, periodo, fecha, inspector_id, inspector_nombre, estado, observacion, firma)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                [$placa, $periodo, $fecha, $user['id'], $user['nombre'] ?? null, $estado, $obs ?: null, $firmaVal]);
+                "INSERT INTO chk_inspecciones (componente_id, placa, periodo, fecha, inspector_id, inspector_nombre, estado, observacion, firma)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                [$compId, $placa, $periodo, $fecha, $user['id'], $user['nombre'] ?? null, $estado, $obs ?: null, $firmaVal]);
             $inspId = (int)db()->lastInsertId();
         }
         foreach ($items as $it) {
@@ -168,11 +175,13 @@ function resumen() {
     $periodo = trim($_GET['periodo'] ?? '');
     if (!preg_match('/^\d{4}-\d{2}$/', $periodo)) $periodo = date('Y-m');
     $rows = db()->fetchAll(
-        "SELECT i.id, i.placa, i.fecha, i.inspector_nombre, i.estado,
+        "SELECT i.id, i.placa, c.nombre AS equipo, i.fecha, i.inspector_nombre, i.estado,
                 (SELECT COUNT(*) FROM chk_resultados r WHERE r.inspeccion_id = i.id) AS total,
                 (SELECT COUNT(*) FROM chk_resultados r WHERE r.inspeccion_id = i.id AND r.resultado = 'conforme') AS conformes,
+                (SELECT COUNT(*) FROM chk_resultados r WHERE r.inspeccion_id = i.id AND r.resultado = 'na') AS na,
                 (SELECT COUNT(*) FROM chk_resultados r WHERE r.inspeccion_id = i.id AND r.resultado = 'no_conforme') AS no_conformes
-           FROM chk_inspecciones i WHERE i.periodo = ? ORDER BY i.placa ASC, i.fecha DESC", [$periodo]);
+           FROM chk_inspecciones i LEFT JOIN chk_componentes c ON c.id = i.componente_id
+          WHERE i.periodo = ? ORDER BY i.placa ASC, c.nombre ASC", [$periodo]);
     $periodos = array_column(db()->fetchAll("SELECT DISTINCT periodo FROM chk_inspecciones ORDER BY periodo DESC"), 'periodo');
     jsonResponse(true, '', ['periodo' => $periodo, 'items' => $rows, 'periodos' => $periodos]);
 }

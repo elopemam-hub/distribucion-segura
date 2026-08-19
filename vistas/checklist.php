@@ -25,6 +25,8 @@
       <div class="filter-bar">
         <div class="form-group"><label class="form-label">Mes</label>
           <input type="month" class="form-control" id="chkFiltroPeriodo" onchange="chkRecargar()"></div>
+        <div class="form-group" id="chkFiltroEquipoWrap"><label class="form-label">Equipo</label>
+          <select class="form-control" id="chkFiltroEquipo" onchange="cargarChecklist()"><option value="">Todos</option></select></div>
         <div class="form-group" id="chkFiltroEstadoWrap"><label class="form-label">Estado</label>
           <select class="form-control" id="chkFiltroEstado" onchange="cargarChecklist()">
             <option value="">Todos</option><option value="apto">Apto</option>
@@ -52,6 +54,8 @@
       <div class="modal-body">
         <input type="hidden" id="chk_id">
         <div class="filter-bar" style="margin-bottom:12px">
+          <div class="form-group"><label class="form-label">Equipo / Formulario <span style="color:var(--rojo)">*</span></label>
+            <select class="form-control" id="chk_componente" onchange="chkRenderItemsSel()"></select></div>
           <div class="form-group" style="position:relative"><label class="form-label">Unidad (placa) <span style="color:var(--rojo)">*</span></label>
             <input type="text" class="form-control" id="chk_placa" placeholder="Buscar placa…" autocomplete="off" oninput="chkBuscarPlaca(this.value)">
             <div id="chkPlacaResultados" style="display:none;position:absolute;z-index:20;left:0;right:0;background:var(--gris-800);border:1px solid var(--gris-600);border-radius:6px;max-height:200px;overflow:auto;box-shadow:0 8px 24px rgba(0,0,0,.35)"></div>

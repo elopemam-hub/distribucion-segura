@@ -16,8 +16,11 @@ if ($id <= 0) { http_response_code(400); die('ID inválido'); }
 $insp = db()->fetchOne("SELECT * FROM chk_inspecciones WHERE id = ?", [$id]);
 if (!$insp) { http_response_code(404); die('Inspección no encontrada'); }
 
-// Componentes + ítems + resultado de esta inspección.
-$comps = db()->fetchAll("SELECT id, nombre FROM chk_componentes ORDER BY orden ASC, id ASC");
+// Equipo (componente) de esta inspección + sus ítems.
+$comps = !empty($insp['componente_id'])
+    ? db()->fetchAll("SELECT id, nombre FROM chk_componentes WHERE id = ?", [(int)$insp['componente_id']])
+    : db()->fetchAll("SELECT id, nombre FROM chk_componentes ORDER BY orden ASC, id ASC");
+$equipoNombre = $comps[0]['nombre'] ?? '';
 $resRows = db()->fetchAll("SELECT item_id, resultado, observacion FROM chk_resultados WHERE inspeccion_id = ?", [$id]);
 $res = [];
 foreach ($resRows as $r) $res[(int)$r['item_id']] = $r;
@@ -90,6 +93,9 @@ $RES = ['conforme' => 'C', 'no_conforme' => 'NC', 'na' => 'N/A'];
       <tr>
         <td class="lbl" style="width:14%">Empleador</td><td class="val"><?= $h($g('emp_razon_social')) ?></td>
         <td class="lbl" style="width:10%">Unidad</td><td class="val" style="font-size:13px;font-weight:700"><?= $h($insp['placa']) ?></td>
+      </tr>
+      <tr>
+        <td class="lbl">Equipo</td><td class="val" colspan="3" style="font-weight:700"><?= $h($equipoNombre) ?></td>
       </tr>
       <tr>
         <td class="lbl">Inspector</td><td class="val"><?= $h($insp['inspector_nombre']) ?></td>

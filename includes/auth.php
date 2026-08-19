@@ -710,6 +710,11 @@ function setupChecklist(): void {
             KEY idx_chkres (inspeccion_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", []);
 
+        // Cada inspección es de UN equipo (su formulario/banco de preguntas).
+        $ex = db()->fetchOne("SELECT 1 FROM information_schema.columns
+              WHERE table_schema = DATABASE() AND table_name = 'chk_inspecciones' AND column_name = 'componente_id'");
+        if (!$ex) db()->query("ALTER TABLE chk_inspecciones ADD COLUMN componente_id INT NULL AFTER placa", []);
+
         // Siembra componentes + ítems estándar (solo si está vacío).
         if ((int)(db()->fetchOne("SELECT COUNT(*) c FROM chk_componentes")['c'] ?? 0) === 0) {
             $data = [

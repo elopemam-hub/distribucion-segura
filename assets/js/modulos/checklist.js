@@ -36,7 +36,7 @@ function initChecklist() {
   const p = document.getElementById('chkFiltroPeriodo');
   if (p && !p.value) p.value = new Date().toISOString().slice(0, 7);
   // Carga el catálogo de componentes una vez.
-  _chkCargarComponentes().then(() => switchChkTab('inspecciones'));
+  _chkCargarComponentes().then(() => { _chkLlenarSelects(); switchChkTab('inspecciones'); });
 }
 
 async function _chkCargarComponentes(todos) {
@@ -69,8 +69,10 @@ async function cargarChecklist() {
   const per = document.getElementById('chkFiltroPeriodo')?.value || '';
   const estado = document.getElementById('chkFiltroEstado')?.value || '';
   const q = document.getElementById('chkFiltroQ')?.value.trim() || '';
+  const equipo = document.getElementById('chkFiltroEquipo')?.value || '';
   const params = new URLSearchParams({ action: 'list' });
   if (per) params.set('periodo', per);
+  if (equipo) params.set('componente_id', equipo);
   if (estado) params.set('estado', estado);
   if (q) params.set('q', q);
   try {
@@ -92,22 +94,27 @@ function renderChecklist() {
   const body = rows.map(x => {
     const est = CHK_EST[x.estado] || ['badge-secondary', x.estado];
     const nc = +x.no_conformes;
+    const evaluados = (+x.total_items) - (+x.na);
+    const pct = evaluados > 0 ? Math.round(+x.conformes / evaluados * 100) : (+x.total_items ? 100 : 0);
+    const pcol = pct === 100 ? 'var(--verde)' : pct >= 80 ? 'var(--naranja)' : 'var(--rojo)';
     const del = _chkAdmin() ? `<button class="btn btn-outline btn-sm" onclick="eliminarInspeccion(${x.id})" title="Eliminar"><i class="fas fa-trash" style="color:var(--rojo)"></i></button>` : '';
     return `<tr>
+      <td class="muted" style="white-space:nowrap">${_chkFecha(x.fecha)}</td>
+      <td style="font-weight:600;color:var(--gris-100)">${_chkEsc(x.inspector_nombre || '—')}</td>
+      <td><span class="badge badge-info">${_chkEsc(x.equipo || '—')}</span></td>
       <td style="font-weight:700;color:var(--gris-100)">${_chkEsc(x.placa)}</td>
       <td class="muted">${_chkEsc(x.periodo)}</td>
-      <td class="muted">${_chkFecha(x.fecha)}</td>
-      <td class="muted">${_chkEsc(x.inspector_nombre || '—')}</td>
-      <td style="text-align:center">${nc > 0 ? '<span class="badge badge-danger">' + nc + ' NC</span>' : '<i class="fas fa-check" style="color:var(--verde)"></i>'}</td>
       <td><span class="badge ${est[0]}">${est[1]}</span></td>
+      <td style="text-align:right;font-weight:700;color:${pcol};font-variant-numeric:tabular-nums">${pct}%</td>
+      <td style="text-align:center">${nc > 0 ? '<span class="badge badge-danger">' + nc + '</span>' : '—'}</td>
       <td style="text-align:right;white-space:nowrap">
         <button class="btn btn-outline btn-sm" onclick="editarInspeccion(${x.id})" title="Editar"><i class="fas fa-pen"></i></button>
         <button class="btn btn-outline btn-sm" onclick="chkVerPdf(${x.id})" title="Registro PDF"><i class="fas fa-print"></i></button>
         ${del}
       </td></tr>`;
   }).join('');
-  wrap.innerHTML = `<table class="data-table" style="min-width:760px"><thead><tr>
-    <th>Unidad</th><th>Mes</th><th>Fecha</th><th>Inspector</th><th style="text-align:center">No conf.</th><th>Estado</th><th style="text-align:right">Acciones</th>
+  wrap.innerHTML = `<table class="data-table" style="min-width:860px"><thead><tr>
+    <th>Fecha</th><th>Inspector</th><th>Equipo</th><th>Unidad</th><th>Mes</th><th>Estado</th><th style="text-align:right">%</th><th style="text-align:center">No conf.</th><th style="text-align:right">Acciones</th>
     </tr></thead><tbody>${body}</tbody></table>`;
   if (pag) pag.innerHTML = _chkPagBar(total, _chkPag, CHK_PAGE, 'irChkPagina');
 }
@@ -140,10 +147,12 @@ function renderChkResumen(data) {
   if (!total) { wrap.innerHTML = '<p class="muted" style="text-align:center;padding:28px">Sin inspecciones en ' + (data.periodo || 'el mes') + '.</p>'; return; }
   const body = items.map(x => {
     const est = CHK_EST[x.estado] || ['badge-secondary', x.estado];
-    const pct = +x.total ? Math.round(+x.conformes / +x.total * 100) : 0;
+    const evaluados = (+x.total) - (+x.na);
+    const pct = evaluados > 0 ? Math.round(+x.conformes / evaluados * 100) : (+x.total ? 100 : 0);
     const col = pct === 100 ? 'var(--verde)' : pct >= 80 ? 'var(--naranja)' : 'var(--rojo)';
     return `<tr>
       <td style="font-weight:700;color:var(--gris-100)">${_chkEsc(x.placa)}</td>
+      <td><span class="badge badge-info">${_chkEsc(x.equipo || '—')}</span></td>
       <td class="muted">${_chkFecha(x.fecha)}</td>
       <td class="muted">${_chkEsc(x.inspector_nombre || '—')}</td>
       <td style="text-align:right;font-variant-numeric:tabular-nums;color:${col};font-weight:700">${pct}%</td>
@@ -152,8 +161,8 @@ function renderChkResumen(data) {
       <td style="text-align:right"><button class="btn btn-outline btn-sm" onclick="chkVerPdf(${x.id})" title="Registro PDF"><i class="fas fa-print"></i></button></td>
       </tr>`;
   }).join('');
-  wrap.innerHTML = `<table class="data-table" style="min-width:720px"><thead><tr>
-    <th>Unidad</th><th>Fecha</th><th>Inspector</th><th style="text-align:right">Conformidad</th><th style="text-align:center">No conf.</th><th>Estado</th><th></th>
+  wrap.innerHTML = `<table class="data-table" style="min-width:760px"><thead><tr>
+    <th>Unidad</th><th>Equipo</th><th>Fecha</th><th>Inspector</th><th style="text-align:right">Conformidad</th><th style="text-align:center">No conf.</th><th>Estado</th><th></th>
     </tr></thead><tbody>${body}</tbody></table>`;
 }
 function _chkKpi(color, icon, label, value, sub) {
@@ -214,7 +223,11 @@ async function nuevaInspeccion() {
   document.getElementById('chk_observacion').value = '';
   _chkFirma = ''; _chkFirmaEstado();
   if (!_chkComp.length) await _chkCargarComponentes();
-  _chkRenderItems({});
+  _chkPrevRes = {};
+  _chkLlenarSelects();
+  const selEq = document.getElementById('chkFiltroEquipo')?.value;
+  if (selEq) document.getElementById('chk_componente').value = selEq;   // usa el filtro si hay
+  chkRenderItemsSel();
   abrirModal('modalChkInsp');
 }
 
@@ -233,35 +246,48 @@ async function editarInspeccion(id) {
     document.getElementById('chk_observacion').value = x.observacion || '';
     _chkFirma = x.firma || ''; _chkFirmaEstado();
     if (!_chkComp.length) await _chkCargarComponentes();
-    const prev = {};
-    (x.resultados || []).forEach(r => { prev[+r.item_id] = { resultado: r.resultado, observacion: r.observacion || '' }; });
-    _chkRenderItems(prev);
+    _chkPrevRes = {};
+    (x.resultados || []).forEach(r => { _chkPrevRes[+r.item_id] = { resultado: r.resultado, observacion: r.observacion || '' }; });
+    _chkLlenarSelects();
+    document.getElementById('chk_componente').value = x.componente_id || '';
+    chkRenderItemsSel();
     abrirModal('modalChkInsp');
   } catch (e) { toast('Error al cargar', 'error'); }
 }
 
-// Renderiza las secciones de componentes con sus ítems (radios C/NC/NA + obs).
-function _chkRenderItems(prev) {
+// Llena los <select> de equipo (modal + filtro) con los componentes activos.
+let _chkPrevRes = {};
+function _chkLlenarSelects() {
+  const activos = _chkComp.filter(c => +c.activo !== 0);
+  const opts = activos.map(c => `<option value="${c.id}">${_chkEsc(c.nombre)}</option>`).join('');
+  const sm = document.getElementById('chk_componente'); if (sm) sm.innerHTML = opts;
+  const sf = document.getElementById('chkFiltroEquipo');
+  if (sf) { const prev = sf.value; sf.innerHTML = '<option value="">Todos</option>' + opts; sf.value = prev; }
+}
+
+// Renderiza los ítems (banco de preguntas) del equipo seleccionado en el modal.
+function chkRenderItemsSel() {
   const cont = document.getElementById('chkItemsCont');
   if (!cont) return;
-  if (!_chkComp.length) { cont.innerHTML = '<p class="muted" style="padding:12px">No hay componentes configurados.</p>'; return; }
-  cont.innerHTML = _chkComp.filter(c => +c.activo !== 0).map(c => {
-    const items = (c.items || []).filter(it => +it.activo !== 0).map(it => {
-      const cur = prev[+it.id] ? prev[+it.id].resultado : 'conforme';
-      const obs = prev[+it.id] ? (prev[+it.id].observacion || '') : '';
-      const radio = (val, lbl, color) =>
-        `<label style="display:inline-flex;align-items:center;gap:3px;cursor:pointer;color:${color}"><input type="radio" name="chkit_${it.id}" value="${val}" ${cur === val ? 'checked' : ''} style="accent-color:${color}"> ${lbl}</label>`;
-      return `<div class="chk-item-row" data-item="${it.id}" data-comp="${c.id}" style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--gris-700);flex-wrap:wrap">
-        <span style="flex:1;min-width:180px;color:var(--gris-200);font-size:12.5px">${_chkEsc(it.texto)}</span>
-        <span style="display:flex;gap:10px;font-size:12px">${radio('conforme', 'C', 'var(--verde)')}${radio('no_conforme', 'NC', 'var(--rojo)')}${radio('na', 'N/A', 'var(--gris-400)')}</span>
-        <input type="text" class="form-control chk-item-obs" placeholder="Observación" value="${_chkEsc(obs)}" style="width:180px;font-size:12px;padding:4px 8px">
-      </div>`;
-    }).join('');
-    return `<div class="card" style="margin-bottom:10px"><div class="card-body" style="padding:10px 14px">
-      <strong style="color:var(--gris-100);font-size:13px"><i class="fas fa-cube" style="color:var(--primary)"></i> ${_chkEsc(c.nombre)}</strong>
-      <div style="margin-top:4px">${items || '<span class="muted" style="font-size:12px">Sin ítems.</span>'}</div>
-    </div></div>`;
+  const compId = +(document.getElementById('chk_componente')?.value || 0);
+  const c = _chkComp.find(k => +k.id === compId);
+  if (!c) { cont.innerHTML = '<p class="muted" style="padding:12px">Selecciona un equipo.</p>'; return; }
+  const prev = _chkPrevRes || {};
+  const items = (c.items || []).filter(it => +it.activo !== 0).map(it => {
+    const cur = prev[+it.id] ? prev[+it.id].resultado : 'conforme';
+    const obs = prev[+it.id] ? (prev[+it.id].observacion || '') : '';
+    const radio = (val, lbl, color) =>
+      `<label style="display:inline-flex;align-items:center;gap:3px;cursor:pointer;color:${color}"><input type="radio" name="chkit_${it.id}" value="${val}" ${cur === val ? 'checked' : ''} style="accent-color:${color}"> ${lbl}</label>`;
+    return `<div class="chk-item-row" data-item="${it.id}" data-comp="${c.id}" style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--gris-700);flex-wrap:wrap">
+      <span style="flex:1;min-width:180px;color:var(--gris-200);font-size:12.5px">${_chkEsc(it.texto)}</span>
+      <span style="display:flex;gap:10px;font-size:12px">${radio('conforme', 'C', 'var(--verde)')}${radio('no_conforme', 'NC', 'var(--rojo)')}${radio('na', 'N/A', 'var(--gris-400)')}</span>
+      <input type="text" class="form-control chk-item-obs" placeholder="Observación" value="${_chkEsc(obs)}" style="width:180px;font-size:12px;padding:4px 8px">
+    </div>`;
   }).join('');
+  cont.innerHTML = `<div class="card"><div class="card-body" style="padding:10px 14px">
+    <strong style="color:var(--gris-100);font-size:13px"><i class="fas fa-cube" style="color:var(--primary)"></i> Banco de preguntas · ${_chkEsc(c.nombre)}</strong>
+    <div style="margin-top:4px">${items || '<span class="muted" style="font-size:12px">Sin preguntas. Agrégalas en Configuración.</span>'}</div>
+  </div></div>`;
 }
 
 function chkMarcarTodo(val) {
@@ -273,6 +299,8 @@ function chkMarcarTodo(val) {
 }
 
 async function guardarInspeccion() {
+  const compId = document.getElementById('chk_componente').value;
+  if (!compId) { toast('Selecciona el equipo a inspeccionar', 'warning'); return; }
   const placa = document.getElementById('chk_placa').value.trim().toUpperCase();
   if (!placa) { toast('Indica la placa de la unidad', 'warning'); return; }
   const periodo = document.getElementById('chk_periodo').value;
@@ -288,7 +316,7 @@ async function guardarInspeccion() {
   const btn = document.getElementById('chkGuardarBtn'); if (btn) btn.disabled = true;
   const r = await _chkPost({
     action: 'save', id: document.getElementById('chk_id').value || '0',
-    placa, periodo, fecha: document.getElementById('chk_fecha').value,
+    componente_id: compId, placa, periodo, fecha: document.getElementById('chk_fecha').value,
     estado: document.getElementById('chk_estado').value,
     observacion: document.getElementById('chk_observacion').value.trim(),
     firma: _chkFirma || '', resultados: JSON.stringify(resultados),
