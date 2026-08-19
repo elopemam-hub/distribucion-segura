@@ -56,8 +56,12 @@ try {
 // Componentes con sus ítems (para armar el formulario y la config).
 function componentes() {
     $todos = ($_GET['todos'] ?? '') === '1';   // incluir inactivos (config)
-    $wc = $todos ? '' : 'WHERE activo = 1';
-    $comps = db()->fetchAll("SELECT id, nombre, orden, activo FROM chk_componentes $wc ORDER BY orden ASC, id ASC");
+    $wc = $todos ? '' : 'WHERE c.activo = 1';
+    $comps = db()->fetchAll(
+        "SELECT c.id, c.nombre, c.orden, c.activo,
+                (SELECT COUNT(*) FROM chk_items t WHERE t.componente_id = c.id AND t.activo = 1) AS n_items,
+                (SELECT COUNT(*) FROM chk_inspecciones i WHERE i.componente_id = c.id) AS n_inspecciones
+           FROM chk_componentes c $wc ORDER BY c.orden ASC, c.id ASC");
     $wi = $todos ? '' : 'AND activo = 1';
     foreach ($comps as &$c) {
         $c['items'] = db()->fetchAll(

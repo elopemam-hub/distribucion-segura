@@ -13,7 +13,8 @@
     </div>
 
     <div class="tabs" style="margin-bottom:18px">
-      <button class="tab-btn chk-tab-btn active" id="chk-btn-inspecciones" onclick="switchChkTab('inspecciones')"><i class="fas fa-list-check"></i> Inspecciones</button>
+      <button class="tab-btn chk-tab-btn active" id="chk-btn-formularios" onclick="switchChkTab('formularios')"><i class="fas fa-table-cells-large"></i> Formularios</button>
+      <button class="tab-btn chk-tab-btn" id="chk-btn-inspecciones" onclick="switchChkTab('inspecciones')"><i class="fas fa-list-check"></i> Inspecciones</button>
       <button class="tab-btn chk-tab-btn" id="chk-btn-resumen" onclick="switchChkTab('resumen')"><i class="fas fa-table-list"></i> Resumen mensual</button>
       <button class="tab-btn chk-tab-btn" id="chk-btn-config" onclick="switchChkTab('config')"><i class="fas fa-sliders"></i> Configuración</button>
     </div>

@@ -36,7 +36,7 @@ function initChecklist() {
   const p = document.getElementById('chkFiltroPeriodo');
   if (p && !p.value) p.value = new Date().toISOString().slice(0, 7);
   // Carga el catálogo de componentes una vez.
-  _chkCargarComponentes().then(() => { _chkLlenarSelects(); switchChkTab('inspecciones'); });
+  _chkCargarComponentes().then(() => { _chkLlenarSelects(); switchChkTab('formularios'); });
 }
 
 async function _chkCargarComponentes(todos) {
@@ -52,13 +52,41 @@ function switchChkTab(tab) {
   document.querySelectorAll('.chk-tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('chk-btn-' + tab)?.classList.add('active');
   const show = (id, on) => { const el = document.getElementById(id); if (el) el.style.display = on ? '' : 'none'; };
-  show('chkFiltros', tab !== 'config');
+  show('chkFiltros', tab === 'inspecciones' || tab === 'resumen');
   show('chkKpis', tab === 'resumen');
   show('chkBtnNueva', tab === 'inspecciones');
   show('chkFiltroEstadoWrap', tab === 'inspecciones');
-  if (tab === 'inspecciones') cargarChecklist();
+  show('chkFiltroEquipoWrap', tab === 'inspecciones');
+  if (tab === 'formularios') renderFormularios();
+  else if (tab === 'inspecciones') cargarChecklist();
   else if (tab === 'resumen') cargarChkResumen();
   else renderChkConfig();
+}
+
+// Galería de formularios (un equipo por tarjeta) — inicia una inspección al clic.
+async function renderFormularios() {
+  const wrap = document.getElementById('chkTablaWrap'), pag = document.getElementById('chkPagWrap');
+  if (pag) pag.innerHTML = '';
+  await _chkCargarComponentes();
+  _chkLlenarSelects();
+  const activos = _chkComp.filter(c => +c.activo !== 0);
+  if (!activos.length) { wrap.innerHTML = '<p class="muted" style="padding:20px">Sin formularios. Crea equipos en Configuración.</p>'; return; }
+  wrap.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(258px,1fr));gap:14px;padding:14px">' +
+    activos.map(c => {
+      const code = 'CHK-' + String(c.id).padStart(3, '0');
+      return `<div onclick="nuevaInspeccion(${c.id})" style="cursor:pointer;background:var(--gris-800);border:1px solid var(--gris-600);border-radius:10px;padding:16px;transition:border-color .15s" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--gris-600)'">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span class="muted" style="font-size:11px;letter-spacing:.5px">${code}</span>
+          <span class="badge badge-secondary"><i class="fas fa-rotate"></i> ${+c.n_inspecciones} usos</span>
+        </div>
+        <div style="font-weight:700;color:var(--gris-100);font-size:15px;margin-bottom:10px"><i class="fas fa-clipboard-check" style="color:var(--primary)"></i> Inspección de ${_chkEsc(c.nombre)}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <span class="badge badge-info"><i class="fas fa-list-ol"></i> ${+c.n_items} preguntas</span>
+          <span class="badge badge-secondary"><i class="fas fa-calendar-days"></i> Mensual</span>
+        </div>
+        <div style="margin-top:12px"><span class="btn btn-primary btn-sm" style="pointer-events:none"><i class="fas fa-plus"></i> Nueva inspección</span></div>
+      </div>`;
+    }).join('') + '</div>';
 }
 
 function chkRecargar() { if (_chkTab === 'resumen') cargarChkResumen(); else cargarChecklist(); }
@@ -213,7 +241,7 @@ async function chkGuardarItem() {
 async function chkToggleItem(id) { const r = await _chkPost({ action: 'item_toggle', id }); if (r && r.success) renderChkConfig(); }
 
 // ── Modal de inspección ──
-async function nuevaInspeccion() {
+async function nuevaInspeccion(compId) {
   document.getElementById('chkModalTitulo').textContent = 'Nueva inspección';
   document.getElementById('chk_id').value = '';
   document.getElementById('chk_placa').value = '';
@@ -225,8 +253,8 @@ async function nuevaInspeccion() {
   if (!_chkComp.length) await _chkCargarComponentes();
   _chkPrevRes = {};
   _chkLlenarSelects();
-  const selEq = document.getElementById('chkFiltroEquipo')?.value;
-  if (selEq) document.getElementById('chk_componente').value = selEq;   // usa el filtro si hay
+  const pre = compId || document.getElementById('chkFiltroEquipo')?.value;
+  if (pre) document.getElementById('chk_componente').value = pre;   // equipo pre-seleccionado
   chkRenderItemsSel();
   abrirModal('modalChkInsp');
 }
