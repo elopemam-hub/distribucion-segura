@@ -721,6 +721,20 @@ function setupChecklist(): void {
             creado_en DATETIME DEFAULT CURRENT_TIMESTAMP, KEY idx_chkfoto (inspeccion_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", []);
 
+        // Inventario de equipos físicos (unidades individuales por tipo de equipo).
+        db()->query("CREATE TABLE IF NOT EXISTS chk_unidades (
+            id INT AUTO_INCREMENT PRIMARY KEY, componente_id INT NOT NULL,
+            codigo VARCHAR(40) NOT NULL, nombre VARCHAR(160) NOT NULL,
+            ubicacion VARCHAR(120) NULL, area VARCHAR(80) NULL, vencimiento DATE NULL,
+            activo TINYINT(1) NOT NULL DEFAULT 1, creado_en DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_chkuni_codigo (codigo), KEY idx_chkuni_comp (componente_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", []);
+
+        // Vincula la inspección a una unidad de inventario (equipos físicos).
+        $exU = db()->fetchOne("SELECT 1 FROM information_schema.columns
+              WHERE table_schema = DATABASE() AND table_name = 'chk_inspecciones' AND column_name = 'unidad_id'");
+        if (!$exU) db()->query("ALTER TABLE chk_inspecciones ADD COLUMN unidad_id INT NULL AFTER componente_id", []);
+
         // Siembra componentes + ítems estándar (solo si está vacío).
         if ((int)(db()->fetchOne("SELECT COUNT(*) c FROM chk_componentes")['c'] ?? 0) === 0) {
             $data = [

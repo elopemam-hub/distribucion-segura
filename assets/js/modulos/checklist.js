@@ -11,6 +11,7 @@ let _chkPag = 1;
 const CHK_PAGE = 20;
 let _chkBuscarTimer = null, _chkPlacaTimer = null;
 let _chkFirma = '';         // dataURL de la firma en edición
+let _chkPreUnidad = null;   // unidad a preseleccionar en el modal (al editar)
 
 const CHK_EST = {
   apto: ['badge-success', 'Apto'], observado: ['badge-warning', 'Observado'], no_apto: ['badge-danger', 'No apto'],
@@ -62,8 +63,10 @@ function switchChkTab(tab) {
   show('chkFiltroQWrap', tab === 'inspecciones');
   show('chkFiltroTipoWrap', tab === 'cumplimiento');
   show('chkDashboard', tab === 'dashboard');
-  show('chkTablaCard', tab !== 'dashboard');
+  show('chkEquipos', tab === 'equipos');
+  show('chkTablaCard', tab !== 'dashboard' && tab !== 'equipos');
   if (tab === 'dashboard') cargarChkDashboard();
+  else if (tab === 'equipos') renderEquiposGaleria();
   else if (tab === 'formularios') renderFormularios();
   else if (tab === 'inspecciones') cargarChecklist();
   else if (tab === 'cumplimiento') cargarChkCumplimiento();
@@ -501,6 +504,238 @@ function renderChkDashSinInsp(placas) {
     `<span class="badge badge-secondary" style="font-size:12px;padding:4px 10px"><i class="fas fa-truck" style="opacity:.6"></i> ${_chkEsc(p)}</span>`).join('') + '</div>';
 }
 
+// ============================================================
+// EQUIPOS: galería de tipos + dashboard por tipo + inventario
+// ============================================================
+const CHK_MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Set', 'Oct', 'Nov', 'Dic'];
+let _chkEqComp = null, _chkEqAnio = null;
+let _chkEqChartArea = null, _chkEqChartEvo = null;
+let _chkEqData = null, _chkEqUnidadesAll = [];
+
+function _chkPuedeEditarEq() { return _chkAdmin() || (typeof USER_ROL !== 'undefined' && USER_ROL === 'supervisor'); }
+function _chkVencInfo(f) {
+  if (!f) return { txt: 'Sin fecha', cls: 'badge-secondary' };
+  const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+  const v = new Date(f + 'T00:00:00');
+  const dias = Math.round((v - hoy) / 86400000);
+  const cls = dias < 0 ? 'badge-danger' : dias <= 90 ? 'badge-warning' : 'badge-success';
+  return { txt: _chkFecha(f), cls };
+}
+function _chkPctTxt(v) {
+  if (v === null || v === undefined) return '<span class="muted">—</span>';
+  const col = v >= 90 ? 'var(--verde)' : v >= 70 ? 'var(--naranja)' : 'var(--rojo)';
+  return `<span style="color:${col};font-weight:700;font-variant-numeric:tabular-nums">${v}%</span>`;
+}
+
+// Galería "Tipos de equipo": una tarjeta por tipo con # unidades y vencimientos.
+async function renderEquiposGaleria() {
+  const gal = document.getElementById('chkEqGaleria'), dash = document.getElementById('chkEqDash');
+  if (dash) dash.style.display = 'none';
+  if (gal) { gal.style.display = ''; gal.innerHTML = '<p class="muted" style="padding:20px">Cargando…</p>'; }
+  await _chkCargarComponentes();
+  let unidades = [];
+  try { const r = await fetch('api/checklist.php?action=uni_list'); const d = await r.json(); unidades = (d && d.success) ? (d.data.unidades || []) : []; }
+  catch (e) {}
+  const porComp = {};
+  unidades.forEach(u => { (porComp[+u.componente_id] = porComp[+u.componente_id] || []).push(u); });
+  const activos = _chkComp.filter(c => +c.activo !== 0);
+  const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+  const cards = activos.map(c => {
+    const us = (porComp[+c.id] || []).filter(u => +u.activo !== 0);
+    let venc = 0, porV = 0;
+    us.forEach(u => { if (u.vencimiento) { const dias = Math.round((new Date(u.vencimiento + 'T00:00:00') - hoy) / 86400000); if (dias < 0) venc++; else if (dias <= 90) porV++; } });
+    const code = 'CHK-' + String(c.id).padStart(3, '0');
+    return `<div onclick="abrirEquipoDash(${c.id})" style="cursor:pointer;background:var(--gris-800);border:1px solid var(--gris-600);border-radius:10px;padding:16px;transition:border-color .15s" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--gris-600)'">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span class="muted" style="font-size:11px;letter-spacing:.5px">${code}</span>
+        <span class="badge badge-info"><i class="fas fa-box"></i> ${us.length} unidad${us.length !== 1 ? 'es' : ''}</span>
+      </div>
+      <div style="font-weight:700;color:var(--gris-100);font-size:15px;margin-bottom:10px"><i class="fas fa-clipboard-check" style="color:var(--primary)"></i> ${_chkEsc(c.nombre)}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;min-height:22px">
+        ${venc ? `<span class="badge badge-danger"><i class="fas fa-triangle-exclamation"></i> ${venc} vencido${venc !== 1 ? 's' : ''}</span>` : ''}
+        ${porV ? `<span class="badge badge-warning"><i class="fas fa-clock"></i> ${porV} por vencer</span>` : ''}
+        ${!venc && !porV ? '<span class="badge badge-success"><i class="fas fa-check"></i> Vencimientos al día</span>' : ''}
+      </div>
+      <div style="margin-top:12px"><span class="btn btn-outline btn-sm" style="pointer-events:none"><i class="fas fa-gauge-high"></i> Ver dashboard</span></div>
+    </div>`;
+  }).join('');
+  gal.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <h3 style="color:var(--gris-100);font-size:16px"><i class="fas fa-boxes-stacked" style="color:var(--primary)"></i> Tipos de equipo</h3>
+      <span class="muted" style="font-size:12px">Elige un tipo para ver su dashboard e inventario</span></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(258px,1fr));gap:14px">${cards || '<p class="muted">Sin tipos de equipo activos.</p>'}</div>`;
+}
+
+function abrirEquipoDash(compId) { _chkEqComp = compId; _chkEqAnio = null; cargarEquipoDash(); }
+function volverEquipos() { renderEquiposGaleria(); }
+function chkEqCambiarAnio(a) { _chkEqAnio = a; cargarEquipoDash(); }
+
+async function cargarEquipoDash() {
+  const gal = document.getElementById('chkEqGaleria'), dash = document.getElementById('chkEqDash');
+  if (gal) gal.style.display = 'none';
+  if (dash) { dash.style.display = ''; dash.innerHTML = '<p class="muted" style="padding:24px">Cargando dashboard…</p>'; }
+  const anio = _chkEqAnio || new Date().getFullYear();
+  try {
+    const [rd, ru] = await Promise.all([
+      fetch(`api/checklist.php?action=equipo_dash&componente_id=${_chkEqComp}&anio=${anio}`).then(r => r.json()),
+      fetch(`api/checklist.php?action=uni_list&componente_id=${_chkEqComp}`).then(r => r.json()),
+    ]);
+    if (!rd || !rd.success) { dash.innerHTML = '<p class="muted" style="padding:24px">No se pudo cargar.</p>'; return; }
+    _chkEqData = rd.data;
+    _chkEqUnidadesAll = (ru && ru.success) ? (ru.data.unidades || []) : [];
+    _chkEqAnio = _chkEqData.anio;
+    renderEquipoDash(_chkEqData);
+  } catch (e) { dash.innerHTML = '<p class="muted" style="padding:24px">Error al cargar el dashboard.</p>'; }
+}
+
+function renderEquipoDash(d) {
+  const dash = document.getElementById('chkEqDash');
+  const k = d.kpis || {}, anios = (d.anios || []).slice();
+  const curY = new Date().getFullYear();
+  if (!anios.includes(String(curY)) && !anios.includes(curY)) anios.unshift(curY);
+  const yearBtns = anios.map(a => `<button class="btn btn-sm ${+a === +d.anio ? 'btn-primary' : 'btn-outline'}" onclick="chkEqCambiarAnio(${a})">${a}</button>`).join('');
+  const puede = _chkPuedeEditarEq();
+
+  const kpis =
+    _chkDashKpi('fas fa-box', 'azul', 'Total unidades', k.total_unidades || 0, 'inventariadas', null, '', false) +
+    _chkDashKpi('fas fa-clipboard-check', 'azul', 'Inspecciones', k.inspecciones || 0, 'en ' + d.anio, null, '', false) +
+    _chkDashKpi('fas fa-clock', (k.por_vencer || 0) > 0 ? 'naranja' : 'verde', 'Por vencer', k.por_vencer || 0, 'próx. 90 días', null, '', true) +
+    _chkDashKpi('fas fa-triangle-exclamation', (k.vencidos || 0) > 0 ? 'rojo' : 'verde', 'Vencidos', k.vencidos || 0, 'requieren acción', null, '', true) +
+    _chkDashKpi('fas fa-circle-check', (k.cumplimiento === null ? 'azul' : k.cumplimiento >= 90 ? 'verde' : k.cumplimiento >= 70 ? 'naranja' : 'rojo'), 'Cumplimiento', (k.cumplimiento === null ? '—' : k.cumplimiento + '%'), 'promedio ' + d.anio, null, '', false) +
+    _chkDashKpi('fas fa-location-dot', 'azul', 'Áreas', k.areas || 0, 'ubicaciones', null, '', false);
+
+  dash.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="btn btn-outline btn-sm" onclick="volverEquipos()"><i class="fas fa-arrow-left"></i> Tipos de equipo</button>
+        <h3 style="color:var(--gris-100);font-size:18px;margin:0">Dashboard — ${_chkEsc(d.componente.nombre)}</h3>
+      </div>
+      <div style="display:flex;gap:6px">${yearBtns}</div>
+    </div>
+    <div class="dash-kpi-grid" style="margin-bottom:18px">${kpis}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px" class="charts-row">
+      <div class="card"><div class="card-header"><h3><i class="fas fa-chart-bar"></i> Cumplimiento por Área</h3></div>
+        <div class="card-body" style="padding:14px 18px"><canvas id="chkEqChartArea" height="200"></canvas>
+          <p class="muted" id="chkEqAreaEmpty" style="display:none;font-size:13px">Sin datos de inspección en ${d.anio}.</p></div></div>
+      <div class="card"><div class="card-header"><h3><i class="fas fa-chart-column"></i> Evolución mensual ${d.anio}</h3></div>
+        <div class="card-body" style="padding:14px 18px"><canvas id="chkEqChartEvo" height="200"></canvas></div></div>
+    </div>
+    <div class="card" style="margin-bottom:18px"><div class="card-header"><h3><i class="fas fa-table-list"></i> Matriz de Verificación (${(d.unidades || []).length} unidades)</h3></div>
+      <div class="card-body" style="padding:0"><div class="tbl-scroll">${_chkEqMatriz(d)}</div></div></div>
+    <div class="card"><div class="card-header"><h3><i class="fas fa-boxes-stacked"></i> Estado por Unidad — ${d.anio}</h3>
+      ${puede ? `<button class="btn btn-primary btn-sm" onclick="chkNuevaUni()"><i class="fas fa-plus"></i> Unidad</button>` : ''}</div>
+      <div class="card-body" style="padding:0"><div class="tbl-scroll">${_chkEqEstadoUnidad(d, puede)}</div></div></div>`;
+
+  _chkEqRenderArea(d.por_area || []);
+  _chkEqRenderEvo(d.evolucion || []);
+}
+
+function _chkEqMatriz(d) {
+  const items = d.items || [];
+  const th = CHK_MESES.map(m => `<th style="text-align:center;min-width:52px">${m}</th>`).join('');
+  if (!items.length) return '<p class="muted" style="padding:20px">Sin preguntas para este equipo.</p>';
+  const rows = items.map(it => {
+    const cells = (it.meses || []).map(v => `<td style="text-align:center">${_chkPctTxt(v)}</td>`).join('');
+    return `<tr><td style="min-width:240px;color:var(--gris-200)" title="${_chkEsc(it.texto)}">${_chkEsc(it.texto.length > 46 ? it.texto.slice(0, 46) + '…' : it.texto)}</td>${cells}<td style="text-align:center;background:var(--gris-800)">${_chkPctTxt(it.prom)}</td></tr>`;
+  }).join('');
+  const promMes = (d.evolucion || []).map(e => `<td style="text-align:center">${_chkPctTxt(e.pct)}</td>`).join('');
+  return `<table class="data-table" style="min-width:${300 + 12 * 52}px">
+    <thead><tr><th>Ítem de verificación</th>${th}<th style="text-align:center">Prom.</th></tr></thead>
+    <tbody>${rows}
+      <tr style="background:var(--gris-800);font-weight:700"><td style="color:var(--gris-100)">Promedio</td>${promMes}<td style="text-align:center">${_chkPctTxt((d.kpis || {}).cumplimiento)}</td></tr>
+    </tbody></table>`;
+}
+
+function _chkEqEstadoUnidad(d, puede) {
+  const us = d.unidades || [];
+  const th = CHK_MESES.map(m => `<th style="text-align:center;min-width:48px">${m}</th>`).join('');
+  if (!us.length) return '<p class="muted" style="padding:20px">Sin unidades activas. Agrega la primera con “＋ Unidad”.</p>';
+  const rows = us.map(u => {
+    const cells = (u.meses || []).map(v => `<td style="text-align:center">${_chkPctTxt(v)}</td>`).join('');
+    const vi = _chkVencInfo(u.vencimiento);
+    const acc = puede ? `<td style="text-align:right;white-space:nowrap">
+        <button class="btn btn-outline btn-sm" onclick="chkEditarUni(${u.id})" title="Editar"><i class="fas fa-pen"></i></button>
+        ${_chkAdmin() ? `<button class="btn btn-outline btn-sm" onclick="chkEliminarUni(${u.id})" title="Eliminar"><i class="fas fa-trash" style="color:var(--rojo)"></i></button>` : ''}</td>` : '';
+    return `<tr>
+      <td style="font-weight:700;color:var(--gris-100);white-space:nowrap">${_chkEsc(u.codigo)}</td>
+      <td class="muted" style="min-width:180px">${_chkEsc(u.nombre || '')}</td>
+      <td>${u.area ? '<span class="badge badge-secondary">' + _chkEsc(u.area) + '</span>' : '—'}</td>
+      <td><span class="badge ${vi.cls}">${vi.txt}</span></td>
+      ${cells}
+      <td style="text-align:center;background:var(--gris-800)">${_chkPctTxt(u.prom)}</td>
+      ${acc}
+    </tr>`;
+  }).join('');
+  return `<table class="data-table" style="min-width:${560 + 12 * 48}px">
+    <thead><tr><th>Cód.</th><th>Nombre</th><th>Área</th><th>Vencimiento</th>${th}<th style="text-align:center">Prom.</th>${puede ? '<th></th>' : ''}</tr></thead>
+    <tbody>${rows}</tbody></table>`;
+}
+
+function _chkEqRenderArea(rows) {
+  const el = document.getElementById('chkEqChartArea'); if (!el) return;
+  if (_chkEqChartArea) { _chkEqChartArea.destroy(); _chkEqChartArea = null; }
+  const empty = document.getElementById('chkEqAreaEmpty');
+  const valid = rows.filter(r => r.pct !== null);
+  if (!valid.length) { el.style.display = 'none'; if (empty) empty.style.display = ''; return; }
+  el.style.display = ''; if (empty) empty.style.display = 'none';
+  const t = _chkDashTheme();
+  const cols = valid.map(r => r.pct >= 90 ? CHK_COL.verde : r.pct >= 70 ? CHK_COL.naranja : CHK_COL.rojo);
+  const plugin = { id: 'eqAreaLbl', afterDatasetsDraw(ch) { const { ctx } = ch; ctx.save(); ctx.font = '700 11px sans-serif'; ctx.textBaseline = 'middle'; ch.getDatasetMeta(0).data.forEach((b, i) => { const v = valid[i].pct; if (v >= 55) { ctx.fillStyle = '#fff'; ctx.textAlign = 'right'; ctx.fillText(v + '%', b.x - 8, b.y); } else { ctx.fillStyle = t.txt; ctx.textAlign = 'left'; ctx.fillText(v + '%', b.x + 6, b.y); } }); ctx.restore(); } };
+  _chkEqChartArea = new Chart(el.getContext('2d'), {
+    type: 'bar', plugins: [plugin],
+    data: { labels: valid.map(r => r.area), datasets: [{ data: valid.map(r => r.pct), backgroundColor: cols, borderRadius: 4, maxBarThickness: 26 }] },
+    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ` ${c.raw}%` } } }, scales: { x: { min: 0, max: 100, ticks: { color: t.tick, callback: v => v + '%', font: { size: 11 } }, grid: { color: t.grid } }, y: { ticks: { color: t.tick, font: { size: 11 } }, grid: { display: false } } } }
+  });
+}
+
+function _chkEqRenderEvo(evo) {
+  const el = document.getElementById('chkEqChartEvo'); if (!el) return;
+  if (_chkEqChartEvo) { _chkEqChartEvo.destroy(); _chkEqChartEvo = null; }
+  const t = _chkDashTheme();
+  const data = evo.map(e => e.pct);
+  const cols = evo.map(e => e.pct === null ? 'rgba(150,150,150,.2)' : e.pct >= 90 ? CHK_COL.verde : e.pct >= 70 ? CHK_COL.naranja : CHK_COL.rojo);
+  const plugin = { id: 'eqEvoLbl', afterDatasetsDraw(ch) { const { ctx } = ch; ctx.save(); ctx.font = '700 10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ch.getDatasetMeta(0).data.forEach((b, i) => { const v = data[i]; if (v === null) return; ctx.fillStyle = t.txt; ctx.fillText(v + '%', b.x, b.y - 3); }); ctx.restore(); } };
+  _chkEqChartEvo = new Chart(el.getContext('2d'), {
+    type: 'bar', plugins: [plugin],
+    data: { labels: CHK_MESES, datasets: [{ data: data.map(v => v === null ? 0 : v), backgroundColor: cols, borderRadius: 4, maxBarThickness: 34 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => data[c.dataIndex] === null ? ' Sin datos' : ` ${data[c.dataIndex]}%` } } }, scales: { x: { ticks: { color: t.tick, font: { size: 11 } }, grid: { display: false } }, y: { min: 0, max: 100, ticks: { color: t.tick, callback: v => v + '%', font: { size: 11 } }, grid: { color: t.grid } } } }
+  });
+}
+
+// ── Inventario de unidades (CRUD) ──
+function chkNuevaUni() { _chkAbrirUni(null); }
+function chkEditarUni(id) { const u = _chkEqUnidadesAll.find(x => +x.id === +id); _chkAbrirUni(u || null); }
+function _chkAbrirUni(u) {
+  document.getElementById('chkUniTitulo').textContent = u ? 'Editar unidad' : 'Nueva unidad';
+  document.getElementById('chk_uni_id').value = u ? u.id : '';
+  document.getElementById('chk_uni_comp').value = _chkEqComp;
+  document.getElementById('chk_uni_codigo').value = u ? u.codigo : '';
+  document.getElementById('chk_uni_nombre').value = u ? (u.nombre || '') : '';
+  document.getElementById('chk_uni_ubic').value = u ? (u.ubicacion || '') : '';
+  document.getElementById('chk_uni_area').value = u ? (u.area || '') : '';
+  document.getElementById('chk_uni_venc').value = u ? (u.vencimiento || '') : '';
+  abrirModal('modalChkUni');
+}
+async function chkGuardarUni() {
+  const codigo = document.getElementById('chk_uni_codigo').value.trim();
+  const nombre = document.getElementById('chk_uni_nombre').value.trim();
+  if (!codigo) { toast('El código es obligatorio', 'warning'); return; }
+  if (!nombre) { toast('El nombre es obligatorio', 'warning'); return; }
+  const r = await _chkPost({
+    action: 'uni_save', id: document.getElementById('chk_uni_id').value || '0',
+    componente_id: document.getElementById('chk_uni_comp').value,
+    codigo, nombre,
+    ubicacion: document.getElementById('chk_uni_ubic').value.trim(),
+    area: document.getElementById('chk_uni_area').value.trim(),
+    vencimiento: document.getElementById('chk_uni_venc').value || '',
+  });
+  if (r && r.success) { toast('Unidad guardada', 'success'); cerrarModal('modalChkUni'); delete _chkUnidadesCache[_chkEqComp]; cargarEquipoDash(); }
+}
+async function chkEliminarUni(id) {
+  if (!confirm('¿Eliminar esta unidad? Se conservan sus inspecciones (quedan sin unidad).')) return;
+  const r = await _chkPost({ action: 'uni_del', id });
+  if (r && r.success) { toast('Unidad eliminada', 'success'); delete _chkUnidadesCache[_chkEqComp]; cargarEquipoDash(); }
+}
+
 // ── Configuración (componentes + ítems) ──
 async function renderChkConfig() {
   const wrap = document.getElementById('chkTablaWrap'), pag = document.getElementById('chkPagWrap');
@@ -571,6 +806,7 @@ async function nuevaInspeccion(compId) {
   document.getElementById('chkModalTitulo').textContent = 'Nueva inspección';
   document.getElementById('chk_id').value = '';
   document.getElementById('chk_placa').value = '';
+  document.getElementById('chk_unidad_id').value = ''; _chkPreUnidad = null;
   document.getElementById('chk_periodo').value = document.getElementById('chkFiltroPeriodo')?.value || new Date().toISOString().slice(0, 7);
   document.getElementById('chk_fecha').value = new Date().toISOString().slice(0, 10);
   document.getElementById('chk_estado').value = 'apto';
@@ -595,6 +831,7 @@ async function editarInspeccion(id) {
     document.getElementById('chkModalTitulo').textContent = 'Editar inspección · ' + x.placa;
     document.getElementById('chk_id').value = x.id;
     document.getElementById('chk_placa').value = x.placa || '';
+    document.getElementById('chk_unidad_id').value = x.unidad_id || ''; _chkPreUnidad = x.unidad_id || null;
     document.getElementById('chk_periodo').value = x.periodo || '';
     document.getElementById('chk_fecha').value = x.fecha || '';
     document.getElementById('chk_estado').value = x.estado || 'apto';
@@ -644,6 +881,39 @@ function chkRenderItemsSel() {
     <strong style="color:var(--gris-100);font-size:13px"><i class="fas fa-cube" style="color:var(--primary)"></i> Banco de preguntas · ${_chkEsc(c.nombre)}</strong>
     <div style="margin-top:4px">${items || '<span class="muted" style="font-size:12px">Sin preguntas. Agrégalas en Configuración.</span>'}</div>
   </div></div>`;
+  _chkToggleUnidadSel(compId);
+}
+
+// Si el equipo tiene inventario de unidades, muestra el selector de unidad
+// (en vez del buscador de placa) y lo llena. Preselecciona _chkPreUnidad si aplica.
+let _chkUnidadesCache = {};
+async function _chkToggleUnidadSel(compId) {
+  const wrapU = document.getElementById('chk_unidad_wrap'), wrapP = document.getElementById('chk_placa_wrap');
+  const sel = document.getElementById('chk_unidad');
+  if (!wrapU || !wrapP || !sel) return;
+  let units = _chkUnidadesCache[compId];
+  if (units === undefined) {
+    try { const r = await fetch('api/checklist.php?action=uni_list&componente_id=' + compId); const d = await r.json(); units = (d && d.success) ? (d.data.unidades || []) : []; }
+    catch (e) { units = []; }
+    units = units.filter(u => +u.activo !== 0);
+    _chkUnidadesCache[compId] = units;
+  }
+  if (units.length) {
+    sel.innerHTML = '<option value="">— Selecciona unidad —</option>' + units.map(u =>
+      `<option value="${u.id}" data-codigo="${_chkEsc(u.codigo)}">${_chkEsc(u.codigo)} · ${_chkEsc(u.nombre)}</option>`).join('');
+    if (_chkPreUnidad) sel.value = _chkPreUnidad;
+    wrapU.style.display = ''; wrapP.style.display = 'none';
+    if (sel.value) chkSelUnidad();
+  } else {
+    wrapU.style.display = 'none'; wrapP.style.display = '';
+    document.getElementById('chk_unidad_id').value = '';
+  }
+}
+function chkSelUnidad() {
+  const sel = document.getElementById('chk_unidad');
+  const opt = sel.options[sel.selectedIndex];
+  document.getElementById('chk_unidad_id').value = sel.value || '';
+  if (sel.value && opt) document.getElementById('chk_placa').value = opt.getAttribute('data-codigo') || '';
 }
 
 function chkMarcarTodo(val) {
@@ -657,6 +927,9 @@ function chkMarcarTodo(val) {
 async function guardarInspeccion() {
   const compId = document.getElementById('chk_componente').value;
   if (!compId) { toast('Selecciona el equipo a inspeccionar', 'warning'); return; }
+  const unidadId = document.getElementById('chk_unidad_id').value || '';
+  const usaInventario = document.getElementById('chk_unidad_wrap')?.style.display !== 'none';
+  if (usaInventario && !unidadId) { toast('Selecciona la unidad del inventario', 'warning'); return; }
   const placa = document.getElementById('chk_placa').value.trim().toUpperCase();
   if (!placa) { toast('Indica la placa de la unidad', 'warning'); return; }
   const periodo = document.getElementById('chk_periodo').value;
@@ -672,7 +945,7 @@ async function guardarInspeccion() {
   const btn = document.getElementById('chkGuardarBtn'); if (btn) btn.disabled = true;
   const r = await _chkPost({
     action: 'save', id: document.getElementById('chk_id').value || '0',
-    componente_id: compId, placa, periodo, fecha: document.getElementById('chk_fecha').value,
+    componente_id: compId, unidad_id: unidadId || '0', placa, periodo, fecha: document.getElementById('chk_fecha').value,
     estado: document.getElementById('chk_estado').value,
     observacion: document.getElementById('chk_observacion').value.trim(),
     firma: _chkFirma || '', resultados: JSON.stringify(resultados),

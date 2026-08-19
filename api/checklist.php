@@ -19,14 +19,14 @@ const CHK_ESTADOS    = ['apto', 'observado', 'no_apto'];
 
 $action = $_GET['action'] ?? $_POST['action'] ?? 'list';
 
-$mutaciones = ['save', 'delete', 'foto_add', 'foto_del', 'comp_save', 'comp_toggle', 'item_save', 'item_toggle', 'item_del'];
+$mutaciones = ['save', 'delete', 'foto_add', 'foto_del', 'comp_save', 'comp_toggle', 'item_save', 'item_toggle', 'item_del', 'uni_save', 'uni_toggle', 'uni_del'];
 if (in_array($action, $mutaciones, true)) {
     requireCsrf();
     $user = getCurrentUser();
     if (!in_array($user['rol'], ['administrador', 'supervisor'])) {
         jsonResponse(false, 'No tienes permisos.', null, 403);
     }
-    if ($action === 'delete' && $user['rol'] !== 'administrador') {
+    if (in_array($action, ['delete', 'uni_del'], true) && $user['rol'] !== 'administrador') {
         jsonResponse(false, 'Solo un administrador puede eliminar.', null, 403);
     }
 }
@@ -43,6 +43,11 @@ try {
         case 'foto_del':    fotoDel();      break;
         case 'cumplimiento': cumplimiento(); break;
         case 'dashboard':    dashboard();    break;
+        case 'uni_list':     uniList();      break;
+        case 'uni_save':     uniSave();      break;
+        case 'uni_toggle':   uniToggle();    break;
+        case 'uni_del':      uniDel();       break;
+        case 'equipo_dash':  equipoDash();   break;
         case 'comp_save':   compSave();     break;
         case 'comp_toggle': compToggle();   break;
         case 'item_save':   itemSave();     break;
@@ -150,6 +155,7 @@ function fotoDel() {
 function guardar() {
     $id      = (int)($_POST['id'] ?? 0);
     $compId  = (int)($_POST['componente_id'] ?? 0);
+    $unidadId = ((int)($_POST['unidad_id'] ?? 0)) ?: null;
     $placa   = strtoupper(trim($_POST['placa'] ?? ''));
     $periodo = trim($_POST['periodo'] ?? '');
     $fecha   = trim($_POST['fecha'] ?? date('Y-m-d'));
@@ -172,17 +178,17 @@ function guardar() {
         db()->beginTransaction();
         if ($id > 0) {
             db()->query(
-                "UPDATE chk_inspecciones SET componente_id=?, placa=?, periodo=?, fecha=?, estado=?, observacion=?"
+                "UPDATE chk_inspecciones SET componente_id=?, unidad_id=?, placa=?, periodo=?, fecha=?, estado=?, observacion=?"
                 . ($firmaVal ? ", firma=?" : "") . " WHERE id=?",
-                $firmaVal ? [$compId, $placa, $periodo, $fecha, $estado, $obs ?: null, $firmaVal, $id]
-                          : [$compId, $placa, $periodo, $fecha, $estado, $obs ?: null, $id]);
+                $firmaVal ? [$compId, $unidadId, $placa, $periodo, $fecha, $estado, $obs ?: null, $firmaVal, $id]
+                          : [$compId, $unidadId, $placa, $periodo, $fecha, $estado, $obs ?: null, $id]);
             db()->query("DELETE FROM chk_resultados WHERE inspeccion_id = ?", [$id]);
             $inspId = $id;
         } else {
             db()->query(
-                "INSERT INTO chk_inspecciones (componente_id, placa, periodo, fecha, inspector_id, inspector_nombre, estado, observacion, firma)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                [$compId, $placa, $periodo, $fecha, $user['id'], $user['nombre'] ?? null, $estado, $obs ?: null, $firmaVal]);
+                "INSERT INTO chk_inspecciones (componente_id, unidad_id, placa, periodo, fecha, inspector_id, inspector_nombre, estado, observacion, firma)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                [$compId, $unidadId, $placa, $periodo, $fecha, $user['id'], $user['nombre'] ?? null, $estado, $obs ?: null, $firmaVal]);
             $inspId = (int)db()->lastInsertId();
         }
         foreach ($items as $it) {
@@ -449,6 +455,188 @@ function dashboard() {
         'nc_list'       => $ncList,
         'sin_inspeccion'=> $sinInsp,
         'periodos'      => $periodos,
+    ]);
+}
+
+// ============================================================
+// Inventario de equipos físicos (unidades individuales por tipo)
+// ============================================================
+function uniList() {
+    $comp = (int)($_GET['componente_id'] ?? 0);
+    $where = $comp > 0 ? 'WHERE u.componente_id = ?' : '';
+    $params = $comp > 0 ? [$comp] : [];
+    $rows = db()->fetchAll(
+        "SELECT u.id, u.componente_id, u.codigo, u.nombre, u.ubicacion, u.area, u.vencimiento, u.activo,
+                (SELECT COUNT(*) FROM chk_inspecciones i WHERE i.unidad_id = u.id) AS n_inspecciones
+           FROM chk_unidades u $where ORDER BY u.codigo ASC", $params);
+    jsonResponse(true, '', ['unidades' => $rows]);
+}
+
+function uniSave() {
+    $id     = (int)($_POST['id'] ?? 0);
+    $comp   = (int)($_POST['componente_id'] ?? 0);
+    $codigo = strtoupper(trim($_POST['codigo'] ?? ''));
+    $nombre = trim($_POST['nombre'] ?? '');
+    $ubic   = trim($_POST['ubicacion'] ?? '');
+    $area   = trim($_POST['area'] ?? '');
+    $venc   = trim($_POST['vencimiento'] ?? '');
+    if ($comp <= 0)      jsonResponse(false, 'Tipo de equipo inválido.', null, 422);
+    if ($codigo === '')  jsonResponse(false, 'El código es obligatorio.', null, 422);
+    if ($nombre === '')  jsonResponse(false, 'El nombre es obligatorio.', null, 422);
+    $vencVal = preg_match('/^\d{4}-\d{2}-\d{2}$/', $venc) ? $venc : null;
+    if (db()->fetchOne("SELECT id FROM chk_unidades WHERE codigo = ? AND id <> ?", [$codigo, $id])) {
+        jsonResponse(false, 'Ya existe una unidad con ese código.', null, 422);
+    }
+    if ($id > 0) {
+        db()->query("UPDATE chk_unidades SET componente_id=?, codigo=?, nombre=?, ubicacion=?, area=?, vencimiento=? WHERE id=?",
+            [$comp, $codigo, $nombre, $ubic ?: null, $area ?: null, $vencVal, $id]);
+    } else {
+        db()->query("INSERT INTO chk_unidades (componente_id, codigo, nombre, ubicacion, area, vencimiento) VALUES (?, ?, ?, ?, ?, ?)",
+            [$comp, $codigo, $nombre, $ubic ?: null, $area ?: null, $vencVal]);
+        $id = (int)db()->lastInsertId();
+    }
+    jsonResponse(true, 'Unidad guardada.', ['id' => $id]);
+}
+
+function uniToggle() {
+    $id = (int)($_POST['id'] ?? 0);
+    if ($id <= 0) jsonResponse(false, 'ID inválido.', null, 400);
+    db()->query("UPDATE chk_unidades SET activo = 1 - activo WHERE id = ?", [$id]);
+    jsonResponse(true, 'Estado actualizado.');
+}
+
+function uniDel() {
+    $id = (int)($_POST['id'] ?? 0);
+    if ($id <= 0) jsonResponse(false, 'ID inválido.', null, 400);
+    db()->query("UPDATE chk_inspecciones SET unidad_id = NULL WHERE unidad_id = ?", [$id]);  // conserva el historial
+    db()->query("DELETE FROM chk_unidades WHERE id = ?", [$id]);
+    jsonResponse(true, 'Unidad eliminada.');
+}
+
+// Dashboard por tipo de equipo: KPIs, cumplimiento por área, evolución mensual,
+// matriz de verificación (ítems × meses) y estado por unidad (× meses).
+function equipoDash() {
+    $comp = (int)($_GET['componente_id'] ?? 0);
+    if ($comp <= 0) jsonResponse(false, 'Tipo de equipo inválido.', null, 422);
+    $anio = (int)($_GET['anio'] ?? date('Y'));
+    if ($anio < 2000 || $anio > 2100) $anio = (int)date('Y');
+    $like = $anio . '-%';
+
+    $comprow = db()->fetchOne("SELECT id, nombre FROM chk_componentes WHERE id = ?", [$comp]);
+    if (!$comprow) jsonResponse(false, 'Tipo de equipo no encontrado.', null, 404);
+
+    $pct = fn($c, $nc) => ($c + $nc) > 0 ? (int)round($c / ($c + $nc) * 100) : null;
+
+    // Unidades activas del tipo.
+    $unidades = db()->fetchAll(
+        "SELECT id, codigo, nombre, ubicacion, area, vencimiento FROM chk_unidades
+          WHERE componente_id = ? AND activo = 1 ORDER BY codigo ASC", [$comp]);
+    $totalUnid = count($unidades);
+
+    // Ítems (preguntas) activos del tipo.
+    $items = db()->fetchAll(
+        "SELECT id, texto FROM chk_items WHERE componente_id = ? AND activo = 1 ORDER BY orden ASC, id ASC", [$comp]);
+
+    // Filtro común de resultados: este tipo, año, con unidad vinculada.
+    $baseFrom = "FROM chk_resultados r JOIN chk_inspecciones i ON i.id = r.inspeccion_id
+                 WHERE i.componente_id = ? AND i.unidad_id IS NOT NULL AND i.periodo LIKE ?";
+    $bp = [$comp, $like];
+
+    // Evolución mensual (todos los ítems).
+    $evoRaw = [];
+    foreach (db()->fetchAll("SELECT SUBSTRING(i.periodo,6,2) mes,
+            SUM(r.resultado='conforme') c, SUM(r.resultado='no_conforme') nc $baseFrom GROUP BY mes", $bp) as $r) {
+        $evoRaw[(int)$r['mes']] = ['c' => (int)$r['c'], 'nc' => (int)$r['nc']];
+    }
+    $evolucion = [];
+    for ($m = 1; $m <= 12; $m++) {
+        $e = $evoRaw[$m] ?? ['c' => 0, 'nc' => 0];
+        $evolucion[] = ['mes' => $m, 'pct' => $pct($e['c'], $e['nc'])];
+    }
+
+    // Matriz ítem × mes.
+    $matRaw = [];
+    foreach (db()->fetchAll("SELECT r.item_id, SUBSTRING(i.periodo,6,2) mes,
+            SUM(r.resultado='conforme') c, SUM(r.resultado='no_conforme') nc $baseFrom GROUP BY r.item_id, mes", $bp) as $r) {
+        $matRaw[(int)$r['item_id']][(int)$r['mes']] = ['c' => (int)$r['c'], 'nc' => (int)$r['nc']];
+    }
+    $itemsOut = array_map(function ($it) use ($matRaw, $pct) {
+        $meses = []; $cT = 0; $ncT = 0;
+        for ($m = 1; $m <= 12; $m++) {
+            $x = $matRaw[(int)$it['id']][$m] ?? ['c' => 0, 'nc' => 0];
+            $cT += $x['c']; $ncT += $x['nc'];
+            $meses[] = $pct($x['c'], $x['nc']);
+        }
+        return ['id' => (int)$it['id'], 'texto' => $it['texto'], 'meses' => $meses, 'prom' => $pct($cT, $ncT)];
+    }, $items);
+
+    // Estado por unidad × mes.
+    $uniRaw = [];
+    foreach (db()->fetchAll("SELECT i.unidad_id, SUBSTRING(i.periodo,6,2) mes,
+            SUM(r.resultado='conforme') c, SUM(r.resultado='no_conforme') nc $baseFrom GROUP BY i.unidad_id, mes", $bp) as $r) {
+        $uniRaw[(int)$r['unidad_id']][(int)$r['mes']] = ['c' => (int)$r['c'], 'nc' => (int)$r['nc']];
+    }
+    $hoy = new DateTime('today');
+    $unidadesOut = array_map(function ($u) use ($uniRaw, $pct, $hoy) {
+        $meses = []; $cT = 0; $ncT = 0;
+        for ($m = 1; $m <= 12; $m++) {
+            $x = $uniRaw[(int)$u['id']][$m] ?? ['c' => 0, 'nc' => 0];
+            $cT += $x['c']; $ncT += $x['nc'];
+            $meses[] = $pct($x['c'], $x['nc']);
+        }
+        $estVenc = 'ok';
+        if (!empty($u['vencimiento'])) {
+            $v = DateTime::createFromFormat('Y-m-d', $u['vencimiento']);
+            if ($v) { $dias = (int)$hoy->diff($v)->format('%r%a'); $estVenc = $dias < 0 ? 'vencido' : ($dias <= 90 ? 'por_vencer' : 'ok'); }
+        }
+        return ['id' => (int)$u['id'], 'codigo' => $u['codigo'], 'nombre' => $u['nombre'],
+                'area' => $u['area'], 'ubicacion' => $u['ubicacion'], 'vencimiento' => $u['vencimiento'],
+                'est_venc' => $estVenc, 'meses' => $meses, 'prom' => $pct($cT, $ncT)];
+    }, $unidades);
+
+    // Cumplimiento por área (año).
+    $porArea = [];
+    foreach (db()->fetchAll("SELECT COALESCE(NULLIF(u.area,''),'Sin área') area,
+            SUM(r.resultado='conforme') c, SUM(r.resultado='no_conforme') nc
+            FROM chk_resultados r JOIN chk_inspecciones i ON i.id = r.inspeccion_id
+            JOIN chk_unidades u ON u.id = i.unidad_id
+            WHERE i.componente_id = ? AND i.periodo LIKE ? GROUP BY u.area ORDER BY u.area ASC", $bp) as $r) {
+        $porArea[] = ['area' => $r['area'], 'pct' => $pct((int)$r['c'], (int)$r['nc'])];
+    }
+
+    // KPIs.
+    $tot = db()->fetchOne("SELECT SUM(r.resultado='conforme') c, SUM(r.resultado='no_conforme') nc $baseFrom", $bp);
+    $cumpl = $pct((int)($tot['c'] ?? 0), (int)($tot['nc'] ?? 0));
+    $nInsp = (int)(db()->fetchOne(
+        "SELECT COUNT(*) n FROM chk_inspecciones WHERE componente_id = ? AND unidad_id IS NOT NULL AND periodo LIKE ?", $bp)['n'] ?? 0);
+    $vencidos = 0; $porVencer = 0; $areasSet = [];
+    foreach ($unidades as $u) {
+        if (!empty($u['area'])) $areasSet[$u['area']] = 1;
+        if (!empty($u['vencimiento'])) {
+            $v = DateTime::createFromFormat('Y-m-d', $u['vencimiento']);
+            if ($v) { $dias = (int)$hoy->diff($v)->format('%r%a'); if ($dias < 0) $vencidos++; elseif ($dias <= 90) $porVencer++; }
+        }
+    }
+
+    $anios = array_column(db()->fetchAll(
+        "SELECT DISTINCT LEFT(periodo,4) anio FROM chk_inspecciones WHERE componente_id = ? AND unidad_id IS NOT NULL ORDER BY anio DESC", [$comp]), 'anio');
+
+    jsonResponse(true, '', [
+        'componente' => $comprow,
+        'anio'       => $anio,
+        'anios'      => $anios,
+        'kpis'       => [
+            'total_unidades' => $totalUnid,
+            'inspecciones'   => $nInsp,
+            'por_vencer'     => $porVencer,
+            'vencidos'       => $vencidos,
+            'cumplimiento'   => $cumpl,
+            'areas'          => count($areasSet),
+        ],
+        'por_area'   => $porArea,
+        'evolucion'  => $evolucion,
+        'items'      => $itemsOut,
+        'unidades'   => $unidadesOut,
     ]);
 }
 

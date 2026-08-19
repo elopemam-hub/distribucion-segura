@@ -17,6 +17,7 @@
       <button class="tab-btn chk-tab-btn" id="chk-btn-formularios" onclick="switchChkTab('formularios')"><i class="fas fa-table-cells-large"></i> Formularios</button>
       <button class="tab-btn chk-tab-btn" id="chk-btn-inspecciones" onclick="switchChkTab('inspecciones')"><i class="fas fa-list-check"></i> Inspecciones</button>
       <button class="tab-btn chk-tab-btn" id="chk-btn-cumplimiento" onclick="switchChkTab('cumplimiento')"><i class="fas fa-table-cells"></i> Cumplimiento</button>
+      <button class="tab-btn chk-tab-btn" id="chk-btn-equipos" onclick="switchChkTab('equipos')"><i class="fas fa-boxes-stacked"></i> Equipos</button>
       <button class="tab-btn chk-tab-btn" id="chk-btn-config" onclick="switchChkTab('config')"><i class="fas fa-sliders"></i> Configuración</button>
     </div>
 
@@ -107,6 +108,41 @@
         <span id="chkSinInspBadge" style="font-size:11px;color:var(--gris-400)"></span></div>
         <div class="card-body" id="chkSinInspList" style="padding:14px 18px"></div></div>
     </div>
+
+    <!-- ===== EQUIPOS: galería de tipos + dashboard por tipo ===== -->
+    <div id="chkEquipos" style="display:none">
+      <div id="chkEqGaleria"></div>
+      <div id="chkEqDash" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: UNIDAD DE INVENTARIO ===== -->
+  <div class="modal-overlay" id="modalChkUni" style="z-index:1200">
+    <div class="modal-box" style="max-width:480px;width:95%">
+      <div class="modal-header">
+        <h3><i class="fas fa-box" style="color:var(--primary)"></i> <span id="chkUniTitulo">Unidad</span></h3>
+        <button class="modal-close" onclick="cerrarModal('modalChkUni')"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="chk_uni_id"><input type="hidden" id="chk_uni_comp">
+        <div class="filter-bar">
+          <div class="form-group"><label class="form-label">Código <span style="color:var(--rojo)">*</span></label>
+            <input type="text" class="form-control" id="chk_uni_codigo" maxlength="40" placeholder="Ej: CAR-DIA-ALM-01"></div>
+          <div class="form-group"><label class="form-label">Nombre / descripción <span style="color:var(--rojo)">*</span></label>
+            <input type="text" class="form-control" id="chk_uni_nombre" maxlength="160" placeholder="Ej: Carretilla diaria 01 – Almacén Central"></div>
+          <div class="form-group"><label class="form-label">Ubicación</label>
+            <input type="text" class="form-control" id="chk_uni_ubic" maxlength="120" placeholder="Ej: Almacén Central"></div>
+          <div class="form-group"><label class="form-label">Área</label>
+            <input type="text" class="form-control" id="chk_uni_area" maxlength="80" placeholder="Ej: Almacén"></div>
+          <div class="form-group"><label class="form-label">Vencimiento</label>
+            <input type="date" class="form-control" id="chk_uni_venc"></div>
+        </div>
+      </div>
+      <div class="modal-footer" style="display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--gris-700)">
+        <button class="btn btn-secondary" onclick="cerrarModal('modalChkUni')">Cancelar</button>
+        <button class="btn btn-primary" onclick="chkGuardarUni()"><i class="fas fa-save"></i> Guardar</button>
+      </div>
+    </div>
   </div>
 
   <!-- ===== MODAL: INSPECCIÓN ===== -->
@@ -121,7 +157,10 @@
         <div class="filter-bar" style="margin-bottom:12px">
           <div class="form-group"><label class="form-label">Equipo / Formulario <span style="color:var(--rojo)">*</span></label>
             <select class="form-control" id="chk_componente" onchange="chkRenderItemsSel()"></select></div>
-          <div class="form-group" style="position:relative"><label class="form-label">Unidad (placa) <span style="color:var(--rojo)">*</span></label>
+          <input type="hidden" id="chk_unidad_id">
+          <div class="form-group" id="chk_unidad_wrap" style="display:none"><label class="form-label">Unidad (inventario) <span style="color:var(--rojo)">*</span></label>
+            <select class="form-control" id="chk_unidad" onchange="chkSelUnidad()"></select></div>
+          <div class="form-group" id="chk_placa_wrap" style="position:relative"><label class="form-label">Unidad (placa) <span style="color:var(--rojo)">*</span></label>
             <input type="text" class="form-control" id="chk_placa" placeholder="Buscar placa…" autocomplete="off" oninput="chkBuscarPlaca(this.value)">
             <div id="chkPlacaResultados" style="display:none;position:absolute;z-index:20;left:0;right:0;background:var(--gris-800);border:1px solid var(--gris-600);border-radius:6px;max-height:200px;overflow:auto;box-shadow:0 8px 24px rgba(0,0,0,.35)"></div>
           </div>
