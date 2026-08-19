@@ -202,9 +202,10 @@ async function renderChkConfig() {
   const wrap = document.getElementById('chkTablaWrap'), pag = document.getElementById('chkPagWrap');
   if (pag) pag.innerHTML = '';
   await _chkCargarComponentes(true);
-  if (!_chkComp.length) { wrap.innerHTML = '<p class="muted" style="padding:20px">Sin componentes.</p>'; return; }
   const puedeEditar = _chkAdmin() || (typeof USER_ROL !== 'undefined' && USER_ROL === 'supervisor');
-  wrap.innerHTML = '<div style="padding:14px">' + _chkComp.map(c => {
+  const topBtn = puedeEditar ? '<div style="margin-bottom:14px"><button class="btn btn-primary" onclick="chkNuevoComp()"><i class="fas fa-plus"></i> Nuevo equipo / formulario</button></div>' : '';
+  if (!_chkComp.length) { wrap.innerHTML = '<div style="padding:14px">' + topBtn + '<p class="muted">Sin equipos. Crea el primero.</p></div>'; return; }
+  wrap.innerHTML = '<div style="padding:14px">' + topBtn + _chkComp.map(c => {
     const items = (c.items || []).map(it =>
       `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--gris-700);${+it.activo ? '' : 'opacity:.5'}">
         <i class="fas fa-circle" style="font-size:5px;color:var(--gris-500)"></i>
@@ -215,8 +216,12 @@ async function renderChkConfig() {
     return `<div class="card" style="margin-bottom:12px"><div class="card-body" style="padding:12px 16px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
         <strong style="color:var(--gris-100)"><i class="fas fa-cube" style="color:var(--primary)"></i> ${_chkEsc(c.nombre)}${+c.activo ? '' : ' <span class="badge badge-secondary">inactivo</span>'}</strong>
-        ${puedeEditar ? `<button class="btn btn-primary btn-sm" onclick="chkNuevoItem(${c.id})"><i class="fas fa-plus"></i> Ítem</button>` : ''}
-      </div>${items || '<span class="muted" style="font-size:12px">Sin ítems.</span>'}
+        ${puedeEditar ? `<div style="display:flex;gap:6px">
+          <button class="btn btn-outline btn-sm" onclick="chkEditarComp(${c.id})" title="Renombrar equipo"><i class="fas fa-pen"></i></button>
+          <button class="btn btn-outline btn-sm" onclick="chkToggleComp(${c.id})" title="${+c.activo ? 'Desactivar' : 'Activar'}"><i class="fas fa-${+c.activo ? 'toggle-on' : 'toggle-off'}"></i></button>
+          <button class="btn btn-primary btn-sm" onclick="chkNuevoItem(${c.id})"><i class="fas fa-plus"></i> Pregunta</button>
+        </div>` : ''}
+      </div>${items || '<span class="muted" style="font-size:12px">Sin preguntas.</span>'}
     </div></div>`;
   }).join('') + '</div>';
 }
@@ -239,6 +244,23 @@ async function chkGuardarItem() {
   if (r && r.success) { toast('Ítem guardado', 'success'); cerrarModal('modalChkItem'); renderChkConfig(); }
 }
 async function chkToggleItem(id) { const r = await _chkPost({ action: 'item_toggle', id }); if (r && r.success) renderChkConfig(); }
+
+// Equipos (componentes / formularios)
+function chkNuevoComp() { _chkAbrirComp(0, ''); }
+function chkEditarComp(id) { const c = _chkComp.find(k => +k.id === +id); _chkAbrirComp(id, c ? c.nombre : ''); }
+function _chkAbrirComp(id, nombre) {
+  document.getElementById('chkCompTitulo').textContent = id ? 'Editar equipo' : 'Nuevo equipo / formulario';
+  document.getElementById('chk_comp_id').value = id || '';
+  document.getElementById('chk_comp_nombre').value = nombre || '';
+  abrirModal('modalChkComp');
+}
+async function chkGuardarComp() {
+  const nombre = document.getElementById('chk_comp_nombre').value.trim();
+  if (!nombre) { toast('Escribe el nombre del equipo', 'warning'); return; }
+  const r = await _chkPost({ action: 'comp_save', id: document.getElementById('chk_comp_id').value || '0', nombre });
+  if (r && r.success) { toast('Equipo guardado', 'success'); cerrarModal('modalChkComp'); renderChkConfig(); }
+}
+async function chkToggleComp(id) { const r = await _chkPost({ action: 'comp_toggle', id }); if (r && r.success) renderChkConfig(); }
 
 // ── Modal de inspección ──
 async function nuevaInspeccion(compId) {

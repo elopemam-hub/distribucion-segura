@@ -145,6 +145,26 @@
     </div>
   </div>
 
+  <!-- ===== MODAL: EQUIPO / FORMULARIO (config) ===== -->
+  <div class="modal-overlay" id="modalChkComp" style="z-index:1200">
+    <div class="modal-box" style="max-width:460px;width:94%">
+      <div class="modal-header">
+        <h3><i class="fas fa-cube" style="color:var(--primary)"></i> <span id="chkCompTitulo">Equipo</span></h3>
+        <button class="modal-close" onclick="cerrarModal('modalChkComp')"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="chk_comp_id">
+        <div class="form-group"><label class="form-label">Nombre del equipo / formulario</label>
+          <input type="text" class="form-control" id="chk_comp_nombre" maxlength="120" placeholder="Ej: Cinturón de seguridad"></div>
+        <p class="muted" style="font-size:11px;margin-top:6px">Luego agrégale sus preguntas con el botón “Pregunta”.</p>
+      </div>
+      <div class="modal-footer" style="display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--gris-700)">
+        <button class="btn btn-secondary" onclick="cerrarModal('modalChkComp')">Cancelar</button>
+        <button class="btn btn-primary" onclick="chkGuardarComp()"><i class="fas fa-save"></i> Guardar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ===== MODAL: ÍTEM (config) ===== -->
   <div class="modal-overlay" id="modalChkItem" style="z-index:1200">
     <div class="modal-box" style="max-width:460px;width:94%">
