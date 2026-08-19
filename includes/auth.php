@@ -122,12 +122,12 @@ function requireCsrf(): void {
 // PERMISOS POR MÓDULO
 // ============================================================
 
-const MODULOS_VALIDOS = ['dashboard', 'inspecciones', 'personal', 'reportes', 'matriz', 'amonestaciones', 'geocercas', 'evaluaciones', 'capacitaciones', 'kpi_analytics', 'epp', 'vehiculos', 'empresas'];
+const MODULOS_VALIDOS = ['dashboard', 'inspecciones', 'personal', 'reportes', 'matriz', 'amonestaciones', 'geocercas', 'evaluaciones', 'capacitaciones', 'checklist', 'kpi_analytics', 'epp', 'vehiculos', 'empresas'];
 
 // Defaults de acceso según rol (cuando el usuario no tiene filas en permisos)
 const ROL_DEFAULTS = [
-    'supervisor' => ['dashboard', 'inspecciones', 'personal', 'reportes', 'matriz', 'amonestaciones', 'geocercas', 'evaluaciones', 'capacitaciones', 'kpi_analytics', 'epp', 'vehiculos', 'empresas'],
-    'inspector'  => ['dashboard', 'inspecciones', 'evaluaciones', 'capacitaciones'],
+    'supervisor' => ['dashboard', 'inspecciones', 'personal', 'reportes', 'matriz', 'amonestaciones', 'geocercas', 'evaluaciones', 'capacitaciones', 'checklist', 'kpi_analytics', 'epp', 'vehiculos', 'empresas'],
+    'inspector'  => ['dashboard', 'inspecciones', 'evaluaciones', 'capacitaciones', 'checklist'],
 ];
 
 function getModulosUsuario(int $userId): array {
@@ -677,6 +677,62 @@ function setupCapacitaciones(): void {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", []);
     } catch (Exception $e) {
         error_log('[setupCapacitaciones] ' . $e->getMessage());
+    }
+}
+
+// ============================================================
+// AUTO-PROVISIÓN: MÓDULO CHECKLIST (inspección mensual de componentes de unidad)
+// Componentes del camión (extintores, botiquín, EPP, etc.) inspeccionados por
+// unidad (placa) cada mes. Normas SST: Ley 29783, NTP 350.043 (extintores),
+// R.M. 050-2013-TR (EPP), R.M. 1275-2021-SA (botiquín). Idempotente.
+// ============================================================
+function setupChecklist(): void {
+    try {
+        db()->query("CREATE TABLE IF NOT EXISTS chk_componentes (
+            id INT AUTO_INCREMENT PRIMARY KEY, nombre VARCHAR(120) NOT NULL, orden INT NOT NULL DEFAULT 0,
+            activo TINYINT(1) NOT NULL DEFAULT 1, creado_en DATETIME DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", []);
+        db()->query("CREATE TABLE IF NOT EXISTS chk_items (
+            id INT AUTO_INCREMENT PRIMARY KEY, componente_id INT NOT NULL, texto VARCHAR(255) NOT NULL,
+            orden INT NOT NULL DEFAULT 0, activo TINYINT(1) NOT NULL DEFAULT 1, creado_en DATETIME DEFAULT CURRENT_TIMESTAMP,
+            KEY idx_chkitem_comp (componente_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", []);
+        db()->query("CREATE TABLE IF NOT EXISTS chk_inspecciones (
+            id INT AUTO_INCREMENT PRIMARY KEY, placa VARCHAR(20) NOT NULL, periodo CHAR(7) NOT NULL,
+            fecha DATE NOT NULL, inspector_id INT NULL, inspector_nombre VARCHAR(120) NULL,
+            estado ENUM('apto','observado','no_apto') NOT NULL DEFAULT 'apto',
+            observacion VARCHAR(500) NULL, firma MEDIUMTEXT NULL, creado_en DATETIME DEFAULT CURRENT_TIMESTAMP,
+            KEY idx_chkinsp (periodo, placa)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", []);
+        db()->query("CREATE TABLE IF NOT EXISTS chk_resultados (
+            id INT AUTO_INCREMENT PRIMARY KEY, inspeccion_id INT NOT NULL, item_id INT NOT NULL, componente_id INT NOT NULL,
+            resultado ENUM('conforme','no_conforme','na') NOT NULL DEFAULT 'conforme', observacion VARCHAR(300) NULL,
+            KEY idx_chkres (inspeccion_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", []);
+
+        // Siembra componentes + ítems estándar (solo si está vacío).
+        if ((int)(db()->fetchOne("SELECT COUNT(*) c FROM chk_componentes")['c'] ?? 0) === 0) {
+            $data = [
+                'Extintores' => ['Manómetro/presión en rango (aguja en verde)', 'Precinto y seguro intactos', 'Fecha de vencimiento/recarga vigente', 'Manguera y boquilla en buen estado', 'Cilindro sin corrosión ni daños', 'Señalización visible y acceso libre', 'Soporte/fijación firme', 'Tarjeta de control al día'],
+                'Botiquín' => ['Contenido completo según norma', 'Insumos vigentes (no vencidos)', 'Limpio, sellado y en buen estado', 'Ubicación accesible y señalizada', 'Inventario de contenido presente'],
+                'EPP' => ['Casco en buen estado y vigente', 'Chaleco reflectivo visible', 'Zapatos de seguridad en buen estado', 'Lentes de seguridad', 'Guantes', 'EPP completo para la tripulación'],
+                'Botón de pánico' => ['Funciona (prueba de activación)', 'Visible y accesible para el conductor', 'Cableado/conexión en buen estado', 'Enlazado al sistema de monitoreo'],
+                'Tanque de combustible' => ['Sin fugas ni goteos', 'Tapa segura y con precinto', 'Fijación firme al chasis', 'Sin corrosión ni abolladuras', 'Sin olor a combustible'],
+                'Gata hidráulica' => ['Levanta y baja correctamente', 'Sin fugas de aceite hidráulico', 'Base y brazo firmes, sin daños', 'Capacidad acorde a la carga'],
+                'Carretillas' => ['Ruedas en buen estado', 'Estructura sin fisuras ni deformaciones', 'Manijas/agarraderas firmes', 'Limpieza general'],
+                'Caja fuerte' => ['Cierre/cerradura funciona', 'Fijación segura (anclada)', 'Sin daños ni forzaduras', 'Llave/clave operativa y controlada'],
+            ];
+            $orden = 0;
+            foreach ($data as $comp => $items) {
+                $orden++;
+                db()->query("INSERT INTO chk_componentes (nombre, orden) VALUES (?, ?)", [$comp, $orden]);
+                $cid = (int)db()->lastInsertId();
+                $io = 0;
+                foreach ($items as $it) { $io++; db()->query("INSERT INTO chk_items (componente_id, texto, orden) VALUES (?, ?, ?)", [$cid, $it, $io]); }
+            }
+        }
+    } catch (Exception $e) {
+        error_log('[setupChecklist] ' . $e->getMessage());
     }
 }
 

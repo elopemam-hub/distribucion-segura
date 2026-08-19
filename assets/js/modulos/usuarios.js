@@ -38,11 +38,11 @@ function actualizarSeccionModulos() {
   if(secE) secE.style.display=vis;
 }
 function setModulosChecked(modulos) {
-  ['inspecciones','personal','reportes','matriz','amonestaciones','geocercas','evaluaciones','capacitaciones','kpi_analytics','epp','vehiculos','empresas'].forEach(m=>{const el=document.getElementById('mod_'+m);if(el)el.checked=modulos.includes(m);});
+  ['inspecciones','personal','reportes','matriz','amonestaciones','geocercas','evaluaciones','capacitaciones','checklist','kpi_analytics','epp','vehiculos','empresas'].forEach(m=>{const el=document.getElementById('mod_'+m);if(el)el.checked=modulos.includes(m);});
 }
 function getModulosSeleccionados() {
   const checked=['dashboard'];
-  ['inspecciones','personal','reportes','matriz','amonestaciones','geocercas','evaluaciones','capacitaciones','kpi_analytics','epp','vehiculos','empresas'].forEach(m=>{const el=document.getElementById('mod_'+m);if(el&&el.checked)checked.push(m);});
+  ['inspecciones','personal','reportes','matriz','amonestaciones','geocercas','evaluaciones','capacitaciones','checklist','kpi_analytics','epp','vehiculos','empresas'].forEach(m=>{const el=document.getElementById('mod_'+m);if(el&&el.checked)checked.push(m);});
   return checked;
 }
 

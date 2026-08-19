@@ -147,7 +147,7 @@ $csrf = csrfToken();
     </a>
 
 
-    <?php if (tieneAccesoModulo('inspecciones') || tieneAccesoModulo('personal') || tieneAccesoModulo('geocercas') || tieneAccesoModulo('vehiculos') || tieneAccesoModulo('empresas')): ?>
+    <?php if (tieneAccesoModulo('inspecciones') || tieneAccesoModulo('personal') || tieneAccesoModulo('geocercas') || tieneAccesoModulo('vehiculos') || tieneAccesoModulo('empresas') || tieneAccesoModulo('checklist')): ?>
     <div class="nav-section-title" style="margin-top:12px">Operaciones</div>
     <?php endif; ?>
     <?php if (tieneAccesoModulo('inspecciones')): ?>
@@ -168,6 +168,11 @@ $csrf = csrfToken();
     <?php if (tieneAccesoModulo('vehiculos')): ?>
     <a class="nav-item" data-page="vehiculos" onclick="showPage('vehiculos')">
       <i class="fas fa-truck"></i> Vehículos
+    </a>
+    <?php endif; ?>
+    <?php if (tieneAccesoModulo('checklist')): ?>
+    <a class="nav-item" data-page="checklist" onclick="showPage('checklist')">
+      <i class="fas fa-clipboard-check"></i> Checklist
     </a>
     <?php endif; ?>
 
@@ -1222,6 +1227,10 @@ $csrf = csrfToken();
   <?php require_once __DIR__ . '/vistas/empresas.php'; ?>
   <?php endif; ?>
 
+  <?php if (tieneAccesoModulo('checklist')): ?>
+  <?php require_once __DIR__ . '/vistas/checklist.php'; ?>
+  <?php endif; ?>
+
   <?php if (tieneAccesoModulo('vehiculos')): ?>
   <?php require_once __DIR__ . '/vistas/vehiculos.php'; ?>
   <?php endif; ?>
@@ -1800,6 +1809,7 @@ $csrf = csrfToken();
             <label class="modulo-check"><input type="checkbox" value="kpi_analytics" id="mod_kpi_analytics"> <i class="fas fa-chart-line"></i> KPI Analytics</label>
             <label class="modulo-check"><input type="checkbox" value="epp" id="mod_epp"> <i class="fas fa-helmet-safety"></i> EPP</label>
             <label class="modulo-check"><input type="checkbox" value="vehiculos" id="mod_vehiculos"> <i class="fas fa-truck"></i> Vehículos</label>
+            <label class="modulo-check"><input type="checkbox" value="checklist" id="mod_checklist"> <i class="fas fa-clipboard-check"></i> Checklist</label>
           </div>
           <p style="font-size:11px;color:var(--gris-400);margin-top:8px"><i class="fas fa-info-circle"></i> Dashboard siempre visible. Desmarca todo para usar defaults del rol.</p>
         </div>
@@ -2078,6 +2088,9 @@ $csrf = csrfToken();
 <?php endif; ?>
 <?php if (tieneAccesoModulo('vehiculos')): ?>
 <script src="assets/js/modulos/vehiculos.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/vehiculos.js') ?>"></script>
+<?php endif; ?>
+<?php if (tieneAccesoModulo('checklist')): ?>
+<script src="assets/js/modulos/checklist.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/checklist.js') ?>"></script>
 <?php endif; ?>
 <?php if (tieneAccesoModulo('empresas')): ?>
 <script src="assets/js/modulos/empresas.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/empresas.js') ?>"></script>

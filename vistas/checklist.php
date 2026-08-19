@@ -1,0 +1,147 @@
+  <!-- ===== PAGE: CHECKLIST DE UNIDADES ===== -->
+  <div class="page-content" id="page-checklist" style="display:none">
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:12px">
+      <div>
+        <h2 style="font-family:var(--font-display);font-size:24px;font-weight:800;color:var(--gris-100)">
+          <i class="fas fa-clipboard-check" style="color:var(--amarillo)"></i> Checklist de Unidades
+        </h2>
+        <p style="color:var(--gris-400);font-size:13px;margin-top:2px">
+          Inspección mensual de componentes de seguridad por unidad · Ley N° 29783 · NTP 350.043
+        </p>
+      </div>
+    </div>
+
+    <div class="tabs" style="margin-bottom:18px">
+      <button class="tab-btn chk-tab-btn active" id="chk-btn-inspecciones" onclick="switchChkTab('inspecciones')"><i class="fas fa-list-check"></i> Inspecciones</button>
+      <button class="tab-btn chk-tab-btn" id="chk-btn-resumen" onclick="switchChkTab('resumen')"><i class="fas fa-table-list"></i> Resumen mensual</button>
+      <button class="tab-btn chk-tab-btn" id="chk-btn-config" onclick="switchChkTab('config')"><i class="fas fa-sliders"></i> Configuración</button>
+    </div>
+
+    <div class="kpi-grid" id="chkKpis" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin-bottom:16px"></div>
+
+    <!-- Filtros -->
+    <div class="card" id="chkFiltros" style="margin-bottom:16px"><div class="card-body" style="padding:14px 20px">
+      <div class="filter-bar">
+        <div class="form-group"><label class="form-label">Mes</label>
+          <input type="month" class="form-control" id="chkFiltroPeriodo" onchange="chkRecargar()"></div>
+        <div class="form-group" id="chkFiltroEstadoWrap"><label class="form-label">Estado</label>
+          <select class="form-control" id="chkFiltroEstado" onchange="cargarChecklist()">
+            <option value="">Todos</option><option value="apto">Apto</option>
+            <option value="observado">Observado</option><option value="no_apto">No apto</option>
+          </select></div>
+        <div class="form-group"><label class="form-label">Buscar</label>
+          <input type="text" class="form-control" id="chkFiltroQ" placeholder="Placa o inspector…" oninput="chkBuscarDebounced()"></div>
+        <button class="btn btn-primary" id="chkBtnNueva" onclick="nuevaInspeccion()"><i class="fas fa-plus"></i> Nueva inspección</button>
+      </div>
+    </div></div>
+
+    <div class="card"><div class="card-body" style="padding:0">
+      <div class="tbl-scroll" id="chkTablaWrap"><p class="muted" style="text-align:center;padding:28px">Cargando…</p></div>
+      <div id="chkPagWrap"></div>
+    </div></div>
+  </div>
+
+  <!-- ===== MODAL: INSPECCIÓN ===== -->
+  <div class="modal-overlay" id="modalChkInsp">
+    <div class="modal-box" style="max-width:840px;width:97%">
+      <div class="modal-header">
+        <h3><i class="fas fa-clipboard-check" style="color:var(--primary)"></i> <span id="chkModalTitulo">Nueva inspección</span></h3>
+        <button class="modal-close" onclick="cerrarModal('modalChkInsp')"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="chk_id">
+        <div class="filter-bar" style="margin-bottom:12px">
+          <div class="form-group" style="position:relative"><label class="form-label">Unidad (placa) <span style="color:var(--rojo)">*</span></label>
+            <input type="text" class="form-control" id="chk_placa" placeholder="Buscar placa…" autocomplete="off" oninput="chkBuscarPlaca(this.value)">
+            <div id="chkPlacaResultados" style="display:none;position:absolute;z-index:20;left:0;right:0;background:var(--gris-800);border:1px solid var(--gris-600);border-radius:6px;max-height:200px;overflow:auto;box-shadow:0 8px 24px rgba(0,0,0,.35)"></div>
+          </div>
+          <div class="form-group"><label class="form-label">Mes</label>
+            <input type="month" class="form-control" id="chk_periodo"></div>
+          <div class="form-group"><label class="form-label">Fecha</label>
+            <input type="date" class="form-control" id="chk_fecha"></div>
+          <div class="form-group"><label class="form-label">Resultado</label>
+            <select class="form-control" id="chk_estado">
+              <option value="apto">Apto</option><option value="observado">Observado</option><option value="no_apto">No apto</option>
+            </select></div>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <button class="btn btn-outline btn-sm" onclick="chkMarcarTodo('conforme')"><i class="fas fa-check-double"></i> Todo conforme</button>
+          <button class="btn btn-outline btn-sm" onclick="chkMarcarTodo('na')">Todo N/A</button>
+          <span class="muted" style="font-size:11px;align-self:center">C = Conforme · NC = No Conforme · N/A = No aplica</span>
+        </div>
+
+        <div id="chkItemsCont"><p class="muted" style="padding:12px">Cargando componentes…</p></div>
+
+        <div class="form-group" style="margin-top:10px">
+          <label class="form-label">Observaciones generales</label>
+          <textarea class="form-control" id="chk_observacion" rows="2" style="resize:vertical"></textarea>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
+          <button class="btn btn-outline btn-sm" onclick="chkAbrirFirma()"><i class="fas fa-pen-nib"></i> Firmar inspección</button>
+          <span id="chkFirmaEstado" class="muted" style="font-size:12px">Sin firma</span>
+        </div>
+      </div>
+      <div class="modal-footer" style="display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--gris-700)">
+        <button class="btn btn-secondary" onclick="cerrarModal('modalChkInsp')">Cancelar</button>
+        <button class="btn btn-primary" id="chkGuardarBtn" onclick="guardarInspeccion()"><i class="fas fa-save"></i> Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: FIRMA ===== -->
+  <div class="modal-overlay" id="modalChkFirma" style="z-index:1200">
+    <div class="modal-box" style="max-width:460px;width:94%">
+      <div class="modal-header">
+        <h3><i class="fas fa-pen-nib" style="color:var(--primary)"></i> Firma del inspector</h3>
+        <button class="modal-close" onclick="cerrarModal('modalChkFirma')"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body" style="text-align:center">
+        <canvas id="chkFirmaCanvas" width="400" height="180" style="border:1px dashed var(--gris-500);border-radius:6px;background:#fff;touch-action:none;max-width:100%"></canvas>
+      </div>
+      <div class="modal-footer" style="display:flex;justify-content:space-between;gap:10px;padding:14px 20px;border-top:1px solid var(--gris-700)">
+        <button class="btn btn-outline btn-sm" onclick="chkFirmaLimpiar()"><i class="fas fa-eraser"></i> Limpiar</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-secondary" onclick="cerrarModal('modalChkFirma')">Cancelar</button>
+          <button class="btn btn-primary" onclick="chkFirmaGuardar()"><i class="fas fa-check"></i> Guardar firma</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: VISOR PDF ===== -->
+  <div class="modal-overlay" id="modalChkPdf" style="z-index:1200">
+    <div class="modal-box" style="max-width:1000px;width:97%">
+      <div class="modal-header">
+        <h3><i class="fas fa-file-lines" style="color:var(--primary)"></i> Registro de inspección</h3>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn btn-primary btn-sm" onclick="chkImprimir()"><i class="fas fa-print"></i> Imprimir / PDF</button>
+          <button class="modal-close" onclick="cerrarModal('modalChkPdf')"><i class="fas fa-times"></i></button>
+        </div>
+      </div>
+      <div class="modal-body" style="padding:0;background:#525659;min-height:74vh">
+        <iframe id="chkPdfFrame" title="Registro" style="width:100%;height:74vh;border:0;background:#fff"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: ÍTEM (config) ===== -->
+  <div class="modal-overlay" id="modalChkItem" style="z-index:1200">
+    <div class="modal-box" style="max-width:460px;width:94%">
+      <div class="modal-header">
+        <h3><i class="fas fa-list-check" style="color:var(--primary)"></i> <span id="chkItemTitulo">Ítem</span></h3>
+        <button class="modal-close" onclick="cerrarModal('modalChkItem')"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="chk_item_id"><input type="hidden" id="chk_item_comp">
+        <div class="form-group"><label class="form-label">Texto del ítem de verificación</label>
+          <input type="text" class="form-control" id="chk_item_texto" maxlength="255"></div>
+      </div>
+      <div class="modal-footer" style="display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--gris-700)">
+        <button class="btn btn-secondary" onclick="cerrarModal('modalChkItem')">Cancelar</button>
+        <button class="btn btn-primary" onclick="chkGuardarItem()"><i class="fas fa-save"></i> Guardar</button>
+      </div>
+    </div>
+  </div>

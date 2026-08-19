@@ -101,6 +101,7 @@ function showPage(page) {
   if (page === 'epp' && typeof initEpp === 'function') initEpp();
   if (page === 'vehiculos' && typeof initVehiculos === 'function') initVehiculos();
   if (page === 'capacitaciones' && typeof initCapacitaciones === 'function') initCapacitaciones();
+  if (page === 'checklist' && typeof initChecklist === 'function') initChecklist();
   if (page === 'empresas' && typeof initEmpresas === 'function') initEmpresas();
 }
 
