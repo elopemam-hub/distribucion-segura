@@ -84,7 +84,7 @@ async function renderFormularios() {
           <span class="badge badge-info"><i class="fas fa-list-ol"></i> ${+c.n_items} preguntas</span>
           <span class="badge badge-secondary"><i class="fas fa-calendar-days"></i> Mensual</span>
         </div>
-        <div style="margin-top:12px"><span class="btn btn-primary btn-sm" style="pointer-events:none"><i class="fas fa-plus"></i> Nueva inspección</span></div>
+        <div style="margin-top:12px"><span class="btn btn-outline btn-sm" style="pointer-events:none"><i class="fas fa-plus"></i> Nueva inspección</span></div>
       </div>`;
     }).join('') + '</div>';
 }
