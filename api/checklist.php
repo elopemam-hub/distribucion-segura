@@ -256,7 +256,7 @@ function cumplimiento() {
 
     $componentes = db()->fetchAll(
         "SELECT id, nombre FROM chk_componentes WHERE activo = 1 ORDER BY orden ASC, id ASC");
-    $flota = _chkFlota($tipo);
+    $flota = _chkFlota($tipo, true);   // excluye unidades inactivas
     $mapa  = _chkMapaMes($periodo);
 
     $periodos = array_column(db()->fetchAll("SELECT DISTINCT periodo FROM chk_inspecciones ORDER BY periodo DESC"), 'periodo');
