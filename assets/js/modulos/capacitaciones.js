@@ -55,7 +55,7 @@ const CAP_META = {
   alerta: {
     nuevo: 'Nueva alerta', titulo: 'Título de la alerta', fecha: 'Fecha',
     desc: 'Descripción / Lección aprendida / Medidas', lugar: 'Área / Proceso',
-    cols: ['Título', 'Tipo', 'Área', 'Fecha', 'Imagen'],
+    cols: ['Título', 'Tipo', 'Área', 'Fecha', 'Imagen', 'Estado'],
   },
   campana: {
     nuevo: 'Nueva campaña', titulo: 'Nombre de la campaña', fecha: 'Fecha inicio',
@@ -442,7 +442,8 @@ function _capFila(x) {
       `<td><span class="badge badge-warning">${t('subtipo')}</span></td>` +
       `<td class="muted">${t('lugar')}</td>` +
       `<td class="muted">${_capFecha(x.fecha)}</td>` +
-      `<td style="text-align:center">${img}</td>`;
+      `<td style="text-align:center">${img}</td>` +
+      `<td>${_capBadge(x.estado)}</td>`;
   } else { // campana
     const per = _capFecha(x.fecha) + (x.fecha_fin ? ' – ' + _capFecha(x.fecha_fin) : '');
     return nombre +
