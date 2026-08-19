@@ -29,6 +29,17 @@ foreach ($comps as &$c) {
 }
 unset($c);
 
+$fotos = db()->fetchAll("SELECT archivo FROM chk_fotos WHERE inspeccion_id = ? ORDER BY id ASC", [$id]);
+$fotoData = [];
+foreach ($fotos as $ft) {
+    $p = __DIR__ . '/../uploads/' . $ft['archivo'];
+    if (is_file($p)) {
+        $ext = strtolower(pathinfo($p, PATHINFO_EXTENSION));
+        $mime = ['jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png', 'webp' => 'image/webp'][$ext] ?? 'image/jpeg';
+        $fotoData[] = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($p));
+    }
+}
+
 $cfg = [];
 foreach (db()->fetchAll("SELECT clave, valor FROM epp_config") as $r) $cfg[$r['clave']] = $r['valor'] ?? '';
 $g = fn($k) => $cfg[$k] ?? '';
@@ -120,6 +131,15 @@ $RES = ['conforme' => 'C', 'no_conforme' => 'NC', 'na' => 'N/A'];
 
     <?php if (!empty($insp['observacion'])): ?>
     <table style="margin-top:4px"><tr><td class="lbl" style="width:18%">Observaciones</td><td><?= nl2br($h($insp['observacion'])) ?></td></tr></table>
+    <?php endif; ?>
+
+    <?php if (count($fotoData)): ?>
+    <table style="margin-top:4px"><tr><td class="band">Evidencia fotográfica</td></tr></table>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;border:1px solid #000;padding:5px">
+      <?php foreach ($fotoData as $fd): ?>
+        <img src="<?= $fd ?>" style="width:31%;height:auto;border:1px solid #999;object-fit:cover">
+      <?php endforeach; ?>
+    </div>
     <?php endif; ?>
 
     <table style="margin-top:10px">

@@ -250,6 +250,7 @@ async function nuevaInspeccion(compId) {
   document.getElementById('chk_estado').value = 'apto';
   document.getElementById('chk_observacion').value = '';
   _chkFirma = ''; _chkFirmaEstado();
+  _chkFotosPend = []; _chkFotosExist = []; _chkRenderFotos();
   if (!_chkComp.length) await _chkCargarComponentes();
   _chkPrevRes = {};
   _chkLlenarSelects();
@@ -273,6 +274,7 @@ async function editarInspeccion(id) {
     document.getElementById('chk_estado').value = x.estado || 'apto';
     document.getElementById('chk_observacion').value = x.observacion || '';
     _chkFirma = x.firma || ''; _chkFirmaEstado();
+    _chkFotosExist = x.fotos || []; _chkFotosPend = []; _chkRenderFotos();
     if (!_chkComp.length) await _chkCargarComponentes();
     _chkPrevRes = {};
     (x.resultados || []).forEach(r => { _chkPrevRes[+r.item_id] = { resultado: r.resultado, observacion: r.observacion || '' }; });
@@ -349,8 +351,19 @@ async function guardarInspeccion() {
     observacion: document.getElementById('chk_observacion').value.trim(),
     firma: _chkFirma || '', resultados: JSON.stringify(resultados),
   });
+  if (r && r.success) {
+    const inspId = (r.data && r.data.id) ? r.data.id : (document.getElementById('chk_id').value || 0);
+    if (_chkFotosPend.length && inspId) {
+      await Promise.all(_chkFotosPend.map(f => {
+        const fd = new FormData(); fd.append('csrf_token', CSRF_TOKEN); fd.append('action', 'foto_add');
+        fd.append('inspeccion_id', inspId); fd.append('archivo', f);
+        return fetch('api/checklist.php', { method: 'POST', body: fd }).catch(() => {});
+      }));
+    }
+    _chkFotosPend = [];
+    toast('Inspección guardada', 'success'); cerrarModal('modalChkInsp'); cargarChecklist();
+  }
   if (btn) btn.disabled = false;
-  if (r && r.success) { toast('Inspección guardada', 'success'); cerrarModal('modalChkInsp'); cargarChecklist(); }
 }
 
 async function eliminarInspeccion(id) {
@@ -382,6 +395,35 @@ function chkBuscarPlaca(q) {
   }, 300);
 }
 function chkSelPlaca(placa) { document.getElementById('chk_placa').value = placa; document.getElementById('chkPlacaResultados').style.display = 'none'; }
+
+// ── Evidencia fotográfica ──
+let _chkFotosPend = [];   // File pendientes (inspección nueva o nuevas al editar)
+let _chkFotosExist = [];  // {id, archivo} ya guardadas
+function chkFotoElegir(files) {
+  Array.from(files || []).forEach(f => { if (f && f.type.startsWith('image/')) _chkFotosPend.push(f); });
+  _chkRenderFotos();
+}
+function chkQuitarPend(idx) { _chkFotosPend.splice(idx, 1); _chkRenderFotos(); }
+async function chkEliminarFotoExist(id) {
+  if (!confirm('¿Quitar esta foto?')) return;
+  const r = await _chkPost({ action: 'foto_del', id });
+  if (r && r.success) { _chkFotosExist = _chkFotosExist.filter(f => +f.id !== +id); _chkRenderFotos(); }
+}
+function _chkRenderFotos() {
+  const gal = document.getElementById('chkFotosGal');
+  if (!gal) return;
+  const up = (typeof UPLOAD_URL !== 'undefined' ? UPLOAD_URL : 'uploads/');
+  const exist = _chkFotosExist.map(f =>
+    `<div style="position:relative"><img src="${up}${f.archivo}" onclick="verDocumento('${encodeURI(up + f.archivo)}')" style="width:80px;height:80px;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid var(--gris-600)">
+      <button onclick="chkEliminarFotoExist(${f.id})" title="Quitar" style="position:absolute;top:-6px;right:-6px;background:var(--rojo);color:#fff;border:0;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer">&times;</button></div>`).join('');
+  const pend = _chkFotosPend.map((f, i) => {
+    const url = URL.createObjectURL(f);
+    return `<div style="position:relative"><img src="${url}" style="width:80px;height:80px;object-fit:cover;border-radius:6px;border:1px dashed var(--primary)">
+      <button onclick="chkQuitarPend(${i})" title="Quitar" style="position:absolute;top:-6px;right:-6px;background:var(--gris-500);color:#fff;border:0;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer">&times;</button>
+      <span style="position:absolute;bottom:2px;left:2px;background:rgba(0,0,0,.6);color:#fff;font-size:8px;padding:1px 4px;border-radius:3px">nueva</span></div>`;
+  }).join('');
+  gal.innerHTML = exist + pend || '<span class="muted" style="font-size:12px">Sin fotos.</span>';
+}
 
 // ── Firma (canvas) ──
 function _chkFirmaCanvas() { return document.getElementById('chkFirmaCanvas'); }

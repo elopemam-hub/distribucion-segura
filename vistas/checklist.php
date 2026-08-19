@@ -80,6 +80,19 @@
         <div id="chkItemsCont"><p class="muted" style="padding:12px">Cargando componentes…</p></div>
 
         <div class="form-group" style="margin-top:10px">
+          <label class="form-label">Evidencia fotográfica</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+            <label class="btn btn-outline btn-sm" style="margin:0" title="Usa la cámara (en móvil)">
+              <i class="fas fa-camera"></i> Tomar foto
+              <input type="file" id="chk_foto_cam" accept="image/*" capture="environment" style="display:none" onchange="chkFotoElegir(this.files);this.value=''"></label>
+            <label class="btn btn-outline btn-sm" style="margin:0">
+              <i class="fas fa-image"></i> Agregar imagen
+              <input type="file" id="chk_foto_img" accept="image/*" multiple style="display:none" onchange="chkFotoElegir(this.files);this.value=''"></label>
+          </div>
+          <div id="chkFotosGal" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+        </div>
+
+        <div class="form-group" style="margin-top:10px">
           <label class="form-label">Observaciones generales</label>
           <textarea class="form-control" id="chk_observacion" rows="2" style="resize:vertical"></textarea>
         </div>

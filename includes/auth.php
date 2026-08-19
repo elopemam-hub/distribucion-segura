@@ -715,6 +715,12 @@ function setupChecklist(): void {
               WHERE table_schema = DATABASE() AND table_name = 'chk_inspecciones' AND column_name = 'componente_id'");
         if (!$ex) db()->query("ALTER TABLE chk_inspecciones ADD COLUMN componente_id INT NULL AFTER placa", []);
 
+        // Evidencia fotográfica de la inspección.
+        db()->query("CREATE TABLE IF NOT EXISTS chk_fotos (
+            id INT AUTO_INCREMENT PRIMARY KEY, inspeccion_id INT NOT NULL, archivo VARCHAR(255) NOT NULL,
+            creado_en DATETIME DEFAULT CURRENT_TIMESTAMP, KEY idx_chkfoto (inspeccion_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", []);
+
         // Siembra componentes + ítems estándar (solo si está vacío).
         if ((int)(db()->fetchOne("SELECT COUNT(*) c FROM chk_componentes")['c'] ?? 0) === 0) {
             $data = [

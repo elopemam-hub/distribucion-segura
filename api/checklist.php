@@ -19,7 +19,7 @@ const CHK_ESTADOS    = ['apto', 'observado', 'no_apto'];
 
 $action = $_GET['action'] ?? $_POST['action'] ?? 'list';
 
-$mutaciones = ['save', 'delete', 'comp_save', 'comp_toggle', 'item_save', 'item_toggle', 'item_del'];
+$mutaciones = ['save', 'delete', 'foto_add', 'foto_del', 'comp_save', 'comp_toggle', 'item_save', 'item_toggle', 'item_del'];
 if (in_array($action, $mutaciones, true)) {
     requireCsrf();
     $user = getCurrentUser();
@@ -39,6 +39,8 @@ try {
         case 'get':         obtener();      break;
         case 'save':        guardar();      break;
         case 'delete':      eliminar();     break;
+        case 'foto_add':    fotoAdd();      break;
+        case 'foto_del':    fotoDel();      break;
         case 'resumen':     resumen();      break;
         case 'comp_save':   compSave();     break;
         case 'comp_toggle': compToggle();   break;
@@ -107,7 +109,41 @@ function obtener() {
     if (!$insp) jsonResponse(false, 'No encontrada.', null, 404);
     $insp['resultados'] = db()->fetchAll(
         "SELECT item_id, componente_id, resultado, observacion FROM chk_resultados WHERE inspeccion_id = ?", [$id]);
+    $insp['fotos'] = db()->fetchAll("SELECT id, archivo FROM chk_fotos WHERE inspeccion_id = ? ORDER BY id ASC", [$id]);
     jsonResponse(true, '', $insp);
+}
+
+// Sube una foto de evidencia a la inspección.
+function fotoAdd() {
+    $inspId = (int)($_POST['inspeccion_id'] ?? 0);
+    if ($inspId <= 0) jsonResponse(false, 'Inspección inválida.', null, 422);
+    if (!db()->fetchOne("SELECT id FROM chk_inspecciones WHERE id = ?", [$inspId])) jsonResponse(false, 'Inspección no encontrada.', null, 404);
+    if (empty($_FILES['archivo']) || ($_FILES['archivo']['error'] ?? 1) !== UPLOAD_ERR_OK) {
+        jsonResponse(false, ($_FILES['archivo']['error'] ?? 0) === UPLOAD_ERR_INI_SIZE ? 'La imagen es muy grande.' : 'No se recibió la imagen.', null, 422);
+    }
+    $f = $_FILES['archivo'];
+    if ($f['size'] > 20 * 1024 * 1024) jsonResponse(false, 'La imagen es muy grande (máx 20 MB).', null, 422);
+    $ext = strtolower(pathinfo($f['name'] ?? '', PATHINFO_EXTENSION));
+    if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp'], true) || @getimagesize($f['tmp_name']) === false) {
+        jsonResponse(false, 'Solo imágenes JPG/PNG/WEBP.', null, 422);
+    }
+    $dir = __DIR__ . '/../uploads/checklist/';
+    if (!is_dir($dir)) mkdir($dir, 0755, true);
+    $name = 'chk_' . bin2hex(random_bytes(6)) . '.' . ($ext === 'jpeg' ? 'jpg' : $ext);
+    if (!move_uploaded_file($f['tmp_name'], $dir . $name)) jsonResponse(false, 'No se pudo guardar la imagen.', null, 500);
+    @chmod($dir . $name, 0644);
+    db()->query("INSERT INTO chk_fotos (inspeccion_id, archivo) VALUES (?, ?)", [$inspId, 'checklist/' . $name]);
+    jsonResponse(true, 'Foto agregada.', ['id' => db()->lastInsertId(), 'archivo' => 'checklist/' . $name]);
+}
+
+function fotoDel() {
+    $id = (int)($_POST['id'] ?? 0);
+    if ($id <= 0) jsonResponse(false, 'ID inválido.', null, 400);
+    $r = db()->fetchOne("SELECT archivo FROM chk_fotos WHERE id = ?", [$id]);
+    if (!$r) jsonResponse(false, 'No encontrada.', null, 404);
+    if (!empty($r['archivo']) && is_file(__DIR__ . '/../uploads/' . $r['archivo'])) @unlink(__DIR__ . '/../uploads/' . $r['archivo']);
+    db()->query("DELETE FROM chk_fotos WHERE id = ?", [$id]);
+    jsonResponse(true, 'Foto eliminada.');
 }
 
 function guardar() {
