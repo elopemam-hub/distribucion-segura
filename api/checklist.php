@@ -214,14 +214,15 @@ function eliminar() {
 // Flota (filas): placas desde la BD de vigilancia, con degradación segura a las
 // placas ya inspeccionadas si el catálogo de vehículos no está disponible.
 // Devuelve ['placas' => [...], 'tipos' => [...]].
-function _chkFlota(string $tipo = ''): array {
+function _chkFlota(string $tipo = '', bool $soloActivos = false): array {
     $placas = []; $tipos = [];
     $vig = dbVigilancia();
     if ($vig) {
         try {
-            $sql = "SELECT placa, tipo, marca, modelo FROM vehiculos WHERE placa <> ''";
+            $sql = "SELECT placa, tipo, marca, modelo, estado FROM vehiculos WHERE placa <> ''";
             $params = [];
             if ($tipo !== '') { $sql .= " AND tipo = ?"; $params[] = $tipo; }
+            if ($soloActivos) { $sql .= " AND (estado IS NULL OR LOWER(estado) NOT LIKE 'inactiv%')"; }
             $sql .= " ORDER BY placa ASC LIMIT 500";
             $st = $vig->prepare($sql); $st->execute($params);
             $placas = $st->fetchAll();
@@ -286,8 +287,8 @@ function dashboard() {
     $equiposTotal = count($compActivos);
     $compIds = array_map(fn($c) => (int)$c['id'], $compActivos);
 
-    // Flota (denominador de cobertura).
-    $flota   = _chkFlota($tipo);
+    // Flota (denominador de cobertura). Excluye unidades inactivas.
+    $flota   = _chkFlota($tipo, true);
     $placas  = $flota['placas'];
     $unidTotal = count($placas);
     $placasUp  = array_map(fn($p) => strtoupper($p['placa']), $placas);
