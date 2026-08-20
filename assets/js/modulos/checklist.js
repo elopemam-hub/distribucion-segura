@@ -68,6 +68,8 @@ async function _chkCargarComponentes(todos) {
 }
 
 function switchChkTab(tab) {
+  // La Configuración es exclusiva del administrador.
+  if (tab === 'config' && !_chkAdmin()) tab = 'dashboard';
   _chkTab = tab; _chkPag = 1;
   document.querySelectorAll('.chk-tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('chk-btn-' + tab)?.classList.add('active');
@@ -849,6 +851,7 @@ async function renderChkConfig() {
         <span style="flex:1;color:var(--gris-200)">${_chkEsc(it.texto)}</span>
         ${puedeEditar ? `<button class="btn btn-outline btn-sm" onclick="chkEditarItem(${it.id},${c.id})" title="Editar"><i class="fas fa-pen"></i></button>
           <button class="btn btn-outline btn-sm" onclick="chkToggleItem(${it.id})" title="${+it.activo ? 'Desactivar' : 'Activar'}"><i class="fas fa-${+it.activo ? 'toggle-on' : 'toggle-off'}"></i></button>` : ''}
+        ${_chkAdmin() ? `<button class="btn btn-outline btn-sm" onclick="chkEliminarItem(${it.id},'${_chkEsc(it.texto).replace(/'/g, "\\'")}')" title="Eliminar fila"><i class="fas fa-trash" style="color:var(--rojo)"></i></button>` : ''}
       </div>`).join('');
     return `<div class="card" style="margin-bottom:12px"><div class="card-body" style="padding:12px 16px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
@@ -881,6 +884,12 @@ async function chkGuardarItem() {
   if (r && r.success) { toast('Ítem guardado', 'success'); cerrarModal('modalChkItem'); renderChkConfig(); }
 }
 async function chkToggleItem(id) { const r = await _chkPost({ action: 'item_toggle', id }); if (r && r.success) renderChkConfig(); }
+async function chkEliminarItem(id, texto) {
+  if (!confirm('¿Eliminar esta fila?\n\n"' + (texto || '') + '"\n\nSi tiene inspecciones registradas no se podrá borrar (usa desactivar).')) return;
+  const r = await _chkPost({ action: 'item_del', id });
+  if (r && r.success) { toast('Fila eliminada', 'success'); renderChkConfig(); }
+  else if (r) toast(r.message || 'No se pudo eliminar', 'error', 6000);
+}
 
 // Equipos (componentes / formularios)
 function chkNuevoComp() { _chkAbrirComp(0, ''); }

@@ -26,7 +26,7 @@ if (in_array($action, $mutaciones, true)) {
     if (!in_array($user['rol'], ['administrador', 'supervisor'])) {
         jsonResponse(false, 'No tienes permisos.', null, 403);
     }
-    if (in_array($action, ['delete', 'uni_del'], true) && $user['rol'] !== 'administrador') {
+    if (in_array($action, ['delete', 'uni_del', 'item_del'], true) && $user['rol'] !== 'administrador') {
         jsonResponse(false, 'Solo un administrador puede eliminar.', null, 403);
     }
 }
@@ -768,6 +768,12 @@ function itemToggle() {
 function itemDel() {
     $id = (int)($_POST['id'] ?? 0);
     if ($id <= 0) jsonResponse(false, 'ID inválido.', null, 400);
+    // Si el ítem ya tiene inspecciones registradas, no se borra (rompería el
+    // historial): se pide desactivarlo en su lugar.
+    $usos = (int)(db()->fetchOne("SELECT COUNT(*) n FROM chk_resultados WHERE item_id = ?", [$id])['n'] ?? 0);
+    if ($usos > 0) {
+        jsonResponse(false, 'Este ítem ya tiene inspecciones registradas. Desactívalo (toggle) en vez de eliminarlo para conservar el historial.', null, 409);
+    }
     db()->query("DELETE FROM chk_items WHERE id = ?", [$id]);
     jsonResponse(true, 'Ítem eliminado.');
 }

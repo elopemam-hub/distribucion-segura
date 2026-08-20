@@ -18,7 +18,9 @@
       <button class="tab-btn chk-tab-btn" id="chk-btn-inspecciones" onclick="switchChkTab('inspecciones')"><i class="fas fa-list-check"></i> Inspecciones</button>
       <button class="tab-btn chk-tab-btn" id="chk-btn-cumplimiento" onclick="switchChkTab('cumplimiento')"><i class="fas fa-table-cells"></i> Cumplimiento</button>
       <button class="tab-btn chk-tab-btn" id="chk-btn-equipos" onclick="switchChkTab('equipos')"><i class="fas fa-chart-column"></i> Equipos</button>
+      <?php if (($user['rol'] ?? '') === 'administrador'): ?>
       <button class="tab-btn chk-tab-btn" id="chk-btn-config" onclick="switchChkTab('config')"><i class="fas fa-sliders"></i> Configuración</button>
+      <?php endif; ?>
     </div>
 
     <div class="kpi-grid" id="chkKpis" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin-bottom:16px"></div>
