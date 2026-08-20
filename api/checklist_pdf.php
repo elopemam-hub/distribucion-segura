@@ -21,7 +21,7 @@ $comps = !empty($insp['componente_id'])
     ? db()->fetchAll("SELECT id, nombre FROM chk_componentes WHERE id = ?", [(int)$insp['componente_id']])
     : db()->fetchAll("SELECT id, nombre FROM chk_componentes ORDER BY orden ASC, id ASC");
 $equipoNombre = $comps[0]['nombre'] ?? '';
-$resRows = db()->fetchAll("SELECT item_id, resultado, observacion FROM chk_resultados WHERE inspeccion_id = ?", [$id]);
+$resRows = db()->fetchAll("SELECT item_id, resultado, observacion, vencimiento FROM chk_resultados WHERE inspeccion_id = ?", [$id]);
 $res = [];
 foreach ($resRows as $r) $res[(int)$r['item_id']] = $r;
 foreach ($comps as &$c) {
@@ -123,11 +123,11 @@ $RES = ['conforme' => 'C', 'no_conforme' => 'NC', 'na' => 'N/A'];
 
     <table style="margin-top:4px">
       <tr><td class="band" colspan="3">Checklist de componentes &nbsp;(C = Conforme · NC = No Conforme · N/A = No Aplica)</td></tr>
-      <?php foreach ($comps as $c): if (!count($c['items'])) continue; ?>
+      <?php foreach ($comps as $c): if (!count($c['items'])) continue; $esBotiquin = (bool)preg_match('/botiqu/i', $c['nombre']); ?>
         <tr><td class="comp" colspan="3"><?= $h($c['nombre']) ?></td></tr>
         <?php foreach ($c['items'] as $it): $r = $res[(int)$it['id']] ?? null; $rv = $r['resultado'] ?? ''; ?>
         <tr>
-          <td style="width:66%"><?= $h($it['texto']) ?></td>
+          <td style="width:66%"><?= $h($it['texto']) ?><?php if ($esBotiquin && !empty($r['vencimiento'])): ?> <span style="font-weight:700">· Vence <?= $h($fmt($r['vencimiento'])) ?></span><?php endif; ?></td>
           <td class="cres"><?= $rv ? ($RES[$rv] ?? '') : '' ?></td>
           <td class="cobs"><?= $h($r['observacion'] ?? '') ?></td>
         </tr>

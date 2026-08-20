@@ -115,7 +115,7 @@ function obtener() {
     $insp = db()->fetchOne("SELECT * FROM chk_inspecciones WHERE id = ?", [$id]);
     if (!$insp) jsonResponse(false, 'No encontrada.', null, 404);
     $insp['resultados'] = db()->fetchAll(
-        "SELECT item_id, componente_id, resultado, observacion FROM chk_resultados WHERE inspeccion_id = ?", [$id]);
+        "SELECT item_id, componente_id, resultado, observacion, vencimiento FROM chk_resultados WHERE inspeccion_id = ?", [$id]);
     $insp['fotos'] = db()->fetchAll("SELECT id, archivo FROM chk_fotos WHERE inspeccion_id = ? ORDER BY id ASC", [$id]);
     jsonResponse(true, '', $insp);
 }
@@ -201,9 +201,12 @@ function guardar() {
             $compId = (int)($it['componente_id'] ?? 0);
             $res    = trim($it['resultado'] ?? 'conforme');
             if ($itemId <= 0 || !in_array($res, CHK_RESULTADOS, true)) continue;
+            // Vencimiento por ítem (botiquín): opcional; null si vacío o inválido.
+            $itVenc = trim($it['vencimiento'] ?? '');
+            $itVencVal = preg_match('/^\d{4}-\d{2}-\d{2}$/', $itVenc) ? $itVenc : null;
             db()->query(
-                "INSERT INTO chk_resultados (inspeccion_id, item_id, componente_id, resultado, observacion) VALUES (?, ?, ?, ?, ?)",
-                [$inspId, $itemId, $compId, $res, trim($it['observacion'] ?? '') ?: null]);
+                "INSERT INTO chk_resultados (inspeccion_id, item_id, componente_id, resultado, observacion, vencimiento) VALUES (?, ?, ?, ?, ?, ?)",
+                [$inspId, $itemId, $compId, $res, trim($it['observacion'] ?? '') ?: null, $itVencVal]);
         }
         db()->commit();
     } catch (Throwable $e) {

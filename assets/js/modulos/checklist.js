@@ -852,7 +852,7 @@ async function editarInspeccion(id) {
     _chkFotosExist = x.fotos || []; _chkFotosPend = []; _chkRenderFotos();
     if (!_chkComp.length) await _chkCargarComponentes();
     _chkPrevRes = {};
-    (x.resultados || []).forEach(r => { _chkPrevRes[+r.item_id] = { resultado: r.resultado, observacion: r.observacion || '' }; });
+    (x.resultados || []).forEach(r => { _chkPrevRes[+r.item_id] = { resultado: r.resultado, observacion: r.observacion || '', vencimiento: r.vencimiento || '' }; });
     _chkLlenarSelects();
     document.getElementById('chk_componente').value = x.componente_id || '';
     chkRenderItemsSel();
@@ -870,18 +870,21 @@ function _chkLlenarSelects() {
   if (sf) { const prev = sf.value; sf.innerHTML = '<option value="">Todos</option>' + opts; sf.value = prev; }
 }
 
-// Equipos con fecha de vencimiento: extintor (recarga/prueba hidrostática) y
-// botiquín (caducidad del contenido). Se detecta por el nombre del componente.
-function _chkCompVence(nombre) { return /extint|botiqu/i.test(nombre || ''); }
+// Extintor: UNA fecha de vencimiento para todo el equipo (recarga/prueba
+// hidrostática) → campo único en la cabecera del modal.
+function _chkCompExtintor(nombre) { return /extint/i.test(nombre || ''); }
+// Botiquín: cada producto/insumo tiene su propia caducidad → fecha POR FILA
+// en la sección de preguntas (no usa el campo único de cabecera).
+function _chkCompBotiquin(nombre) { return /botiqu/i.test(nombre || ''); }
 
-// Muestra u oculta el campo de vencimiento según el equipo seleccionado.
+// Muestra u oculta el campo de vencimiento de cabecera (solo extintores).
 function _chkToggleVencimiento(c) {
   const wrap = document.getElementById('chk_vencimiento_wrap');
   const lbl = document.getElementById('chk_vencimiento_lbl');
   if (!wrap) return;
-  const aplica = !!c && _chkCompVence(c.nombre);
+  const aplica = !!c && _chkCompExtintor(c.nombre);
   wrap.style.display = aplica ? '' : 'none';
-  if (aplica && lbl) lbl.textContent = /botiqu/i.test(c.nombre) ? 'Vence contenido (botiquín)' : 'Vence (recarga extintor)';
+  if (aplica && lbl) lbl.textContent = 'Vence (recarga extintor)';
   if (!aplica) { const inp = document.getElementById('chk_vencimiento'); if (inp) inp.value = ''; }
 }
 
@@ -894,14 +897,21 @@ function chkRenderItemsSel() {
   _chkToggleVencimiento(c);
   if (!c) { cont.innerHTML = '<p class="muted" style="padding:12px">Selecciona un equipo.</p>'; return; }
   const prev = _chkPrevRes || {};
+  const esBotiquin = _chkCompBotiquin(c.nombre);
   const items = (c.items || []).filter(it => +it.activo !== 0).map(it => {
     const cur = prev[+it.id] ? prev[+it.id].resultado : 'conforme';
     const obs = prev[+it.id] ? (prev[+it.id].observacion || '') : '';
+    const venc = prev[+it.id] ? (prev[+it.id].vencimiento || '') : '';
     const opt = (val, lbl, cls, icon) =>
       `<label class="chk-opt ${cls}${cur === val ? ' sel' : ''}"><input type="radio" name="chkit_${it.id}" value="${val}" ${cur === val ? 'checked' : ''} onchange="chkSegSync(this)"><i class="fas fa-${icon}"></i>${lbl}</label>`;
+    // Botiquín: cada producto lleva su fecha de vencimiento en la propia fila.
+    const vencInput = esBotiquin
+      ? `<input type="date" class="form-control chk-item-venc" title="Fecha de vencimiento de este producto" value="${_chkEsc(venc)}" style="width:150px;font-size:12px;padding:4px 8px">`
+      : '';
     return `<div class="chk-item-row" data-item="${it.id}" data-comp="${c.id}" style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--gris-700);flex-wrap:wrap">
       <span style="flex:1;min-width:180px;color:var(--gris-200);font-size:12.5px">${_chkEsc(it.texto)}</span>
       <span class="chk-seg">${opt('conforme', 'C', 'opt-c', 'check')}${opt('no_conforme', 'NC', 'opt-nc', 'xmark')}${opt('na', 'N/A', 'opt-na', 'minus')}</span>
+      ${vencInput}
       <input type="text" class="form-control chk-item-obs" placeholder="Observación" value="${_chkEsc(obs)}" style="width:170px;font-size:12px;padding:4px 8px">
     </div>`;
   }).join('');
@@ -992,7 +1002,7 @@ async function guardarInspeccion() {
   document.querySelectorAll('.chk-item-row').forEach(row => {
     const id = +row.getAttribute('data-item'), comp = +row.getAttribute('data-comp');
     const sel = row.querySelector('input[name="chkit_' + id + '"]:checked');
-    resultados.push({ item_id: id, componente_id: comp, resultado: sel ? sel.value : 'conforme', observacion: (row.querySelector('.chk-item-obs')?.value || '').trim() });
+    resultados.push({ item_id: id, componente_id: comp, resultado: sel ? sel.value : 'conforme', observacion: (row.querySelector('.chk-item-obs')?.value || '').trim(), vencimiento: (row.querySelector('.chk-item-venc')?.value || '') });
   });
   if (!resultados.length) { toast('No hay ítems para evaluar', 'warning'); return; }
 

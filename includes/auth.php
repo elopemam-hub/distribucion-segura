@@ -740,11 +740,16 @@ function setupChecklist(): void {
               WHERE table_schema = DATABASE() AND table_name = 'chk_inspecciones' AND column_name = 'area'");
         if (!$exA) db()->query("ALTER TABLE chk_inspecciones ADD COLUMN area VARCHAR(80) NULL AFTER placa", []);
 
-        // Fecha de vencimiento del equipo inspeccionado (extintor: recarga/prueba
-        // hidrostática; botiquín: caducidad del contenido). Solo aplica a esos equipos.
+        // Fecha de vencimiento a nivel de inspección (extintor: recarga/prueba
+        // hidrostática — una sola fecha para todo el equipo).
         $exV = db()->fetchOne("SELECT 1 FROM information_schema.columns
               WHERE table_schema = DATABASE() AND table_name = 'chk_inspecciones' AND column_name = 'vencimiento'");
         if (!$exV) db()->query("ALTER TABLE chk_inspecciones ADD COLUMN vencimiento DATE NULL AFTER fecha", []);
+
+        // Vencimiento POR ÍTEM (botiquín: cada producto/insumo tiene su caducidad).
+        $exRV = db()->fetchOne("SELECT 1 FROM information_schema.columns
+              WHERE table_schema = DATABASE() AND table_name = 'chk_resultados' AND column_name = 'vencimiento'");
+        if (!$exRV) db()->query("ALTER TABLE chk_resultados ADD COLUMN vencimiento DATE NULL AFTER observacion", []);
 
         // Siembra componentes + ítems estándar (solo si está vacío).
         if ((int)(db()->fetchOne("SELECT COUNT(*) c FROM chk_componentes")['c'] ?? 0) === 0) {
