@@ -735,6 +735,11 @@ function setupChecklist(): void {
               WHERE table_schema = DATABASE() AND table_name = 'chk_inspecciones' AND column_name = 'unidad_id'");
         if (!$exU) db()->query("ALTER TABLE chk_inspecciones ADD COLUMN unidad_id INT NULL AFTER componente_id", []);
 
+        // Área de la inspección (para el cumplimiento por área en el dashboard).
+        $exA = db()->fetchOne("SELECT 1 FROM information_schema.columns
+              WHERE table_schema = DATABASE() AND table_name = 'chk_inspecciones' AND column_name = 'area'");
+        if (!$exA) db()->query("ALTER TABLE chk_inspecciones ADD COLUMN area VARCHAR(80) NULL AFTER placa", []);
+
         // Siembra componentes + ítems estándar (solo si está vacío).
         if ((int)(db()->fetchOne("SELECT COUNT(*) c FROM chk_componentes")['c'] ?? 0) === 0) {
             $data = [

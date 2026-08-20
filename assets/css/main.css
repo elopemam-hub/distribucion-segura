@@ -402,6 +402,21 @@ select.form-control {
 .progress-bar-fill.rojo    { background: var(--rojo); }
 .progress-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--gris-400); margin-bottom: 4px; }
 
+/* ===== Segmento C / NC / N/A (checks de inspección) ===== */
+.chk-seg { display: inline-flex; gap: 6px; }
+.chk-seg .chk-opt {
+  display: inline-flex; align-items: center; gap: 5px; cursor: pointer; user-select: none;
+  padding: 5px 12px; border: 1px solid var(--gris-600); border-radius: 999px;
+  font-size: 12px; font-weight: 700; color: var(--gris-400); line-height: 1; transition: all .12s ease;
+}
+.chk-seg .chk-opt input { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
+.chk-seg .chk-opt i { font-size: 10px; opacity: .55; }
+.chk-seg .chk-opt:hover { border-color: var(--gris-400); color: var(--gris-200); }
+.chk-seg .chk-opt.opt-c.sel  { background: var(--verde);  border-color: var(--verde);  color: #fff; }
+.chk-seg .chk-opt.opt-nc.sel { background: var(--rojo);   border-color: var(--rojo);   color: #fff; }
+.chk-seg .chk-opt.opt-na.sel { background: var(--gris-500); border-color: var(--gris-500); color: #fff; }
+.chk-seg .chk-opt.sel i { opacity: 1; }
+
 /* ======================== CHECKLIST ======================== */
 .checklist-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 9px; }
 .checklist-item { display: flex; align-items: center; gap: 12px; background: var(--gris-700); border: 1px solid var(--gris-600); border-radius: 4px; padding: 11px 13px; cursor: pointer; transition: all var(--t); }

@@ -157,6 +157,7 @@ function guardar() {
     $compId  = (int)($_POST['componente_id'] ?? 0);
     $unidadId = ((int)($_POST['unidad_id'] ?? 0)) ?: null;
     $placa   = strtoupper(trim($_POST['placa'] ?? ''));
+    $area    = trim($_POST['area'] ?? '');
     $periodo = trim($_POST['periodo'] ?? '');
     $fecha   = trim($_POST['fecha'] ?? date('Y-m-d'));
     $estado  = trim($_POST['estado'] ?? 'apto');
@@ -178,17 +179,17 @@ function guardar() {
         db()->beginTransaction();
         if ($id > 0) {
             db()->query(
-                "UPDATE chk_inspecciones SET componente_id=?, unidad_id=?, placa=?, periodo=?, fecha=?, estado=?, observacion=?"
+                "UPDATE chk_inspecciones SET componente_id=?, unidad_id=?, placa=?, area=?, periodo=?, fecha=?, estado=?, observacion=?"
                 . ($firmaVal ? ", firma=?" : "") . " WHERE id=?",
-                $firmaVal ? [$compId, $unidadId, $placa, $periodo, $fecha, $estado, $obs ?: null, $firmaVal, $id]
-                          : [$compId, $unidadId, $placa, $periodo, $fecha, $estado, $obs ?: null, $id]);
+                $firmaVal ? [$compId, $unidadId, $placa, $area ?: null, $periodo, $fecha, $estado, $obs ?: null, $firmaVal, $id]
+                          : [$compId, $unidadId, $placa, $area ?: null, $periodo, $fecha, $estado, $obs ?: null, $id]);
             db()->query("DELETE FROM chk_resultados WHERE inspeccion_id = ?", [$id]);
             $inspId = $id;
         } else {
             db()->query(
-                "INSERT INTO chk_inspecciones (componente_id, unidad_id, placa, periodo, fecha, inspector_id, inspector_nombre, estado, observacion, firma)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                [$compId, $unidadId, $placa, $periodo, $fecha, $user['id'], $user['nombre'] ?? null, $estado, $obs ?: null, $firmaVal]);
+                "INSERT INTO chk_inspecciones (componente_id, unidad_id, placa, area, periodo, fecha, inspector_id, inspector_nombre, estado, observacion, firma)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                [$compId, $unidadId, $placa, $area ?: null, $periodo, $fecha, $user['id'], $user['nombre'] ?? null, $estado, $obs ?: null, $firmaVal]);
             $inspId = (int)db()->lastInsertId();
         }
         foreach ($items as $it) {
@@ -579,6 +580,14 @@ function equipoDash() {
         $uniRaw[$r['placa']][(int)$r['mes']] = ['c' => (int)$r['c'], 'nc' => (int)$r['nc']];
     }
 
+    // Área por placa (desde la inspección) para las unidades sin inventario.
+    $placaArea = [];
+    foreach (db()->fetchAll("SELECT UPPER(placa) placa, area FROM chk_inspecciones
+            WHERE componente_id = ? AND periodo LIKE ? AND area IS NOT NULL AND area <> ''
+            ORDER BY fecha ASC", $bp) as $r) {
+        $placaArea[$r['placa']] = $r['area'];
+    }
+
     // Universo de unidades = inventario ∪ placas inspeccionadas (sin duplicar).
     $universe = [];
     foreach ($inv as $u) {
@@ -589,7 +598,7 @@ function equipoDash() {
     foreach (array_keys($uniRaw) as $pk) {
         if (!isset($invByCode[$pk])) {
             $universe[] = ['id' => 0, 'codigo' => $pk, 'nombre' => '', 'ubicacion' => null,
-                           'area' => null, 'vencimiento' => null, 'key' => $pk];
+                           'area' => $placaArea[$pk] ?? null, 'vencimiento' => null, 'key' => $pk];
         }
     }
 
@@ -612,14 +621,15 @@ function equipoDash() {
     }, $universe);
     $totalUnid = count($universe);
 
-    // Cumplimiento por área (año). Placas sin inventario → "Sin área".
+    // Cumplimiento por área (año). Prioriza el área de la inspección, luego la del
+    // inventario; si no hay, "Sin área".
     $porArea = [];
-    foreach (db()->fetchAll("SELECT COALESCE(NULLIF(u.area,''),'Sin área') area,
+    foreach (db()->fetchAll("SELECT COALESCE(NULLIF(i.area,''), NULLIF(u.area,''), 'Sin área') area,
             SUM(r.resultado='conforme') c, SUM(r.resultado='no_conforme') nc
             FROM chk_resultados r JOIN chk_inspecciones i ON i.id = r.inspeccion_id
             LEFT JOIN chk_unidades u ON UPPER(u.codigo) = UPPER(i.placa) AND u.componente_id = i.componente_id
             WHERE i.componente_id = ? AND i.periodo LIKE ?
-            GROUP BY COALESCE(NULLIF(u.area,''),'Sin área') ORDER BY area ASC", $bp) as $r) {
+            GROUP BY COALESCE(NULLIF(i.area,''), NULLIF(u.area,''), 'Sin área') ORDER BY area ASC", $bp) as $r) {
         $porArea[] = ['area' => $r['area'], 'pct' => $pct((int)$r['c'], (int)$r['nc'])];
     }
 

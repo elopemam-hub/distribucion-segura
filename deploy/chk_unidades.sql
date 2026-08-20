@@ -30,3 +30,13 @@ SET @sql := IF(@col = 0,
     'ALTER TABLE chk_inspecciones ADD COLUMN unidad_id INT NULL AFTER componente_id',
     'SELECT 1');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- Área de la inspección (cumplimiento por área también para inspecciones por placa).
+SET @colA := (SELECT COUNT(*) FROM information_schema.columns
+              WHERE table_schema = DATABASE()
+                AND table_name = 'chk_inspecciones'
+                AND column_name = 'area');
+SET @sqlA := IF(@colA = 0,
+    'ALTER TABLE chk_inspecciones ADD COLUMN area VARCHAR(80) NULL AFTER placa',
+    'SELECT 1');
+PREPARE stmtA FROM @sqlA; EXECUTE stmtA; DEALLOCATE PREPARE stmtA;

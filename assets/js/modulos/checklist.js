@@ -808,7 +808,9 @@ async function nuevaInspeccion(compId) {
   document.getElementById('chkModalTitulo').textContent = 'Nueva inspección';
   document.getElementById('chk_id').value = '';
   document.getElementById('chk_placa').value = '';
+  document.getElementById('chk_area').value = '';
   document.getElementById('chk_unidad_id').value = ''; _chkPreUnidad = null;
+  _chkLlenarAreas();
   document.getElementById('chk_periodo').value = document.getElementById('chkFiltroPeriodo')?.value || new Date().toISOString().slice(0, 7);
   document.getElementById('chk_fecha').value = new Date().toISOString().slice(0, 10);
   document.getElementById('chk_estado').value = 'apto';
@@ -833,7 +835,9 @@ async function editarInspeccion(id) {
     document.getElementById('chkModalTitulo').textContent = 'Editar inspección · ' + x.placa;
     document.getElementById('chk_id').value = x.id;
     document.getElementById('chk_placa').value = x.placa || '';
+    document.getElementById('chk_area').value = x.area || '';
     document.getElementById('chk_unidad_id').value = x.unidad_id || ''; _chkPreUnidad = x.unidad_id || null;
+    _chkLlenarAreas();
     document.getElementById('chk_periodo').value = x.periodo || '';
     document.getElementById('chk_fecha').value = x.fecha || '';
     document.getElementById('chk_estado').value = x.estado || 'apto';
@@ -871,12 +875,12 @@ function chkRenderItemsSel() {
   const items = (c.items || []).filter(it => +it.activo !== 0).map(it => {
     const cur = prev[+it.id] ? prev[+it.id].resultado : 'conforme';
     const obs = prev[+it.id] ? (prev[+it.id].observacion || '') : '';
-    const radio = (val, lbl, color) =>
-      `<label style="display:inline-flex;align-items:center;gap:3px;cursor:pointer;color:${color}"><input type="radio" name="chkit_${it.id}" value="${val}" ${cur === val ? 'checked' : ''} style="accent-color:${color}"> ${lbl}</label>`;
+    const opt = (val, lbl, cls, icon) =>
+      `<label class="chk-opt ${cls}${cur === val ? ' sel' : ''}"><input type="radio" name="chkit_${it.id}" value="${val}" ${cur === val ? 'checked' : ''} onchange="chkSegSync(this)"><i class="fas fa-${icon}"></i>${lbl}</label>`;
     return `<div class="chk-item-row" data-item="${it.id}" data-comp="${c.id}" style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--gris-700);flex-wrap:wrap">
       <span style="flex:1;min-width:180px;color:var(--gris-200);font-size:12.5px">${_chkEsc(it.texto)}</span>
-      <span style="display:flex;gap:10px;font-size:12px">${radio('conforme', 'C', 'var(--verde)')}${radio('no_conforme', 'NC', 'var(--rojo)')}${radio('na', 'N/A', 'var(--gris-400)')}</span>
-      <input type="text" class="form-control chk-item-obs" placeholder="Observación" value="${_chkEsc(obs)}" style="width:180px;font-size:12px;padding:4px 8px">
+      <span class="chk-seg">${opt('conforme', 'C', 'opt-c', 'check')}${opt('no_conforme', 'NC', 'opt-nc', 'xmark')}${opt('na', 'N/A', 'opt-na', 'minus')}</span>
+      <input type="text" class="form-control chk-item-obs" placeholder="Observación" value="${_chkEsc(obs)}" style="width:170px;font-size:12px;padding:4px 8px">
     </div>`;
   }).join('');
   cont.innerHTML = `<div class="card"><div class="card-body" style="padding:10px 14px">
@@ -902,7 +906,7 @@ async function _chkToggleUnidadSel(compId) {
   }
   if (units.length) {
     sel.innerHTML = '<option value="">— Selecciona unidad —</option>' + units.map(u =>
-      `<option value="${u.id}" data-codigo="${_chkEsc(u.codigo)}">${_chkEsc(u.codigo)} · ${_chkEsc(u.nombre)}</option>`).join('');
+      `<option value="${u.id}" data-codigo="${_chkEsc(u.codigo)}" data-area="${_chkEsc(u.area || '')}">${_chkEsc(u.codigo)} · ${_chkEsc(u.nombre)}</option>`).join('');
     if (_chkPreUnidad) sel.value = _chkPreUnidad;
     wrapU.style.display = ''; wrapP.style.display = 'none';
     if (sel.value) chkSelUnidad();
@@ -915,15 +919,41 @@ function chkSelUnidad() {
   const sel = document.getElementById('chk_unidad');
   const opt = sel.options[sel.selectedIndex];
   document.getElementById('chk_unidad_id').value = sel.value || '';
-  if (sel.value && opt) document.getElementById('chk_placa').value = opt.getAttribute('data-codigo') || '';
+  if (sel.value && opt) {
+    document.getElementById('chk_placa').value = opt.getAttribute('data-codigo') || '';
+    const ar = opt.getAttribute('data-area') || '';
+    if (ar) document.getElementById('chk_area').value = ar;   // autocompleta el área de la unidad
+  }
+}
+
+// Llena el datalist de áreas con las áreas ya usadas (inventario e inspecciones).
+let _chkAreasCache = null;
+async function _chkLlenarAreas() {
+  const dl = document.getElementById('chkAreasList'); if (!dl) return;
+  if (_chkAreasCache === null) {
+    _chkAreasCache = [];
+    try {
+      const r = await fetch('api/checklist.php?action=uni_list'); const d = await r.json();
+      const set = new Set();
+      if (d && d.success) (d.data.unidades || []).forEach(u => { if (u.area) set.add(u.area); });
+      _chkAreasCache = Array.from(set).sort();
+    } catch (e) { _chkAreasCache = []; }
+  }
+  dl.innerHTML = _chkAreasCache.map(a => `<option value="${_chkEsc(a)}">`).join('');
 }
 
 function chkMarcarTodo(val) {
   document.querySelectorAll('.chk-item-row').forEach(row => {
     const id = row.getAttribute('data-item');
     const rb = row.querySelector('input[name="chkit_' + id + '"][value="' + val + '"]');
-    if (rb) rb.checked = true;
+    if (rb) { rb.checked = true; chkSegSync(rb); }
   });
+}
+
+// Resalta la píldora (C/NC/N/A) seleccionada del ítem.
+function chkSegSync(input) {
+  const seg = input.closest('.chk-seg'); if (!seg) return;
+  seg.querySelectorAll('.chk-opt').forEach(l => l.classList.toggle('sel', l.querySelector('input').checked));
 }
 
 async function guardarInspeccion() {
@@ -947,7 +977,7 @@ async function guardarInspeccion() {
   const btn = document.getElementById('chkGuardarBtn'); if (btn) btn.disabled = true;
   const r = await _chkPost({
     action: 'save', id: document.getElementById('chk_id').value || '0',
-    componente_id: compId, unidad_id: unidadId || '0', placa, periodo, fecha: document.getElementById('chk_fecha').value,
+    componente_id: compId, unidad_id: unidadId || '0', placa, area: document.getElementById('chk_area').value.trim(), periodo, fecha: document.getElementById('chk_fecha').value,
     estado: document.getElementById('chk_estado').value,
     observacion: document.getElementById('chk_observacion').value.trim(),
     firma: _chkFirma || '', resultados: JSON.stringify(resultados),

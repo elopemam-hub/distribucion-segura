@@ -164,6 +164,9 @@
             <input type="text" class="form-control" id="chk_placa" placeholder="Buscar placa…" autocomplete="off" oninput="chkBuscarPlaca(this.value)">
             <div id="chkPlacaResultados" style="display:none;position:absolute;z-index:20;left:0;right:0;background:var(--gris-800);border:1px solid var(--gris-600);border-radius:6px;max-height:200px;overflow:auto;box-shadow:0 8px 24px rgba(0,0,0,.35)"></div>
           </div>
+          <div class="form-group"><label class="form-label">Área</label>
+            <input type="text" class="form-control" id="chk_area" list="chkAreasList" maxlength="80" placeholder="Ej: Almacén, Flota…">
+            <datalist id="chkAreasList"></datalist></div>
           <div class="form-group"><label class="form-label">Mes</label>
             <input type="month" class="form-control" id="chk_periodo"></div>
           <div class="form-group"><label class="form-label">Fecha</label>
