@@ -1060,6 +1060,28 @@ function geoSenalesCerrar(){
   _geoSenTempMarker = null; _geoSenLayers = [];
 }
 
+// ── Portal del Conductor (un solo QR/enlace con todas las rutas) ──
+function geoPortal(){
+  document.getElementById('geoShareGid').value = '';
+  abrirModal('modalGeoShare');
+  const base = location.origin + location.pathname.replace(/\/[^\/]*$/, '/');
+  const url = base + 'rutas_publico.php';
+  document.getElementById('geoShareBody').innerHTML = `
+    <p style="font-size:13px;color:var(--gris-300);margin:0 0 12px"><b>Portal del Conductor:</b> un solo QR/enlace. El conductor elige su ruta del día y ve su guía.</p>
+    <div id="geoQr" style="display:flex;justify-content:center;padding:12px;background:#fff;border-radius:10px;width:max-content;margin:0 auto"></div>
+    <div style="display:flex;gap:6px;margin:14px 0 6px">
+      <input type="text" class="form-control" id="geoShareUrl" value="${escapeHtml(url)}" readonly style="font-size:12px">
+      <button class="btn btn-primary" onclick="geoCopiarLink()"><i class="fas fa-copy"></i></button>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:center;margin-top:10px">
+      <button class="btn btn-outline btn-sm" onclick="geoDescargarQr()"><i class="fas fa-download"></i> Descargar QR</button>
+    </div>
+    <p class="muted" style="font-size:11px;margin-top:12px">Solo aparecen las rutas con enlace activo (botón “Compartir” de cada ruta).</p>`;
+  const box = document.getElementById('geoQr');
+  box.innerHTML = '';
+  if (typeof QRCode !== 'undefined') new QRCode(box, { text: url, width: 200, height: 200, correctLevel: QRCode.CorrectLevel.M });
+}
+
 // ── Compartir (link + QR) ──
 async function geoCompartir(id){
   document.getElementById('geoShareGid').value = id;

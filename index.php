@@ -1141,6 +1141,9 @@ $csrf = csrfToken();
             <button class="geo-share-opt" onclick="exportarGeoJSON();cerrarGeoShareMenu()"><i class="fas fa-code"></i> Exportar GeoJSON</button>
           </div>
         </div>
+        <button class="btn btn-outline" onclick="geoPortal()" title="QR único con todas las rutas para conductores">
+          <i class="fas fa-qrcode"></i> Portal del Conductor
+        </button>
         <?php if (in_array($user['rol'], ['administrador','supervisor'])): ?>
         <button class="btn btn-primary" onclick="abrirModalGeo()">
           <i class="fas fa-plus"></i> Nueva Geocerca
