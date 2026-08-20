@@ -2049,6 +2049,58 @@ $csrf = csrfToken();
     </div>
   </div>
 </div>
+
+<!-- ===== MODAL: SEÑALIZACIÓN DE RUTA (curvas / velocidad máxima) ===== -->
+<div class="modal-overlay" id="modalGeoSenales">
+  <div class="modal-box" style="max-width:900px;width:97%">
+    <div class="modal-header">
+      <h3><i class="fas fa-gauge-high" style="color:var(--primary)"></i> Señalización — <span id="geoSenTitulo"></span></h3>
+      <button class="modal-close" onclick="geoSenalesCerrar()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <p class="muted" style="font-size:12px;margin:0 0 8px">Haz clic sobre la carretera para colocar una señal. Completa la velocidad y guarda.</p>
+      <div id="geoSenMap" style="height:340px;width:100%;border-radius:8px;overflow:hidden"></div>
+      <input type="hidden" id="geoSenGid"><input type="hidden" id="geoSenId">
+      <input type="hidden" id="geoSenLat"><input type="hidden" id="geoSenLng">
+      <div class="filter-bar" style="margin-top:12px">
+        <div class="form-group"><label class="form-label">Tipo</label>
+          <select class="form-control" id="geoSenTipo" onchange="geoSenTipoCambio()">
+            <option value="velocidad_max">Velocidad máxima</option>
+            <option value="curva">Curva peligrosa</option>
+            <option value="cruce">Cruce</option>
+            <option value="zona_escolar">Zona escolar</option>
+            <option value="pendiente">Pendiente</option>
+            <option value="baden">Badén</option>
+            <option value="peligro">Otro peligro</option>
+          </select></div>
+        <div class="form-group" id="geoSenVelWrap"><label class="form-label">Velocidad (km/h)</label>
+          <input type="number" class="form-control" id="geoSenVel" min="5" max="120" step="5" placeholder="Ej: 40"></div>
+        <div class="form-group"><label class="form-label">Severidad</label>
+          <select class="form-control" id="geoSenSev">
+            <option value="precaucion">Precaución</option><option value="peligro">Peligro</option><option value="info">Informativo</option>
+          </select></div>
+        <div class="form-group" style="flex:1;min-width:200px"><label class="form-label">Descripción (opcional)</label>
+          <input type="text" class="form-control" id="geoSenDesc" maxlength="200" placeholder="Ej: curva cerrada a la derecha"></div>
+        <button class="btn btn-primary" onclick="geoSenGuardar()"><i class="fas fa-save"></i> <span id="geoSenBtnTxt">Agregar señal</span></button>
+      </div>
+      <div id="geoSenLista" style="margin-top:12px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: COMPARTIR MAPA (QR / link) ===== -->
+<div class="modal-overlay" id="modalGeoShare">
+  <div class="modal-box" style="max-width:440px;width:94%">
+    <div class="modal-header">
+      <h3><i class="fas fa-share-nodes" style="color:var(--primary)"></i> Compartir con conductores</h3>
+      <button class="modal-close" onclick="cerrarModal('modalGeoShare')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body" style="text-align:center">
+      <input type="hidden" id="geoShareGid">
+      <div id="geoShareBody"><p class="muted">Generando enlace…</p></div>
+    </div>
+  </div>
+</div>
 <?php endif; ?>
 
 <!-- TOAST CONTAINER -->

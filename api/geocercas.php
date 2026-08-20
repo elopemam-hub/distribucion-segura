@@ -27,17 +27,19 @@ if (!tieneAccesoModulo('geocercas')) {
     jsonResponse(false, 'Acceso no autorizado.', null, 403);
 }
 header('Content-Type: application/json; charset=utf-8');
+geoEnsureSchema();
 
 $action = $_GET['action'] ?? $_POST['action'] ?? 'list';
 
-if (in_array($action, ['save', 'delete', 'toggle', 'batch_save'], true)) {
+$geoMut = ['save', 'delete', 'toggle', 'batch_save', 'punto_save', 'punto_del', 'compartir'];
+if (in_array($action, $geoMut, true)) {
     requireCsrf();
     $user = getCurrentUser();
     if (!in_array($user['rol'], ['administrador', 'supervisor'])) {
         jsonResponse(false, 'Sin permisos para esta acción.', null, 403);
     }
 }
-if ($action === 'delete') {
+if (in_array($action, ['delete', 'punto_del'], true)) {
     $user = getCurrentUser();
     if ($user['rol'] !== 'administrador') {
         jsonResponse(false, 'Solo el administrador puede eliminar.', null, 403);
@@ -53,6 +55,10 @@ try {
         case 'toggle': toggleActivo(); break;
         case 'stats':       stats();      break;
         case 'batch_save':  batchSave();  break;
+        case 'puntos_list': puntosList(); break;
+        case 'punto_save':  puntoSave();  break;
+        case 'punto_del':   puntoDel();   break;
+        case 'compartir':   compartir();  break;
         default: jsonResponse(false, 'Acción no válida.', null, 400);
     }
 } catch (Exception $e) {
@@ -214,6 +220,95 @@ function batchSave() {
     $msg = "$saved zona(s) N3 importadas correctamente.";
     if ($errores) $msg .= ' Omitidas: ' . implode('; ', $errores);
     jsonResponse(true, $msg, ['saved' => $saved, 'errores' => $errores]);
+}
+
+// ============================================================
+// Señalización de rutas (puntos: velocidad máxima, curvas, etc.)
+// ============================================================
+function geoEnsureSchema() {
+    try {
+        db()->query("CREATE TABLE IF NOT EXISTS geo_puntos (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            geocerca_id INT NOT NULL,
+            tipo VARCHAR(30) NOT NULL DEFAULT 'velocidad_max',
+            lat DECIMAL(10,7) NOT NULL,
+            lng DECIMAL(10,7) NOT NULL,
+            velocidad INT NULL,
+            descripcion VARCHAR(200) NULL,
+            severidad ENUM('info','precaucion','peligro') NOT NULL DEFAULT 'precaucion',
+            orden INT NOT NULL DEFAULT 0,
+            activo TINYINT(1) NOT NULL DEFAULT 1,
+            creado_en DATETIME DEFAULT CURRENT_TIMESTAMP,
+            KEY idx_geopunto_cerca (geocerca_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", []);
+        $c = db()->fetchOne("SELECT 1 FROM information_schema.columns
+            WHERE table_schema = DATABASE() AND table_name='geocercas' AND column_name='token_publico'");
+        if (!$c) db()->query("ALTER TABLE geocercas ADD COLUMN token_publico VARCHAR(32) NULL, ADD COLUMN publico TINYINT(1) NOT NULL DEFAULT 0", []);
+    } catch (Throwable $e) { error_log('[geocercas:ensure] ' . $e->getMessage()); }
+}
+
+function puntosList() {
+    $gid = (int)($_GET['geocerca_id'] ?? 0);
+    if ($gid <= 0) jsonResponse(false, 'Ruta inválida.', null, 400);
+    $rows = db()->fetchAll(
+        "SELECT id, geocerca_id, tipo, lat, lng, velocidad, descripcion, severidad, orden, activo
+           FROM geo_puntos WHERE geocerca_id = ? ORDER BY orden ASC, id ASC", [$gid]);
+    jsonResponse(true, '', ['puntos' => $rows]);
+}
+
+function puntoSave() {
+    $id   = (int)($_POST['id'] ?? 0);
+    $gid  = (int)($_POST['geocerca_id'] ?? 0);
+    $tipo = trim($_POST['tipo'] ?? 'velocidad_max');
+    $lat  = (float)($_POST['lat'] ?? 0);
+    $lng  = (float)($_POST['lng'] ?? 0);
+    $vel  = ($_POST['velocidad'] ?? '') === '' ? null : (int)$_POST['velocidad'];
+    $desc = trim($_POST['descripcion'] ?? '');
+    $sev  = trim($_POST['severidad'] ?? 'precaucion');
+    if ($gid <= 0) jsonResponse(false, 'Ruta inválida.', null, 422);
+    if (!db()->fetchOne("SELECT id FROM geocercas WHERE id = ? AND tipo='ruta_critica'", [$gid]))
+        jsonResponse(false, 'La ruta no existe o no es ruta crítica.', null, 404);
+    if ($lat == 0.0 || $lng == 0.0) jsonResponse(false, 'Ubica el punto en el mapa.', null, 422);
+    if (!in_array($sev, ['info', 'precaucion', 'peligro'], true)) $sev = 'precaucion';
+    $tiposOk = ['velocidad_max', 'curva', 'cruce', 'zona_escolar', 'pendiente', 'baden', 'peligro'];
+    if (!in_array($tipo, $tiposOk, true)) $tipo = 'velocidad_max';
+    if ($tipo === 'velocidad_max' && ($vel === null || $vel <= 0)) jsonResponse(false, 'Indica la velocidad máxima (km/h).', null, 422);
+
+    if ($id > 0) {
+        db()->query("UPDATE geo_puntos SET tipo=?, lat=?, lng=?, velocidad=?, descripcion=?, severidad=? WHERE id=?",
+            [$tipo, $lat, $lng, $vel, $desc ?: null, $sev, $id]);
+    } else {
+        $orden = (int)(db()->fetchOne("SELECT COALESCE(MAX(orden),0)+1 o FROM geo_puntos WHERE geocerca_id=?", [$gid])['o'] ?? 1);
+        db()->query("INSERT INTO geo_puntos (geocerca_id, tipo, lat, lng, velocidad, descripcion, severidad, orden) VALUES (?,?,?,?,?,?,?,?)",
+            [$gid, $tipo, $lat, $lng, $vel, $desc ?: null, $sev, $orden]);
+        $id = (int)db()->lastInsertId();
+    }
+    jsonResponse(true, 'Señal guardada.', ['id' => $id]);
+}
+
+function puntoDel() {
+    $id = (int)($_POST['id'] ?? 0);
+    if ($id <= 0) jsonResponse(false, 'ID inválido.', null, 400);
+    db()->query("DELETE FROM geo_puntos WHERE id = ?", [$id]);
+    jsonResponse(true, 'Señal eliminada.');
+}
+
+// Genera/activa/desactiva el enlace público de una ruta y devuelve token + URL.
+function compartir() {
+    $gid = (int)($_POST['geocerca_id'] ?? 0);
+    $accion = trim($_POST['modo'] ?? 'activar');   // activar | desactivar | regenerar
+    if ($gid <= 0) jsonResponse(false, 'Ruta inválida.', null, 400);
+    $g = db()->fetchOne("SELECT id, token_publico, publico FROM geocercas WHERE id = ?", [$gid]);
+    if (!$g) jsonResponse(false, 'No encontrada.', null, 404);
+
+    if ($accion === 'desactivar') {
+        db()->query("UPDATE geocercas SET publico = 0 WHERE id = ?", [$gid]);
+        jsonResponse(true, 'Enlace desactivado.', ['publico' => 0]);
+    }
+    $token = $g['token_publico'];
+    if (!$token || $accion === 'regenerar') $token = bin2hex(random_bytes(8));
+    db()->query("UPDATE geocercas SET token_publico = ?, publico = 1 WHERE id = ?", [$token, $gid]);
+    jsonResponse(true, 'Enlace activo.', ['publico' => 1, 'token' => $token]);
 }
 
 // ------------------------------------------------------------

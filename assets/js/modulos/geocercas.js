@@ -237,6 +237,8 @@ function renderGeoTabla(rows) {
         <button class="btn btn-sm btn-outline" onclick="centrarGeoEnMapa(${r.id})" title="Ver en mapa">
           <i class="fas fa-map-marker-alt"></i>
         </button>
+        ${r.tipo === 'ruta_critica' && canEdit ? `<button class="btn btn-sm btn-outline" onclick="geoSenales(${r.id})" title="Señalización (curvas/velocidad)"><i class="fas fa-gauge-high"></i></button>` : ''}
+        ${r.tipo === 'ruta_critica' ? `<button class="btn btn-sm btn-outline" onclick="geoCompartir(${r.id})" title="Compartir mapa (QR/link)"><i class="fas fa-share-nodes"></i></button>` : ''}
         ${canEdit ? `<button class="btn btn-sm btn-outline" onclick="editarGeo(${r.id})" title="Editar"><i class="fas fa-pen"></i></button>` : ''}
         ${canEdit ? `<button class="btn btn-sm btn-outline" onclick="toggleGeo(${r.id})" title="${r.activo ? 'Desactivar' : 'Activar'}">
           <i class="fas fa-${r.activo ? 'eye-slash' : 'eye'}"></i>
@@ -921,4 +923,193 @@ function exportarGeoJSON() {
   a.download = `geocercas_${geoTabActivo}_${new Date().toISOString().slice(0,10)}.geojson`;
   a.click();
   toast(`GeoJSON exportado (${features.length} features)`);
+}
+
+// ============================================================
+// SEÑALIZACIÓN DE RUTA (curvas / velocidad máxima) + COMPARTIR
+// ============================================================
+let _geoSenMap = null, _geoSenTempMarker = null, _geoSenPuntos = [], _geoSenLayers = [];
+
+function _geoSpeedIcon(v){ return L.divIcon({ className:'', html:`<div style="background:#fff;border:3px solid #E74C3C;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;color:#1A1A1A;box-shadow:0 2px 5px rgba(0,0,0,.4)">${v||'!'}</div>`, iconSize:[34,34], iconAnchor:[17,17] }); }
+function _geoWarnIcon(t){ const e={curva:'↩',cruce:'✚',zona_escolar:'🏫',pendiente:'⛰',baden:'〰',peligro:'⚠'}[t]||'⚠';
+  return L.divIcon({ className:'', html:`<div style="background:#F39C12;border:2px solid #fff;border-radius:7px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 2px 5px rgba(0,0,0,.4)">${e}</div>`, iconSize:[28,28], iconAnchor:[14,14] }); }
+
+async function geoSenales(id){
+  document.getElementById('geoSenGid').value = id;
+  document.getElementById('geoSenId').value = '';
+  document.getElementById('geoSenLat').value = '';
+  document.getElementById('geoSenLng').value = '';
+  document.getElementById('geoSenVel').value = '';
+  document.getElementById('geoSenDesc').value = '';
+  document.getElementById('geoSenTipo').value = 'velocidad_max';
+  document.getElementById('geoSenBtnTxt').textContent = 'Agregar señal';
+  geoSenTipoCambio();
+  let ruta = null;
+  try { const r = await fetch('api/geocercas.php?action=get&id=' + id); const d = await r.json(); if (d.success) ruta = d.data; } catch(e){}
+  document.getElementById('geoSenTitulo').textContent = ruta ? ruta.nombre : 'Ruta';
+  abrirModal('modalGeoSenales');
+  setTimeout(() => _geoSenInitMap(ruta), 120);
+  geoSenCargarPuntos();
+}
+
+function _geoSenInitMap(ruta){
+  if (_geoSenMap){ _geoSenMap.remove(); _geoSenMap = null; }
+  _geoSenMap = L.map('geoSenMap');
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19, attribution:'© OpenStreetMap' }).addTo(_geoSenMap);
+  let bounds = null;
+  try {
+    const line = (JSON.parse(ruta.coordenadas) || []).map(p => [+p[0], +p[1]]);
+    if (line.length > 1){ const pl = L.polyline(line, { color: ruta.color || '#F39C12', weight:5, opacity:.85 }).addTo(_geoSenMap); bounds = pl.getBounds(); }
+  } catch(e){}
+  if (bounds) _geoSenMap.fitBounds(bounds.pad(0.2)); else _geoSenMap.setView([-15.5,-70.13], 12);
+  _geoSenMap.on('click', e => {
+    document.getElementById('geoSenLat').value = e.latlng.lat.toFixed(7);
+    document.getElementById('geoSenLng').value = e.latlng.lng.toFixed(7);
+    if (_geoSenTempMarker) _geoSenTempMarker.setLatLng(e.latlng);
+    else _geoSenTempMarker = L.marker(e.latlng, { opacity:.7 }).addTo(_geoSenMap);
+  });
+  setTimeout(() => _geoSenMap.invalidateSize(), 150);
+}
+
+function geoSenTipoCambio(){
+  const t = document.getElementById('geoSenTipo').value;
+  document.getElementById('geoSenVelWrap').style.display = (t === 'velocidad_max') ? '' : 'none';
+}
+
+async function geoSenCargarPuntos(){
+  const gid = document.getElementById('geoSenGid').value;
+  try { const r = await fetch('api/geocercas.php?action=puntos_list&geocerca_id=' + gid); const d = await r.json();
+    _geoSenPuntos = (d.success ? (d.data.puntos || []) : []); } catch(e){ _geoSenPuntos = []; }
+  _geoSenLayers.forEach(l => { try { _geoSenMap.removeLayer(l); } catch(e){} });
+  _geoSenLayers = [];
+  if (_geoSenMap) _geoSenPuntos.forEach(p => {
+    const ic = p.tipo === 'velocidad_max' ? _geoSpeedIcon(p.velocidad) : _geoWarnIcon(p.tipo);
+    const m = L.marker([+p.lat, +p.lng], { icon: ic }).addTo(_geoSenMap).on('click', () => geoSenEditar(p.id));
+    _geoSenLayers.push(m);
+  });
+  const cont = document.getElementById('geoSenLista');
+  if (!_geoSenPuntos.length){ cont.innerHTML = '<p class="muted" style="font-size:12px">Aún no hay señales en esta ruta.</p>'; return; }
+  cont.innerHTML = '<table class="data-table" style="width:100%"><thead><tr><th>Tipo</th><th>Velocidad</th><th>Descripción</th><th></th></tr></thead><tbody>' +
+    _geoSenPuntos.map(p => `<tr>
+      <td>${p.tipo === 'velocidad_max' ? 'Velocidad máx.' : escapeHtml(p.tipo.replace('_',' '))}</td>
+      <td>${p.velocidad ? p.velocidad + ' km/h' : '—'}</td>
+      <td class="muted">${escapeHtml(p.descripcion || '—')}</td>
+      <td style="text-align:right;white-space:nowrap">
+        <button class="btn btn-sm btn-outline" onclick="geoSenEditar(${p.id})" title="Editar"><i class="fas fa-pen"></i></button>
+        ${USER_ROL === 'administrador' ? `<button class="btn btn-sm btn-danger" onclick="geoSenEliminar(${p.id})" title="Eliminar"><i class="fas fa-trash"></i></button>` : ''}
+      </td></tr>`).join('') + '</tbody></table>';
+}
+
+function geoSenEditar(id){
+  const p = _geoSenPuntos.find(x => +x.id === +id); if (!p) return;
+  document.getElementById('geoSenId').value = p.id;
+  document.getElementById('geoSenTipo').value = p.tipo;
+  document.getElementById('geoSenVel').value = p.velocidad || '';
+  document.getElementById('geoSenSev').value = p.severidad || 'precaucion';
+  document.getElementById('geoSenDesc').value = p.descripcion || '';
+  document.getElementById('geoSenLat').value = p.lat;
+  document.getElementById('geoSenLng').value = p.lng;
+  document.getElementById('geoSenBtnTxt').textContent = 'Guardar cambios';
+  geoSenTipoCambio();
+  if (_geoSenMap){ const ll = L.latLng(+p.lat, +p.lng);
+    if (_geoSenTempMarker) _geoSenTempMarker.setLatLng(ll); else _geoSenTempMarker = L.marker(ll,{opacity:.7}).addTo(_geoSenMap);
+    _geoSenMap.panTo(ll); }
+}
+
+async function geoSenGuardar(){
+  const lat = document.getElementById('geoSenLat').value, lng = document.getElementById('geoSenLng').value;
+  if (!lat || !lng){ toast('Haz clic en el mapa para ubicar la señal', 'warning'); return; }
+  const tipo = document.getElementById('geoSenTipo').value;
+  const vel = document.getElementById('geoSenVel').value;
+  if (tipo === 'velocidad_max' && (!vel || +vel <= 0)){ toast('Indica la velocidad máxima', 'warning'); return; }
+  const fd = new FormData();
+  fd.append('csrf_token', CSRF_TOKEN);
+  fd.append('action', 'punto_save');
+  fd.append('id', document.getElementById('geoSenId').value || '0');
+  fd.append('geocerca_id', document.getElementById('geoSenGid').value);
+  fd.append('tipo', tipo);
+  fd.append('lat', lat); fd.append('lng', lng);
+  fd.append('velocidad', vel);
+  fd.append('severidad', document.getElementById('geoSenSev').value);
+  fd.append('descripcion', document.getElementById('geoSenDesc').value.trim());
+  try {
+    const r = await fetch('api/geocercas.php', { method:'POST', body:fd }); const d = await r.json();
+    if (!d.success){ toast(d.message || 'Error', 'error'); return; }
+    toast('Señal guardada', 'success');
+    document.getElementById('geoSenId').value = '';
+    document.getElementById('geoSenVel').value = '';
+    document.getElementById('geoSenDesc').value = '';
+    document.getElementById('geoSenLat').value = ''; document.getElementById('geoSenLng').value = '';
+    document.getElementById('geoSenBtnTxt').textContent = 'Agregar señal';
+    if (_geoSenTempMarker){ _geoSenMap.removeLayer(_geoSenTempMarker); _geoSenTempMarker = null; }
+    geoSenCargarPuntos();
+  } catch(e){ toast('Error de conexión', 'error'); }
+}
+
+async function geoSenEliminar(id){
+  if (!confirm('¿Eliminar esta señal?')) return;
+  const fd = new FormData(); fd.append('csrf_token', CSRF_TOKEN); fd.append('action', 'punto_del'); fd.append('id', id);
+  try { const r = await fetch('api/geocercas.php', { method:'POST', body:fd }); const d = await r.json();
+    if (d.success){ toast('Señal eliminada', 'success'); geoSenCargarPuntos(); } else toast(d.message || 'Error', 'error'); }
+  catch(e){ toast('Error', 'error'); }
+}
+
+function geoSenalesCerrar(){
+  cerrarModal('modalGeoSenales');
+  if (_geoSenMap){ _geoSenMap.remove(); _geoSenMap = null; }
+  _geoSenTempMarker = null; _geoSenLayers = [];
+}
+
+// ── Compartir (link + QR) ──
+async function geoCompartir(id){
+  document.getElementById('geoShareGid').value = id;
+  document.getElementById('geoShareBody').innerHTML = '<p class="muted">Generando enlace…</p>';
+  abrirModal('modalGeoShare');
+  const fd = new FormData(); fd.append('csrf_token', CSRF_TOKEN); fd.append('action', 'compartir'); fd.append('geocerca_id', id); fd.append('modo', 'activar');
+  try {
+    const r = await fetch('api/geocercas.php', { method:'POST', body:fd }); const d = await r.json();
+    if (!d.success){ document.getElementById('geoShareBody').innerHTML = '<p class="muted">' + (d.message || 'No se pudo generar.') + '</p>'; return; }
+    _geoRenderShare(d.data.token);
+  } catch(e){ document.getElementById('geoShareBody').innerHTML = '<p class="muted">Error de conexión.</p>'; }
+}
+
+function _geoRenderShare(token){
+  const base = location.origin + location.pathname.replace(/\/[^\/]*$/, '/');
+  const url = base + 'mapa_publico.php?t=' + token;
+  document.getElementById('geoShareBody').innerHTML = `
+    <p style="font-size:13px;color:var(--gris-300);margin:0 0 12px">Comparte este mapa con los conductores. Léelo con la cámara o el enlace.</p>
+    <div id="geoQr" style="display:flex;justify-content:center;padding:12px;background:#fff;border-radius:10px;width:max-content;margin:0 auto"></div>
+    <div style="display:flex;gap:6px;margin:14px 0 6px">
+      <input type="text" class="form-control" id="geoShareUrl" value="${escapeHtml(url)}" readonly style="font-size:12px">
+      <button class="btn btn-primary" onclick="geoCopiarLink()"><i class="fas fa-copy"></i></button>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:center;margin-top:10px;flex-wrap:wrap">
+      <button class="btn btn-outline btn-sm" onclick="geoDescargarQr()"><i class="fas fa-download"></i> Descargar QR</button>
+      <button class="btn btn-outline btn-sm" onclick="geoShareModo('regenerar')"><i class="fas fa-rotate"></i> Regenerar</button>
+      <button class="btn btn-outline btn-sm" onclick="geoShareModo('desactivar')"><i class="fas fa-ban"></i> Desactivar</button>
+    </div>`;
+  const box = document.getElementById('geoQr');
+  box.innerHTML = '';
+  if (typeof QRCode !== 'undefined') new QRCode(box, { text: url, width: 200, height: 200, correctLevel: QRCode.CorrectLevel.M });
+}
+
+function geoCopiarLink(){
+  const el = document.getElementById('geoShareUrl'); el.select();
+  if (navigator.clipboard) navigator.clipboard.writeText(el.value).then(() => toast('Enlace copiado', 'success')).catch(() => toast('Copia manualmente', 'warning'));
+  else { document.execCommand('copy'); toast('Enlace copiado', 'success'); }
+}
+function geoDescargarQr(){
+  const img = document.querySelector('#geoQr img') || document.querySelector('#geoQr canvas');
+  if (!img) return;
+  const src = img.tagName === 'IMG' ? img.src : img.toDataURL('image/png');
+  const a = document.createElement('a'); a.href = src; a.download = 'mapa_ruta_qr.png'; a.click();
+}
+async function geoShareModo(modo){
+  const id = document.getElementById('geoShareGid').value;
+  const fd = new FormData(); fd.append('csrf_token', CSRF_TOKEN); fd.append('action', 'compartir'); fd.append('geocerca_id', id); fd.append('modo', modo);
+  try { const r = await fetch('api/geocercas.php', { method:'POST', body:fd }); const d = await r.json();
+    if (!d.success){ toast(d.message || 'Error', 'error'); return; }
+    if (modo === 'desactivar'){ document.getElementById('geoShareBody').innerHTML = '<p class="muted">Enlace desactivado. El QR anterior ya no funciona.</p>'; toast('Enlace desactivado', 'success'); }
+    else { _geoRenderShare(d.data.token); toast('Enlace regenerado', 'success'); }
+  } catch(e){ toast('Error', 'error'); }
 }
