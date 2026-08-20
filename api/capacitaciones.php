@@ -256,9 +256,11 @@ function asistenteAdd() {
     $cargo  = trim($_POST['cargo'] ?? '');
 
     // Si viene personal_id, se toma el snapshot desde personal.
+    // Solo se considera personal ACTIVO (los inactivos no deben poder añadirse).
     if ($personalId > 0) {
-        $p = db()->fetchOne("SELECT nombre, dni, cargo FROM personal WHERE id = ?", [$personalId]);
-        if ($p) { $nombre = mb_strtoupper($p['nombre'], 'UTF-8'); $dni = $p['dni']; $cargo = $p['cargo']; }
+        $p = db()->fetchOne("SELECT nombre, dni, cargo FROM personal WHERE id = ? AND activo = 1", [$personalId]);
+        if (!$p) jsonResponse(false, 'El trabajador no existe o está inactivo.', null, 422);
+        $nombre = mb_strtoupper($p['nombre'], 'UTF-8'); $dni = $p['dni']; $cargo = $p['cargo'];
         // Evita duplicar el mismo trabajador en la misma actividad.
         $dup = db()->fetchOne("SELECT id FROM cap_asistentes WHERE capacitacion_id = ? AND personal_id = ?", [$id, $personalId]);
         if ($dup) jsonResponse(false, 'Ese trabajador ya está en la lista.', null, 409);
@@ -292,7 +294,8 @@ function asistenteMasivo() {
     $add = 0;
     foreach ($ids as $pid) {
         if (in_array($pid, $ya, true)) continue;
-        $p = db()->fetchOne("SELECT nombre, dni, cargo FROM personal WHERE id = ?", [$pid]);
+        // Solo personal ACTIVO: se ignoran los inactivos aunque lleguen en la selección.
+        $p = db()->fetchOne("SELECT nombre, dni, cargo FROM personal WHERE id = ? AND activo = 1", [$pid]);
         if (!$p) continue;
         db()->query(
             "INSERT INTO cap_asistentes (capacitacion_id, personal_id, nombre, dni, cargo, presente)

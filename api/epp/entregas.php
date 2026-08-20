@@ -145,8 +145,9 @@ function registrar() {
     $emp = eppRequireEmpresa();
 
     // Trabajador: snapshot desde la tabla personal (incluye su empresa).
-    $p = db()->fetchOne("SELECT id, dni, nombre, cargo, empresa_id FROM personal WHERE id = ?", [$personalId]);
-    if (!$p) jsonResponse(false, 'Trabajador no encontrado.', null, 422);
+    // Solo se puede entregar EPP a personal ACTIVO (los inactivos no deben listarse ni aceptarse).
+    $p = db()->fetchOne("SELECT id, dni, nombre, cargo, empresa_id FROM personal WHERE id = ? AND activo = 1", [$personalId]);
+    if (!$p) jsonResponse(false, 'El trabajador no existe o está inactivo.', null, 422);
     // En multi-empresa, el trabajador debe pertenecer a la empresa activa.
     if (esMultiempresa() && (int)($p['empresa_id'] ?? 0) !== $emp) {
         jsonResponse(false, 'El trabajador no pertenece a la empresa seleccionada.', null, 422);

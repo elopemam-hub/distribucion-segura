@@ -106,7 +106,13 @@ $RES = ['conforme' => 'C', 'no_conforme' => 'NC', 'na' => 'N/A'];
         <td class="lbl" style="width:10%">Unidad</td><td class="val" style="font-size:13px;font-weight:700"><?= $h($insp['placa']) ?></td>
       </tr>
       <tr>
-        <td class="lbl">Equipo</td><td class="val" colspan="3" style="font-weight:700"><?= $h($equipoNombre) ?></td>
+        <td class="lbl">Equipo</td>
+        <?php if (!empty($insp['vencimiento'])): ?>
+          <td class="val" style="font-weight:700"><?= $h($equipoNombre) ?></td>
+          <td class="lbl">Vencimiento</td><td class="val" style="text-align:center;font-weight:700"><?= $h($fmt($insp['vencimiento'])) ?></td>
+        <?php else: ?>
+          <td class="val" colspan="3" style="font-weight:700"><?= $h($equipoNombre) ?></td>
+        <?php endif; ?>
       </tr>
       <tr>
         <td class="lbl">Inspector</td><td class="val"><?= $h($insp['inspector_nombre']) ?></td>

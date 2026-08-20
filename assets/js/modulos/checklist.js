@@ -136,10 +136,14 @@ function renderChecklist() {
     const pct = evaluados > 0 ? Math.round(+x.conformes / evaluados * 100) : (+x.total_items ? 100 : 0);
     const pcol = pct === 100 ? 'var(--verde)' : pct >= 80 ? 'var(--naranja)' : 'var(--rojo)';
     const del = _chkAdmin() ? `<button class="btn btn-outline btn-sm" onclick="eliminarInspeccion(${x.id})" title="Eliminar"><i class="fas fa-trash" style="color:var(--rojo)"></i></button>` : '';
+    const venc = x.vencimiento ? (() => {
+      const vencido = x.vencimiento < new Date().toISOString().slice(0, 10);
+      return `<br><span class="badge ${vencido ? 'badge-danger' : 'badge-warning'}" style="font-size:10px;margin-top:2px" title="Vencimiento del equipo"><i class="fas fa-hourglass-half"></i> Vence ${_chkFecha(x.vencimiento)}</span>`;
+    })() : '';
     return `<tr>
       <td class="muted" style="white-space:nowrap">${_chkFecha(x.fecha)}</td>
       <td style="font-weight:600;color:var(--gris-100)">${_chkEsc(x.inspector_nombre || '—')}</td>
-      <td><span class="badge badge-info">${_chkEsc(x.equipo || '—')}</span></td>
+      <td><span class="badge badge-info">${_chkEsc(x.equipo || '—')}</span>${venc}</td>
       <td style="font-weight:700;color:var(--gris-100)">${_chkEsc(x.placa)}</td>
       <td class="muted">${_chkEsc(x.periodo)}</td>
       <td><span class="badge ${est[0]}">${est[1]}</span></td>
@@ -813,6 +817,7 @@ async function nuevaInspeccion(compId) {
   _chkLlenarAreas(true);
   document.getElementById('chk_periodo').value = document.getElementById('chkFiltroPeriodo')?.value || new Date().toISOString().slice(0, 7);
   document.getElementById('chk_fecha').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('chk_vencimiento').value = '';
   document.getElementById('chk_estado').value = 'apto';
   document.getElementById('chk_observacion').value = '';
   _chkFirma = ''; _chkFirmaEstado();
@@ -840,6 +845,7 @@ async function editarInspeccion(id) {
     _chkLlenarAreas();
     document.getElementById('chk_periodo').value = x.periodo || '';
     document.getElementById('chk_fecha').value = x.fecha || '';
+    document.getElementById('chk_vencimiento').value = x.vencimiento || '';
     document.getElementById('chk_estado').value = x.estado || 'apto';
     document.getElementById('chk_observacion').value = x.observacion || '';
     _chkFirma = x.firma || ''; _chkFirmaEstado();
@@ -864,12 +870,28 @@ function _chkLlenarSelects() {
   if (sf) { const prev = sf.value; sf.innerHTML = '<option value="">Todos</option>' + opts; sf.value = prev; }
 }
 
+// Equipos con fecha de vencimiento: extintor (recarga/prueba hidrostática) y
+// botiquín (caducidad del contenido). Se detecta por el nombre del componente.
+function _chkCompVence(nombre) { return /extint|botiqu/i.test(nombre || ''); }
+
+// Muestra u oculta el campo de vencimiento según el equipo seleccionado.
+function _chkToggleVencimiento(c) {
+  const wrap = document.getElementById('chk_vencimiento_wrap');
+  const lbl = document.getElementById('chk_vencimiento_lbl');
+  if (!wrap) return;
+  const aplica = !!c && _chkCompVence(c.nombre);
+  wrap.style.display = aplica ? '' : 'none';
+  if (aplica && lbl) lbl.textContent = /botiqu/i.test(c.nombre) ? 'Vence contenido (botiquín)' : 'Vence (recarga extintor)';
+  if (!aplica) { const inp = document.getElementById('chk_vencimiento'); if (inp) inp.value = ''; }
+}
+
 // Renderiza los ítems (banco de preguntas) del equipo seleccionado en el modal.
 function chkRenderItemsSel() {
   const cont = document.getElementById('chkItemsCont');
   if (!cont) return;
   const compId = +(document.getElementById('chk_componente')?.value || 0);
   const c = _chkComp.find(k => +k.id === compId);
+  _chkToggleVencimiento(c);
   if (!c) { cont.innerHTML = '<p class="muted" style="padding:12px">Selecciona un equipo.</p>'; return; }
   const prev = _chkPrevRes || {};
   const items = (c.items || []).filter(it => +it.activo !== 0).map(it => {
@@ -978,6 +1000,7 @@ async function guardarInspeccion() {
   const r = await _chkPost({
     action: 'save', id: document.getElementById('chk_id').value || '0',
     componente_id: compId, unidad_id: unidadId || '0', placa, area: document.getElementById('chk_area').value.trim(), periodo, fecha: document.getElementById('chk_fecha').value,
+    vencimiento: document.getElementById('chk_vencimiento').value || '',
     estado: document.getElementById('chk_estado').value,
     observacion: document.getElementById('chk_observacion').value.trim(),
     firma: _chkFirma || '', resultados: JSON.stringify(resultados),

@@ -96,7 +96,7 @@ function listar() {
     $whereSql = implode(' AND ', $where);
 
     $rows = db()->fetchAll(
-        "SELECT i.id, i.placa, i.componente_id, c.nombre AS equipo, i.periodo, i.fecha, i.inspector_nombre, i.estado, i.observacion,
+        "SELECT i.id, i.placa, i.componente_id, c.nombre AS equipo, i.periodo, i.fecha, i.vencimiento, i.inspector_nombre, i.estado, i.observacion,
                 (SELECT COUNT(*) FROM chk_resultados r WHERE r.inspeccion_id = i.id AND r.resultado = 'no_conforme') AS no_conformes,
                 (SELECT COUNT(*) FROM chk_resultados r WHERE r.inspeccion_id = i.id AND r.resultado = 'conforme')    AS conformes,
                 (SELECT COUNT(*) FROM chk_resultados r WHERE r.inspeccion_id = i.id AND r.resultado = 'na')          AS na,
@@ -161,6 +161,7 @@ function guardar() {
     $area    = trim($_POST['area'] ?? '');
     $periodo = trim($_POST['periodo'] ?? '');
     $fecha   = trim($_POST['fecha'] ?? date('Y-m-d'));
+    $venc    = trim($_POST['vencimiento'] ?? '');
     $estado  = trim($_POST['estado'] ?? 'apto');
     $obs     = trim($_POST['observacion'] ?? '');
     $firma   = trim($_POST['firma'] ?? '');
@@ -170,6 +171,8 @@ function guardar() {
     if ($placa === '') jsonResponse(false, 'La placa (unidad) es obligatoria.', null, 422);
     if (!preg_match('/^\d{4}-\d{2}$/', $periodo)) jsonResponse(false, 'Periodo inválido (YYYY-MM).', null, 422);
     if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha)) $fecha = date('Y-m-d');
+    // Vencimiento del equipo (extintor/botiquín): opcional; null si no viene o es inválido.
+    $vencVal = preg_match('/^\d{4}-\d{2}-\d{2}$/', $venc) ? $venc : null;
     if (!in_array($estado, CHK_ESTADOS, true)) $estado = 'apto';
     if (!is_array($items) || !count($items)) jsonResponse(false, 'No hay ítems evaluados.', null, 422);
 
@@ -180,17 +183,17 @@ function guardar() {
         db()->beginTransaction();
         if ($id > 0) {
             db()->query(
-                "UPDATE chk_inspecciones SET componente_id=?, unidad_id=?, placa=?, area=?, periodo=?, fecha=?, estado=?, observacion=?"
+                "UPDATE chk_inspecciones SET componente_id=?, unidad_id=?, placa=?, area=?, periodo=?, fecha=?, vencimiento=?, estado=?, observacion=?"
                 . ($firmaVal ? ", firma=?" : "") . " WHERE id=?",
-                $firmaVal ? [$compId, $unidadId, $placa, $area ?: null, $periodo, $fecha, $estado, $obs ?: null, $firmaVal, $id]
-                          : [$compId, $unidadId, $placa, $area ?: null, $periodo, $fecha, $estado, $obs ?: null, $id]);
+                $firmaVal ? [$compId, $unidadId, $placa, $area ?: null, $periodo, $fecha, $vencVal, $estado, $obs ?: null, $firmaVal, $id]
+                          : [$compId, $unidadId, $placa, $area ?: null, $periodo, $fecha, $vencVal, $estado, $obs ?: null, $id]);
             db()->query("DELETE FROM chk_resultados WHERE inspeccion_id = ?", [$id]);
             $inspId = $id;
         } else {
             db()->query(
-                "INSERT INTO chk_inspecciones (componente_id, unidad_id, placa, area, periodo, fecha, inspector_id, inspector_nombre, estado, observacion, firma)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                [$compId, $unidadId, $placa, $area ?: null, $periodo, $fecha, $user['id'], $user['nombre'] ?? null, $estado, $obs ?: null, $firmaVal]);
+                "INSERT INTO chk_inspecciones (componente_id, unidad_id, placa, area, periodo, fecha, vencimiento, inspector_id, inspector_nombre, estado, observacion, firma)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                [$compId, $unidadId, $placa, $area ?: null, $periodo, $fecha, $vencVal, $user['id'], $user['nombre'] ?? null, $estado, $obs ?: null, $firmaVal]);
             $inspId = (int)db()->lastInsertId();
         }
         foreach ($items as $it) {

@@ -171,6 +171,8 @@
             <input type="month" class="form-control" id="chk_periodo"></div>
           <div class="form-group"><label class="form-label">Fecha</label>
             <input type="date" class="form-control" id="chk_fecha"></div>
+          <div class="form-group" id="chk_vencimiento_wrap" style="display:none"><label class="form-label" id="chk_vencimiento_lbl">Vencimiento del equipo</label>
+            <input type="date" class="form-control" id="chk_vencimiento" title="Fecha de vencimiento (recarga del extintor / caducidad del botiquín)"></div>
           <div class="form-group"><label class="form-label">Resultado</label>
             <select class="form-control" id="chk_estado">
               <option value="apto">Apto</option><option value="observado">Observado</option><option value="no_apto">No apto</option>
