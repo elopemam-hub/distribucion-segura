@@ -286,10 +286,13 @@ let evalPageActual = 1;
 
 // ── Navegación de tabs ───────────────────────────────────────
 function switchEvalTab(tab) {
+  // El Banco de Preguntas es exclusivo del administrador (defensa en profundidad:
+  // el botón/panel ya no se renderizan para otros roles).
+  if (tab === 'banco' && (typeof USER_ROL === 'undefined' || USER_ROL !== 'administrador')) tab = 'listado';
   document.querySelectorAll('.eval-tab-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.eval-tab-panel').forEach(p => p.classList.remove('active'));
-  document.getElementById('eval-btn-' + tab).classList.add('active');
-  document.getElementById('eval-panel-' + tab).classList.add('active');
+  document.getElementById('eval-btn-' + tab)?.classList.add('active');
+  document.getElementById('eval-panel-' + tab)?.classList.add('active');
   if (tab === 'listado') cargarListadoEval();
   if (tab === 'banco' && typeof bpInitBancoTab === 'function') bpInitBancoTab();
 }
