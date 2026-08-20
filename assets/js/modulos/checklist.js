@@ -293,6 +293,7 @@ async function cargarChkDashboard() {
   } catch (e) { console.error(e); }
   if (!d) { if (kpiG) kpiG.innerHTML = '<p class="muted" style="padding:20px">No se pudo cargar el dashboard.</p>'; return; }
   if (_chkDashLlenarSelects(d)) return;   // se autoseleccionó camión y disparó recarga
+  renderChkDashAlertas();
   renderChkDashKpis(d);
   renderChkDashTend(d.tendencia || []);
   renderChkDashEstado(d.estado || {});
@@ -319,6 +320,56 @@ function _chkDashLlenarSelects(d) {
   }
   if (d.tipo && st) st.value = d.tipo;
   return false;
+}
+
+// ── Alerta de vencimientos (extintores por unidad + insumos de botiquín por ítem) ──
+async function renderChkDashAlertas() {
+  const cont = document.getElementById('chkDashAlertas');
+  if (!cont) return;
+  const pedir = async (accion) => {
+    try { const r = await fetch('api/checklist.php?action=' + accion + '&dias=90&_t=' + Date.now()); const j = await r.json(); return (j && j.success) ? j.data : null; }
+    catch (e) { return null; }
+  };
+  const [ext, bot] = await Promise.all([pedir('vencimientos'), pedir('vencimientos_botiquin')]);
+  const eV = (ext && ext.vencidos) || [], eP = (ext && ext.por_vencer) || [];
+  const bV = (bot && bot.vencidos) || [], bP = (bot && bot.por_vencer) || [];
+  if (!eV.length && !eP.length && !bV.length && !bP.length) { cont.innerHTML = ''; return; }
+
+  const cuando = d => { const n = Math.abs(+d); return (+d < 0 ? 'venció hace ' : 'en ') + n + ' día' + (n !== 1 ? 's' : ''); };
+  const camion = p => p ? `<span class="badge badge-info" style="font-size:10px"><i class="fas fa-truck"></i> ${_chkEsc(p)}</span>` : '';
+  const irBtn = id => +id > 0 ? `<button class="btn btn-outline btn-sm" onclick="_chkAbrirInspDesdeUnidad(${id})" title="Inspeccionar"><i class="fas fa-clipboard-check"></i></button>` : '';
+
+  // Fila de extintor (una fecha por unidad).
+  const filaExt = (u, vencido) => `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--gris-700);flex-wrap:wrap">
+      <span style="font-weight:700;color:var(--gris-100);min-width:64px">${_chkEsc(u.codigo)}</span>
+      <span class="muted" style="flex:1;min-width:120px">${_chkEsc(u.tipo || 'Extintor')}${u.nombre ? ' · ' + _chkEsc(u.nombre) : ''}</span>
+      ${camion(u.placa)}
+      <span class="badge ${vencido ? 'badge-danger' : 'badge-warning'}" style="font-size:11px">${_chkFecha(u.vencimiento)} · ${cuando(u.dias)}</span>
+      ${irBtn(u.id)}
+    </div>`;
+  // Fila de insumo de botiquín (fecha por producto).
+  const filaBot = (r, vencido) => `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--gris-700);flex-wrap:wrap">
+      <span style="font-weight:700;color:var(--gris-100);min-width:64px">${_chkEsc(r.codigo)}</span>
+      <span class="muted" style="flex:1;min-width:140px">${_chkEsc(r.item || '')}</span>
+      ${camion(r.placa)}
+      <span class="badge ${vencido ? 'badge-danger' : 'badge-warning'}" style="font-size:11px">${_chkFecha(r.vencimiento)} · ${cuando(r.dias)}</span>
+      ${irBtn(r.id)}
+    </div>`;
+
+  const bloque = (titulo, icono, color, vencido, filasHtml, n) => filasHtml ? `
+    <div class="card" style="margin-bottom:12px;border-left:4px solid ${color}">
+      <div class="card-body" style="padding:10px 16px">
+        <div style="font-weight:700;color:var(--gris-100);margin-bottom:4px">
+          <i class="fas ${icono}" style="color:${color}"></i> ${titulo} <span class="badge ${vencido ? 'badge-danger' : 'badge-warning'}">${n}</span>
+        </div>${filasHtml}
+      </div>
+    </div>` : '';
+
+  cont.innerHTML =
+    bloque('Extintores VENCIDOS — recarga inmediata', 'fa-triangle-exclamation', 'var(--rojo)', true, eV.map(u => filaExt(u, true)).join(''), eV.length) +
+    bloque('Botiquín · insumos VENCIDOS — reponer', 'fa-briefcase-medical', 'var(--rojo)', true, bV.map(r => filaBot(r, true)).join(''), bV.length) +
+    bloque('Extintores por vencer (próx. 90 días)', 'fa-clock', 'var(--naranja)', false, eP.map(u => filaExt(u, false)).join(''), eP.length) +
+    bloque('Botiquín · insumos por vencer (próx. 90 días)', 'fa-clock', 'var(--naranja)', false, bP.map(r => filaBot(r, false)).join(''), bP.length);
 }
 
 // Tarjeta KPI (estilo dashboard general). worseUp: true si subir es malo.

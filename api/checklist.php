@@ -44,6 +44,8 @@ try {
         case 'cumplimiento': cumplimiento(); break;
         case 'dashboard':    dashboard();    break;
         case 'areas':        areas();        break;
+        case 'vencimientos': vencimientos(); break;
+        case 'vencimientos_botiquin': vencimientosBotiquin(); break;
         case 'uni_list':     uniList();      break;
         case 'uni_save':     uniSave();      break;
         case 'uni_toggle':   uniToggle();    break;
@@ -489,6 +491,74 @@ function areas() {
 // ============================================================
 // Inventario de equipos físicos (unidades individuales por tipo)
 // ============================================================
+// Alerta de vencimientos: unidades de inventario (extintores) cuya fecha de
+// vencimiento ya pasó (vencido) o está próxima (por vencer, ≤ N días).
+function vencimientos() {
+    $dias = (int)($_GET['dias'] ?? 90);
+    if ($dias < 1 || $dias > 365) $dias = 90;
+    $rows = db()->fetchAll(
+        "SELECT u.id, u.componente_id, c.nombre AS tipo, u.codigo, u.nombre, u.placa, u.ruta,
+                u.vencimiento, DATEDIFF(u.vencimiento, CURDATE()) AS dias
+           FROM chk_unidades u
+           LEFT JOIN chk_componentes c ON c.id = u.componente_id
+          WHERE u.activo = 1 AND u.vencimiento IS NOT NULL
+            AND DATEDIFF(u.vencimiento, CURDATE()) <= ?
+          ORDER BY u.vencimiento ASC", [$dias]);
+    $vencidos = []; $porVencer = [];
+    foreach ($rows as $r) {
+        if ((int)$r['dias'] < 0) $vencidos[] = $r; else $porVencer[] = $r;
+    }
+    jsonResponse(true, '', ['vencidos' => $vencidos, 'por_vencer' => $porVencer, 'dias' => $dias]);
+}
+
+// Alerta de vencimientos de BOTIQUÍN: los insumos vencen POR PRODUCTO, guardados
+// en chk_resultados.vencimiento. Se toma la ÚLTIMA inspección de cada botiquín y
+// se listan los productos vencidos o próximos a caducar (≤ N días).
+function vencimientosBotiquin() {
+    $dias = (int)($_GET['dias'] ?? 90);
+    if ($dias < 1 || $dias > 365) $dias = 90;
+    $comps = array_map('intval', array_column(
+        db()->fetchAll("SELECT id FROM chk_componentes WHERE nombre LIKE '%otiqu%'"), 'id'));
+    if (!$comps) { jsonResponse(true, '', ['vencidos' => [], 'por_vencer' => [], 'dias' => $dias]); }
+    $in = implode(',', $comps);
+
+    // Última inspección (id máx) por placa/código dentro de botiquín.
+    $latest = [];
+    foreach (db()->fetchAll("SELECT UPPER(placa) placa, MAX(id) maxid
+              FROM chk_inspecciones WHERE componente_id IN ($in) GROUP BY UPPER(placa)") as $r) {
+        $latest[$r['placa']] = (int)$r['maxid'];
+    }
+    if (!$latest) { jsonResponse(true, '', ['vencidos' => [], 'por_vencer' => [], 'dias' => $dias]); }
+    $ids = implode(',', array_values($latest));
+
+    // Mapa placa/código → unidad (para mostrar código de botiquín y su camión).
+    $uni = [];
+    foreach (db()->fetchAll("SELECT id, codigo, nombre, placa FROM chk_unidades
+              WHERE componente_id IN ($in) AND activo = 1") as $u) {
+        $uni[strtoupper($u['codigo'])] = $u;
+        if (!empty($u['placa'])) $uni[strtoupper($u['placa'])] = $u;
+    }
+
+    $rows = db()->fetchAll(
+        "SELECT i.placa, r.vencimiento, DATEDIFF(r.vencimiento, CURDATE()) AS dias, it.texto AS item
+           FROM chk_resultados r
+           JOIN chk_inspecciones i ON i.id = r.inspeccion_id
+           JOIN chk_items it ON it.id = r.item_id
+          WHERE r.inspeccion_id IN ($ids) AND r.vencimiento IS NOT NULL
+            AND DATEDIFF(r.vencimiento, CURDATE()) <= ?
+          ORDER BY r.vencimiento ASC", [$dias]);
+
+    $vencidos = []; $porVencer = [];
+    foreach ($rows as $r) {
+        $u = $uni[strtoupper($r['placa'])] ?? null;
+        $r['id']     = (int)($u['id'] ?? 0);
+        $r['codigo'] = $u['codigo'] ?? $r['placa'];
+        $r['placa']  = $u['placa'] ?? null;   // camión
+        if ((int)$r['dias'] < 0) $vencidos[] = $r; else $porVencer[] = $r;
+    }
+    jsonResponse(true, '', ['vencidos' => $vencidos, 'por_vencer' => $porVencer, 'dias' => $dias]);
+}
+
 function uniList() {
     $comp = (int)($_GET['componente_id'] ?? 0);
     $where = $comp > 0 ? 'WHERE u.componente_id = ?' : '';

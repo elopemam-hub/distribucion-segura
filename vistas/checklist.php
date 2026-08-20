@@ -63,6 +63,9 @@
         </div>
       </div></div>
 
+      <!-- Alerta de vencimientos (extintores por vencer / vencidos) -->
+      <div id="chkDashAlertas" style="margin-bottom:16px"></div>
+
       <!-- KPIs -->
       <div id="chkDashKpis" class="dash-kpi-grid" style="margin-bottom:18px"></div>
 
