@@ -1105,7 +1105,12 @@ $csrf = csrfToken();
 
 
   <?php if (tieneAccesoModulo('matriz')): ?>
-  <div class="page-content" id="page-matriz" style="display:none"></div>
+  <div class="page-content" id="page-matriz" style="display:none">
+    <button class="btn btn-outline btn-sm" onclick="showPage('amonestaciones')" style="margin-bottom:12px">
+      <i class="fas fa-arrow-left"></i> Volver a Amonestaciones
+    </button>
+    <div id="matriz-root"></div>
+  </div>
   <?php endif; ?>
 
   <?php if (tieneAccesoModulo('geocercas')): ?>

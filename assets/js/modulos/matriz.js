@@ -675,7 +675,7 @@ function MatrizApp() {
 let _mtzMounted = false;
 function initMatriz() {
   if (_mtzMounted) return;
-  const container = document.getElementById('page-matriz');
+  const container = document.getElementById('matriz-root');
   if (!container) return;
   _mtzMounted = true;
   ReactDOM.createRoot(container).render(<MatrizApp />);
