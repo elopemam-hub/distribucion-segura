@@ -288,6 +288,14 @@ $csrf = csrfToken();
       <?php endfor; ?>
     </div>
 
+    <!-- ── Resumen por módulo ── -->
+    <div class="card" style="margin-bottom:18px"><div class="card-header">
+        <h3><i class="fas fa-layer-group"></i> Resumen por módulo</h3>
+        <span style="font-size:11px;color:var(--gris-400)">clic para abrir el módulo</span></div>
+      <div class="card-body" style="padding:14px 18px">
+        <div id="dashModulos" class="mod-grid"></div>
+      </div></div>
+
     <!-- ── Fila 2: Tendencia (2/3) + Distribución donut (1/3) ── -->
     <div style="display:grid;grid-template-columns:2fr 1fr;gap:18px;margin-bottom:18px" class="charts-row">
       <div class="card">

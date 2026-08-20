@@ -25,6 +25,7 @@ async function cargarDashboard() {
       }
     }
     renderKPIs(d);
+    renderModulos(d.modulos || {});
     renderTendencia(d.tendencia, mes);
     renderDonut(d.kpis, d.totalHallazgos, d.hallazgosCrit);
     renderRankingConductores(d.ranking);
@@ -114,6 +115,53 @@ function renderKPIs(d) {
       ${deltaHtml}
     </div>`;
   }).join('');
+}
+
+// ── Resumen por módulo ────────────────────────────────────────
+function renderModulos(m) {
+  const cont = document.getElementById('dashModulos');
+  if (!cont) return;
+  const badge = (t, c) => `<span class="mod-badge ${c}">${t}</span>`;
+  const num = v => (v === null || v === undefined) ? '—' : v;
+  const p = m.personal || {}, v = m.vehiculos || {}, c = m.checklist || {}, e = m.evaluaciones || {},
+        cap = m.capacitaciones || {}, epp = m.epp || {}, am = m.amonestaciones || {}, g = m.geocercas || {};
+
+  const cards = [
+    { page: 'personal', icon: 'fa-users', color: 'azul', title: 'Personal',
+      val: num(p.activos), unit: 'activos',
+      badges: [(+p.brevete_vencido > 0 ? badge(p.brevete_vencido + ' brevete venc.', 'rojo') : ''),
+               (+p.brevete_vence > 0 ? badge(p.brevete_vence + ' por vencer', 'naranja') : '')] },
+    { page: 'vehiculos', icon: 'fa-truck', color: 'azul', title: 'Vehículos',
+      val: num(v.total), unit: 'unidades',
+      badges: [v.disponibles != null ? badge(v.disponibles + ' disponibles', 'verde') : badge('sin acceso', 'gris')] },
+    { page: 'checklist', icon: 'fa-clipboard-check', color: 'amarillo', title: 'Checklist unidades',
+      val: num(c.mes), unit: 'inspec. (mes)',
+      badges: [c.cumplimiento != null ? badge(c.cumplimiento + '% cumplimiento', c.cumplimiento >= 90 ? 'verde' : c.cumplimiento >= 70 ? 'naranja' : 'rojo') : badge('sin datos', 'gris')] },
+    { page: 'evaluaciones', icon: 'fa-clipboard-list', color: 'azul', title: 'Evaluaciones',
+      val: num(e.mes), unit: 'este mes',
+      badges: [(+e.aprobadas > 0 ? badge(e.aprobadas + ' aprobadas', 'verde') : ''),
+               (+e.pendientes > 0 ? badge(e.pendientes + ' por revisar', 'naranja') : '')] },
+    { page: 'capacitaciones', icon: 'fa-chalkboard-user', color: 'azul', title: 'Capacitaciones',
+      val: num(cap.ejecutadas), unit: 'ejecutadas (año)',
+      badges: [badge((cap.anio || 0) + ' programadas', 'gris'), (+cap.participantes > 0 ? badge(cap.participantes + ' asistentes', 'verde') : '')] },
+    { page: 'epp', icon: 'fa-helmet-safety', color: 'verde', title: 'EPP',
+      val: num(epp.entregas_mes), unit: 'entregas (mes)',
+      badges: [badge((epp.tipos || 0) + ' tipos', 'gris'), (+epp.mov_mes > 0 ? badge(epp.mov_mes + ' movimientos', 'azul') : '')] },
+    { page: 'amonestaciones', icon: 'fa-triangle-exclamation', color: 'naranja', title: 'Amonestaciones',
+      val: num(am.mes), unit: 'este mes',
+      badges: [(+am.abiertas > 0 ? badge(am.abiertas + ' abiertas', 'rojo') : badge('sin pendientes', 'verde'))] },
+    { page: 'geocercas', icon: 'fa-location-dot', color: 'azul', title: 'Geocercas',
+      val: num(g.activas), unit: 'activas',
+      badges: [(+g.zona_roja > 0 ? badge(g.zona_roja + ' zona roja', 'rojo') : ''),
+               (+g.ruta_critica > 0 ? badge(g.ruta_critica + ' ruta crítica', 'naranja') : '')] },
+  ];
+
+  cont.innerHTML = cards.map(x => `
+    <div class="mod-card" onclick="showPage('${x.page}')" title="Abrir ${x.title}">
+      <div class="mod-top"><span class="mod-title">${x.title}</span><i class="fas ${x.icon} mod-ic ${x.color}"></i></div>
+      <div class="mod-val ${x.color}">${x.val}<span class="mod-unit">${x.unit}</span></div>
+      <div class="mod-badges">${x.badges.filter(Boolean).join('') || '<span class="mod-badge gris">—</span>'}</div>
+    </div>`).join('');
 }
 
 // ── Tendencia del mes ─────────────────────────────────────────

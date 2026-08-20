@@ -278,6 +278,32 @@ body {
 /* Filas de gráficos: colapsan a una columna en pantallas angostas. */
 @media (max-width: 900px) { .charts-row { grid-template-columns: 1fr !important; } }
 
+/* ===== Resumen por módulo (dashboard general) ===== */
+.mod-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+@media (max-width: 1100px) { .mod-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px)  { .mod-grid { grid-template-columns: 1fr; } }
+.mod-card {
+  background: var(--gris-800); border: 1px solid var(--gris-600); border-radius: 10px;
+  padding: 13px 15px; cursor: pointer; transition: border-color .15s, transform .15s;
+}
+.mod-card:hover { border-color: var(--primary); transform: translateY(-2px); }
+.mod-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.mod-title { font-size: 12px; font-weight: 700; color: var(--gris-300); text-transform: uppercase; letter-spacing: .3px; }
+.mod-ic { font-size: 15px; opacity: .8; }
+.mod-ic.verde { color: var(--verde); } .mod-ic.rojo { color: var(--rojo); }
+.mod-ic.amarillo { color: var(--amarillo); } .mod-ic.azul { color: var(--azul); } .mod-ic.naranja { color: var(--naranja); }
+.mod-val { font-family: var(--font-display); font-size: 26px; font-weight: 900; color: var(--gris-100); line-height: 1.1; }
+.mod-val.verde { color: var(--verde); } .mod-val.rojo { color: var(--rojo); }
+.mod-val.amarillo { color: var(--amarillo); } .mod-val.azul { color: var(--azul); } .mod-val.naranja { color: var(--naranja); }
+.mod-unit { font-family: var(--font-base, inherit); font-size: 11px; font-weight: 600; color: var(--gris-400); margin-left: 6px; }
+.mod-badges { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; min-height: 20px; }
+.mod-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; background: var(--gris-700); color: var(--gris-300); }
+.mod-badge.verde { background: rgba(46,184,92,.14); color: var(--verde); }
+.mod-badge.rojo { background: rgba(229,83,83,.14); color: var(--rojo); }
+.mod-badge.naranja { background: rgba(249,177,21,.16); color: var(--naranja); }
+.mod-badge.azul { background: rgba(61,153,245,.14); color: var(--azul); }
+.mod-badge.gris { background: var(--gris-700); color: var(--gris-400); }
+
 /* ======================== KPI CARDS (legacy) ======================== */
 .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; margin-bottom: 22px; }
 
