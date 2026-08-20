@@ -204,11 +204,7 @@ $csrf = csrfToken();
       <i class="fas fa-triangle-exclamation"></i> Matriz Amonestaciones
     </a>
     <?php endif; ?>
-    <?php if (tieneAccesoModulo('matriz')): ?>
-    <a class="nav-item" data-page="matriz" onclick="showPage('matriz')">
-      <i class="fas fa-scale-balanced"></i> Matriz Consecuencias
-    </a>
-    <?php endif; ?>
+    <?php /* Matriz Consecuencias ahora se abre desde un botón dentro de Matriz Amonestaciones */ ?>
 
 
 
@@ -889,9 +885,16 @@ $csrf = csrfToken();
         </h2>
         <p style="color:var(--gris-400);font-size:13px;margin-top:2px">Registro de amonestaciones por tipo de infracción</p>
       </div>
-      <button class="btn btn-primary" onclick="showPage('kpi-amonestaciones')">
-        <i class="fas fa-chart-pie"></i> KPI
-      </button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <?php if (tieneAccesoModulo('matriz')): ?>
+        <button class="btn btn-outline" onclick="showPage('matriz')">
+          <i class="fas fa-scale-balanced"></i> Matriz Consecuencias
+        </button>
+        <?php endif; ?>
+        <button class="btn btn-primary" onclick="showPage('kpi-amonestaciones')">
+          <i class="fas fa-chart-pie"></i> KPI
+        </button>
+      </div>
     </div>
 
     <!-- KPI cards -->
