@@ -516,4 +516,9 @@ function getEmpresaGlobal() {
 }
 
 // ============ INIT ============
-document.addEventListener('DOMContentLoaded', () => { showPage('dashboard'); });
+document.addEventListener('DOMContentLoaded', () => {
+  // Deep-link desde la etiqueta QR de un extintor: abre Checklist y su inspección.
+  const uni = new URLSearchParams(location.search).get('chkuni');
+  if (uni && /^\d+$/.test(uni)) { window._chkPendingUni = uni; showPage('checklist'); return; }
+  showPage('dashboard');
+});

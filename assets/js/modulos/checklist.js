@@ -39,7 +39,24 @@ function initChecklist() {
   const dm = document.getElementById('chkDashMes');
   if (dm && !dm.value) dm.value = new Date().toISOString().slice(0, 7);
   // Carga el catálogo de componentes una vez.
-  _chkCargarComponentes().then(() => { _chkLlenarSelects(); switchChkTab('dashboard'); });
+  _chkCargarComponentes().then(() => {
+    _chkLlenarSelects();
+    const uniId = window._chkPendingUni; window._chkPendingUni = null;
+    if (uniId) { switchChkTab('equipos'); _chkAbrirInspDesdeUnidad(uniId); }
+    else switchChkTab('dashboard');
+  });
+}
+
+// Abre la inspección de una unidad concreta (llegada por el QR ?chkuni=ID).
+async function _chkAbrirInspDesdeUnidad(uniId) {
+  try {
+    const r = await fetch('api/checklist.php?action=uni_list');
+    const d = await r.json();
+    const u = (d && d.success ? (d.data.unidades || []) : []).find(x => +x.id === +uniId);
+    if (!u) { toast('Extintor no encontrado', 'error'); return; }
+    _chkPreUnidad = String(u.id);
+    await nuevaInspeccion(+u.componente_id);
+  } catch (e) { toast('No se pudo abrir la inspección', 'error'); }
 }
 
 async function _chkCargarComponentes(todos) {
@@ -657,14 +674,22 @@ function _chkEqEstadoUnidad(d, puede) {
     const cells = (u.meses || []).map(v => `<td style="text-align:center">${_chkPctTxt(v)}</td>`).join('');
     const vi = _chkVencInfo(u.vencimiento);
     const esInv = +u.id > 0;   // unidad de inventario (no una placa suelta)
-    const acc = puede ? `<td style="text-align:right;white-space:nowrap">${esInv ? `
+    const qrBtn = esInv ? `<button class="btn btn-outline btn-sm" onclick="chkEtiquetaUni(${u.id})" title="Etiqueta QR"><i class="fas fa-qrcode"></i></button> ` : '';
+    const acc = puede ? `<td style="text-align:right;white-space:nowrap">${esInv ? `${qrBtn}
         <button class="btn btn-outline btn-sm" onclick="chkEditarUni(${u.id})" title="Editar"><i class="fas fa-pen"></i></button>
         ${_chkAdmin() ? `<button class="btn btn-outline btn-sm" onclick="chkEliminarUni(${u.id})" title="Eliminar"><i class="fas fa-trash" style="color:var(--rojo)"></i></button>` : ''}` : ''}</td>` : '';
-    const nombre = u.nombre ? _chkEsc(u.nombre) : (esInv ? '' : '<span class="muted" style="font-size:11px">placa sin inventario</span>');
+    // Nombre + metadatos de gestión (camión/capacidad/estado) si existen.
+    const meta = [
+      u.placa ? '<span class="badge badge-info" style="font-size:10px"><i class="fas fa-truck"></i> ' + _chkEsc(u.placa) + '</span>' : '',
+      u.capacidad ? '<span class="muted" style="font-size:11px">' + _chkEsc(u.capacidad) + '</span>' : '',
+      u.estado_operativo === 'fuera_servicio' ? '<span class="badge badge-danger" style="font-size:10px">Fuera de servicio</span>' : '',
+    ].filter(Boolean).join(' ');
+    const nombreTxt = u.nombre ? _chkEsc(u.nombre) : (esInv ? '' : '<span class="muted" style="font-size:11px">placa sin inventario</span>');
+    const nombre = nombreTxt + (meta ? '<div style="margin-top:2px;display:flex;gap:5px;align-items:center;flex-wrap:wrap">' + meta + '</div>' : '');
     return `<tr>
       <td style="font-weight:700;color:var(--gris-100);white-space:nowrap">${_chkEsc(u.codigo)}</td>
       <td class="muted" style="min-width:180px">${nombre}</td>
-      <td>${u.area ? '<span class="badge badge-secondary">' + _chkEsc(u.area) + '</span>' : '—'}</td>
+      <td>${u.ruta ? '<span class="badge badge-secondary">' + _chkEsc(u.ruta) + '</span>' : (u.area ? '<span class="badge badge-secondary">' + _chkEsc(u.area) + '</span>' : '—')}</td>
       <td><span class="badge ${vi.cls}">${vi.txt}</span></td>
       ${cells}
       <td style="text-align:center;background:var(--gris-800)">${_chkPctTxt(u.prom)}</td>
@@ -672,7 +697,7 @@ function _chkEqEstadoUnidad(d, puede) {
     </tr>`;
   }).join('');
   return `<table class="data-table" style="min-width:${560 + 12 * 48}px">
-    <thead><tr><th>Cód.</th><th>Nombre</th><th>Área</th><th>Vencimiento</th>${th}<th style="text-align:center">Prom.</th>${puede ? '<th></th>' : ''}</tr></thead>
+    <thead><tr><th>Cód.</th><th>Nombre</th><th>Ruta / Área</th><th>Vencimiento</th>${th}<th style="text-align:center">Prom.</th>${puede ? '<th></th>' : ''}</tr></thead>
     <tbody>${rows}</tbody></table>`;
 }
 
@@ -710,15 +735,29 @@ function _chkEqRenderEvo(evo) {
 // ── Inventario de unidades (CRUD) ──
 function chkNuevaUni() { _chkAbrirUni(null); }
 function chkEditarUni(id) { const u = _chkEqUnidadesAll.find(x => +x.id === +id); _chkAbrirUni(u || null); }
+// ¿El tipo de equipo actual es "Extintor"? (activa los campos de gestión propios)
+function _chkEqEsExtintor() { return /extint/i.test((_chkEqData && _chkEqData.componente && _chkEqData.componente.nombre) || ''); }
+
 function _chkAbrirUni(u) {
+  const ext = _chkEqEsExtintor();
   document.getElementById('chkUniTitulo').textContent = u ? 'Editar unidad' : 'Nueva unidad';
   document.getElementById('chk_uni_id').value = u ? u.id : '';
   document.getElementById('chk_uni_comp').value = _chkEqComp;
   document.getElementById('chk_uni_codigo').value = u ? u.codigo : '';
   document.getElementById('chk_uni_nombre').value = u ? (u.nombre || '') : '';
+  document.getElementById('chk_uni_placa').value = u ? (u.placa || '') : '';
+  document.getElementById('chk_uni_ruta').value = u ? (u.ruta || '') : '';
+  document.getElementById('chk_uni_agente').value = u ? (u.tipo_agente || '') : (ext ? 'PQS/NITR - ABC' : '');
+  document.getElementById('chk_uni_cap').value = u ? (u.capacidad || '') : '';
   document.getElementById('chk_uni_ubic').value = u ? (u.ubicacion || '') : '';
   document.getElementById('chk_uni_area').value = u ? (u.area || '') : '';
   document.getElementById('chk_uni_venc').value = u ? (u.vencimiento || '') : '';
+  document.getElementById('chk_uni_mto').value = u ? (u.ultimo_mantenimiento || '') : '';
+  document.getElementById('chk_uni_estop').value = u ? (u.estado_operativo || 'operativo') : 'operativo';
+  // Muestra/oculta los campos propios de extintor.
+  ['chk_uni_ext_placa', 'chk_uni_ext_ruta', 'chk_uni_ext_agente', 'chk_uni_ext_cap', 'chk_uni_ext_mto', 'chk_uni_ext_estop']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.style.display = ext ? '' : 'none'; });
+  const vl = document.getElementById('chk_uni_venc_lbl'); if (vl) vl.textContent = ext ? 'Próxima recarga / vencimiento' : 'Vencimiento';
   abrirModal('modalChkUni');
 }
 async function chkGuardarUni() {
@@ -730,11 +769,59 @@ async function chkGuardarUni() {
     action: 'uni_save', id: document.getElementById('chk_uni_id').value || '0',
     componente_id: document.getElementById('chk_uni_comp').value,
     codigo, nombre,
+    placa: document.getElementById('chk_uni_placa').value.trim(),
+    ruta: document.getElementById('chk_uni_ruta').value.trim(),
+    tipo_agente: document.getElementById('chk_uni_agente').value.trim(),
+    capacidad: document.getElementById('chk_uni_cap').value.trim(),
     ubicacion: document.getElementById('chk_uni_ubic').value.trim(),
     area: document.getElementById('chk_uni_area').value.trim(),
     vencimiento: document.getElementById('chk_uni_venc').value || '',
+    ultimo_mantenimiento: document.getElementById('chk_uni_mto').value || '',
+    estado_operativo: document.getElementById('chk_uni_estop').value || 'operativo',
   });
   if (r && r.success) { toast('Unidad guardada', 'success'); cerrarModal('modalChkUni'); delete _chkUnidadesCache[_chkEqComp]; cargarEquipoDash(); }
+}
+
+// ── Etiqueta QR imprimible por unidad (extintor) ──
+function chkEtiquetaUni(id) {
+  const u = _chkEqUnidadesAll.find(x => +x.id === +id) || (_chkEqData && (_chkEqData.unidades || []).find(x => +x.id === +id));
+  if (!u) { toast('Unidad no encontrada', 'error'); return; }
+  if (typeof QRCode === 'undefined') { toast('Librería QR no disponible', 'error'); return; }
+  const url = location.origin + location.pathname + '?chkuni=' + u.id;
+  const tmp = document.createElement('div');
+  new QRCode(tmp, { text: url, width: 240, height: 240, correctLevel: QRCode.CorrectLevel.M });
+  setTimeout(() => {
+    const node = tmp.querySelector('img') || tmp.querySelector('canvas');
+    const src = node.tagName === 'IMG' ? node.src : node.toDataURL('image/png');
+    const esc = s => _chkEsc(s || '');
+    const fila = (lbl, val) => val ? `<tr><td style="color:#555;padding:2px 8px 2px 0;white-space:nowrap">${lbl}</td><td style="font-weight:700;color:#000">${esc(val)}</td></tr>` : '';
+    const w = window.open('', '_blank', 'width=440,height=680');
+    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Etiqueta ${esc(u.codigo)}</title>
+      <style>body{font-family:Arial,Helvetica,sans-serif;margin:0;padding:16px;color:#000}
+      .lbl{border:2px solid #000;border-radius:10px;padding:16px;max-width:360px;margin:0 auto;text-align:center}
+      .hd{background:#000;color:#fff;font-weight:800;letter-spacing:1px;padding:6px;border-radius:6px;font-size:15px}
+      .cod{font-size:30px;font-weight:900;margin:10px 0 2px}
+      table{margin:8px auto 0;font-size:13px;text-align:left}
+      .foot{margin-top:10px;font-size:11px;color:#333}
+      @media print{.noprint{display:none}}</style></head><body>
+      <div class="lbl">
+        <div class="hd">🧯 EXTINTOR</div>
+        <div class="cod">${esc(u.codigo)}</div>
+        <img src="${src}" style="width:200px;height:200px" alt="QR">
+        <table>
+          ${fila('Camión', u.placa)}
+          ${fila('Ruta', u.ruta)}
+          ${fila('Tipo', u.tipo_agente)}
+          ${fila('Capacidad', u.capacidad)}
+          ${fila('Vence', u.vencimiento ? new Date(u.vencimiento + 'T00:00:00').toLocaleDateString('es-PE') : '')}
+        </table>
+        <div class="foot">Escanea el QR para registrar la inspección</div>
+      </div>
+      <div class="noprint" style="text-align:center;margin-top:14px">
+        <button onclick="window.print()" style="padding:8px 18px;font-size:14px;cursor:pointer">Imprimir</button>
+      </div></body></html>`);
+    w.document.close(); w.focus();
+  }, 150);
 }
 async function chkEliminarUni(id) {
   if (!confirm('¿Eliminar esta unidad? Se conservan sus inspecciones (quedan sin unidad).')) return;

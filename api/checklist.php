@@ -494,7 +494,9 @@ function uniList() {
     $where = $comp > 0 ? 'WHERE u.componente_id = ?' : '';
     $params = $comp > 0 ? [$comp] : [];
     $rows = db()->fetchAll(
-        "SELECT u.id, u.componente_id, u.codigo, u.nombre, u.ubicacion, u.area, u.vencimiento, u.activo,
+        "SELECT u.id, u.componente_id, u.codigo, u.nombre, u.placa, u.ruta, u.ubicacion, u.area,
+                u.tipo_agente, u.capacidad, u.vencimiento, u.ultimo_mantenimiento, u.estado_operativo, u.activo,
+                DATEDIFF(u.vencimiento, CURDATE()) AS dias_vencer,
                 (SELECT COUNT(*) FROM chk_inspecciones i WHERE i.unidad_id = u.id) AS n_inspecciones
            FROM chk_unidades u $where ORDER BY u.codigo ASC", $params);
     jsonResponse(true, '', ['unidades' => $rows]);
@@ -505,22 +507,34 @@ function uniSave() {
     $comp   = (int)($_POST['componente_id'] ?? 0);
     $codigo = strtoupper(trim($_POST['codigo'] ?? ''));
     $nombre = trim($_POST['nombre'] ?? '');
+    $placa  = strtoupper(trim($_POST['placa'] ?? ''));
+    $ruta   = trim($_POST['ruta'] ?? '');
+    $tipoAg = trim($_POST['tipo_agente'] ?? '');
+    $capac  = trim($_POST['capacidad'] ?? '');
     $ubic   = trim($_POST['ubicacion'] ?? '');
     $area   = trim($_POST['area'] ?? '');
     $venc   = trim($_POST['vencimiento'] ?? '');
+    $ultMto = trim($_POST['ultimo_mantenimiento'] ?? '');
+    $estOp  = trim($_POST['estado_operativo'] ?? 'operativo');
     if ($comp <= 0)      jsonResponse(false, 'Tipo de equipo inválido.', null, 422);
     if ($codigo === '')  jsonResponse(false, 'El código es obligatorio.', null, 422);
     if ($nombre === '')  jsonResponse(false, 'El nombre es obligatorio.', null, 422);
-    $vencVal = preg_match('/^\d{4}-\d{2}-\d{2}$/', $venc) ? $venc : null;
+    $vencVal   = preg_match('/^\d{4}-\d{2}-\d{2}$/', $venc) ? $venc : null;
+    $ultMtoVal = preg_match('/^\d{4}-\d{2}-\d{2}$/', $ultMto) ? $ultMto : null;
+    $estOp     = in_array($estOp, ['operativo', 'fuera_servicio'], true) ? $estOp : 'operativo';
     if (db()->fetchOne("SELECT id FROM chk_unidades WHERE codigo = ? AND id <> ?", [$codigo, $id])) {
         jsonResponse(false, 'Ya existe una unidad con ese código.', null, 422);
     }
+    // Asignación 1:1 — una misma placa (camión) no puede estar en dos equipos del mismo tipo.
+    if ($placa !== '' && db()->fetchOne("SELECT id FROM chk_unidades WHERE placa = ? AND componente_id = ? AND id <> ?", [$placa, $comp, $id])) {
+        jsonResponse(false, 'Ese camión (placa) ya está asignado a otro equipo de este tipo.', null, 422);
+    }
     if ($id > 0) {
-        db()->query("UPDATE chk_unidades SET componente_id=?, codigo=?, nombre=?, ubicacion=?, area=?, vencimiento=? WHERE id=?",
-            [$comp, $codigo, $nombre, $ubic ?: null, $area ?: null, $vencVal, $id]);
+        db()->query("UPDATE chk_unidades SET componente_id=?, codigo=?, nombre=?, placa=?, ruta=?, tipo_agente=?, capacidad=?, ubicacion=?, area=?, vencimiento=?, ultimo_mantenimiento=?, estado_operativo=? WHERE id=?",
+            [$comp, $codigo, $nombre, $placa ?: null, $ruta ?: null, $tipoAg ?: null, $capac ?: null, $ubic ?: null, $area ?: null, $vencVal, $ultMtoVal, $estOp, $id]);
     } else {
-        db()->query("INSERT INTO chk_unidades (componente_id, codigo, nombre, ubicacion, area, vencimiento) VALUES (?, ?, ?, ?, ?, ?)",
-            [$comp, $codigo, $nombre, $ubic ?: null, $area ?: null, $vencVal]);
+        db()->query("INSERT INTO chk_unidades (componente_id, codigo, nombre, placa, ruta, tipo_agente, capacidad, ubicacion, area, vencimiento, ultimo_mantenimiento, estado_operativo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [$comp, $codigo, $nombre, $placa ?: null, $ruta ?: null, $tipoAg ?: null, $capac ?: null, $ubic ?: null, $area ?: null, $vencVal, $ultMtoVal, $estOp]);
         $id = (int)db()->lastInsertId();
     }
     jsonResponse(true, 'Unidad guardada.', ['id' => $id]);
@@ -555,9 +569,10 @@ function equipoDash() {
 
     $pct = fn($c, $nc) => ($c + $nc) > 0 ? (int)round($c / ($c + $nc) * 100) : null;
 
-    // Inventario del tipo (metadata: nombre, área, ubicación, vencimiento).
+    // Inventario del tipo (metadata: nombre, camión, ruta, capacidad, vencimiento…).
     $inv = db()->fetchAll(
-        "SELECT id, codigo, nombre, ubicacion, area, vencimiento FROM chk_unidades
+        "SELECT id, codigo, nombre, placa, ruta, tipo_agente, capacidad, ubicacion, area, vencimiento, estado_operativo
+           FROM chk_unidades
           WHERE componente_id = ? AND activo = 1 ORDER BY codigo ASC", [$comp]);
     $invByCode = [];
     foreach ($inv as $u) { $invByCode[strtoupper($u['codigo'])] = $u; }
@@ -619,12 +634,15 @@ function equipoDash() {
     $universe = [];
     foreach ($inv as $u) {
         $universe[] = ['id' => (int)$u['id'], 'codigo' => $u['codigo'], 'nombre' => $u['nombre'],
+                       'placa' => $u['placa'], 'ruta' => $u['ruta'], 'capacidad' => $u['capacidad'],
+                       'tipo_agente' => $u['tipo_agente'], 'estado_operativo' => $u['estado_operativo'],
                        'ubicacion' => $u['ubicacion'], 'area' => $u['area'], 'vencimiento' => $u['vencimiento'],
                        'key' => strtoupper($u['codigo'])];
     }
     foreach (array_keys($uniRaw) as $pk) {
         if (!isset($invByCode[$pk])) {
-            $universe[] = ['id' => 0, 'codigo' => $pk, 'nombre' => '', 'ubicacion' => null,
+            $universe[] = ['id' => 0, 'codigo' => $pk, 'nombre' => '', 'placa' => null, 'ruta' => null,
+                           'capacidad' => null, 'tipo_agente' => null, 'estado_operativo' => null, 'ubicacion' => null,
                            'area' => $placaArea[$pk] ?? null, 'vencimiento' => null, 'key' => $pk];
         }
     }
@@ -643,6 +661,8 @@ function equipoDash() {
             if ($v) { $dias = (int)$hoy->diff($v)->format('%r%a'); $estVenc = $dias < 0 ? 'vencido' : ($dias <= 90 ? 'por_vencer' : 'ok'); }
         }
         return ['id' => $u['id'], 'codigo' => $u['codigo'], 'nombre' => $u['nombre'],
+                'placa' => $u['placa'] ?? null, 'ruta' => $u['ruta'] ?? null, 'capacidad' => $u['capacidad'] ?? null,
+                'tipo_agente' => $u['tipo_agente'] ?? null, 'estado_operativo' => $u['estado_operativo'] ?? null,
                 'area' => $u['area'], 'ubicacion' => $u['ubicacion'], 'vencimiento' => $u['vencimiento'],
                 'est_venc' => $estVenc, 'meses' => $meses, 'prom' => $pct($cT, $ncT)];
     }, $universe);

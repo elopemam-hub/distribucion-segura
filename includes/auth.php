@@ -751,6 +751,22 @@ function setupChecklist(): void {
               WHERE table_schema = DATABASE() AND table_name = 'chk_resultados' AND column_name = 'vencimiento'");
         if (!$exRV) db()->query("ALTER TABLE chk_resultados ADD COLUMN vencimiento DATE NULL AFTER observacion", []);
 
+        // Campos de gestión por unidad (extintores: camión asignado, ruta, agente,
+        // capacidad, mantenimiento y estado operativo). Se autoprovisionan una vez.
+        $uniCols = [
+            'placa'                => "VARCHAR(20) NULL AFTER nombre",
+            'ruta'                 => "VARCHAR(40) NULL AFTER placa",
+            'tipo_agente'          => "VARCHAR(40) NULL AFTER area",
+            'capacidad'            => "VARCHAR(30) NULL AFTER tipo_agente",
+            'ultimo_mantenimiento' => "DATE NULL AFTER vencimiento",
+            'estado_operativo'     => "VARCHAR(20) NOT NULL DEFAULT 'operativo' AFTER activo",
+        ];
+        foreach ($uniCols as $col => $ddl) {
+            $exC = db()->fetchOne("SELECT 1 FROM information_schema.columns
+                  WHERE table_schema = DATABASE() AND table_name = 'chk_unidades' AND column_name = ?", [$col]);
+            if (!$exC) db()->query("ALTER TABLE chk_unidades ADD COLUMN $col $ddl", []);
+        }
+
         // Siembra componentes + ítems estándar (solo si está vacío).
         if ((int)(db()->fetchOne("SELECT COUNT(*) c FROM chk_componentes")['c'] ?? 0) === 0) {
             $data = [
@@ -772,8 +788,98 @@ function setupChecklist(): void {
                 foreach ($items as $it) { $io++; db()->query("INSERT INTO chk_items (componente_id, texto, orden) VALUES (?, ?, ?)", [$cid, $it, $io]); }
             }
         }
+
+        // Banco de preguntas oficial de extintores + inventario de 28 unidades.
+        seedExtintoresT2();
     } catch (Exception $e) {
         error_log('[setupChecklist] ' . $e->getMessage());
+    }
+}
+
+// ============================================================
+// Siembra específica de EXTINTORES (proyecto T2): reemplaza el banco de
+// preguntas genérico del componente por el checklist NTP 350.021/043 (17 ítems)
+// y crea las 28 unidades con su camión, ruta, capacidad y vencimiento.
+// Idempotente: cada bloque se ejecuta una sola vez (guardas por existencia).
+// ============================================================
+function seedExtintoresT2(): void {
+    try {
+        $comp = db()->fetchOne("SELECT id FROM chk_componentes WHERE nombre LIKE '%xtintor%' ORDER BY id ASC LIMIT 1");
+        if (!$comp) return;
+        $compId = (int)$comp['id'];
+
+        // ── 17 preguntas oficiales ──
+        $preguntas = [
+            'El extintor está correctamente ubicado (visible, señalizado, altura 0.90–1.50 m)',
+            'El acceso al extintor está libre de obstáculos (radio mínimo 1 metro)',
+            'La zona y el extintor están correctamente numerados',
+            'Pictograma de clase de fuego (NTP 350.021) presente y legible',
+            'Pictograma de forma de uso presente y legible',
+            'Etiqueta de carga presente y legible (agente, capacidad, fecha, proveedor)',
+            'Tipo de recarga, N° de parte y concentración del agente ignífugo indicados',
+            'Colgador o soporte presente y en buen estado',
+            'Pasador y precinto de seguridad intactos (no manipulados)',
+            'Manómetro indica presión adecuada (aguja en zona verde)',
+            'Manija, palanca de activación y cabezal en buen estado y completos',
+            'Manguera presente y en buen estado (sin grietas, torceduras ni cortes)',
+            'Tobera, pitón o pistola presente y sin obstrucciones',
+            'Abrazadera sujetadora de manguera en buen estado',
+            'Cilindro en buen estado (sin golpes, corrosión ni deformaciones)',
+            'Pintura del cilindro en buen estado (sin deterioro ni oxidación visible)',
+            'Otras anomalías o condiciones inseguras observadas',
+        ];
+        // Guarda: si la primera pregunta ya existe, no re-sembramos.
+        $yaPreg = db()->fetchOne("SELECT id FROM chk_items WHERE componente_id = ? AND texto = ? LIMIT 1", [$compId, $preguntas[0]]);
+        if (!$yaPreg) {
+            // Retira las preguntas genéricas del componente (conserva historial: solo desactiva).
+            db()->query("UPDATE chk_items SET activo = 0 WHERE componente_id = ?", [$compId]);
+            $o = 0;
+            foreach ($preguntas as $t) { $o++; db()->query("INSERT INTO chk_items (componente_id, texto, orden, activo) VALUES (?, ?, ?, 1)", [$compId, $t, $o]); }
+        }
+
+        // ── 28 unidades (código, capacidad, camión/placa, ruta, vencimiento) ──
+        $yaUni = db()->fetchOne("SELECT id FROM chk_unidades WHERE codigo = 'EXT-01' LIMIT 1");
+        if (!$yaUni) {
+            // [codigo, capacidad, placa (camión), ruta, vencimiento Y-m-d]
+            $rows = [
+                ['EXT-01', '06 Klg', 'D8W-880', 'BK77-01', '2027-01-31'],
+                ['EXT-02', '12 Klg', 'BNN-921', 'BK77-02', '2027-03-31'],
+                ['EXT-03', '09 Klg', 'BTT-893', 'BK77-03', '2027-04-30'],
+                ['EXT-04', '06 Klg', 'CAE-720', 'BK77-05', '2026-12-31'],
+                ['EXT-05', '06 Klg', 'CAD-777', 'BK77-06', '2026-12-31'],
+                ['EXT-06', '12 Klg', 'C9G-909', 'BK77-07', '2026-12-31'],
+                ['EXT-07', '09 Klg', 'D8Y-857', 'BK77-08', '2027-03-31'],
+                ['EXT-08', '06 Klg', 'BMD-795', 'BK77-09', '2027-01-30'],
+                ['EXT-09', '09 Klg', 'CAD-782', 'BK77-10', '2027-01-31'],
+                ['EXT-10', '10 Klg', 'D8Y-729', 'BK77-13', '2027-05-31'],
+                ['EXT-11', '11 Klg', 'C9H-906', 'BK77-14', '2027-04-30'],
+                ['EXT-12', '12 Klg', 'CHD-926', 'BK77-16', '2026-10-30'],
+                ['EXT-13', '13 Klg', 'D6M-720', 'BK77-17', '2027-02-28'],
+                ['EXT-14', '14 Klg', 'C9I-941', 'BK77-18', '2027-03-30'],
+                ['EXT-15', '15 Klg', 'CAD-788', 'BK77-21', '2027-01-31'],
+                ['EXT-16', '16 Klg', 'F6F-862', 'BK77-22', '2026-09-30'],
+                ['EXT-17', '17 Klg', 'D0L-840', 'BK77-24', '2026-12-30'],
+                ['EXT-18', '18 Klg', 'C9J-885', 'BK77-25', '2027-07-30'],
+                ['EXT-19', '19 Klg', 'CAE-717', 'BK77-26', '2026-12-31'],
+                ['EXT-20', '20 Klg', 'CAD-854', 'BK77-29', '2027-03-31'],
+                ['EXT-21', '21 Klg', 'BTT-892', 'BK77-32', '2027-07-30'],
+                ['EXT-22', '22 Klg', 'BMT-924', 'BK77-33', '2027-01-31'],
+                ['EXT-23', '23 Klg', 'C2C-806', 'CREE',    '2027-01-31'],
+                ['EXT-24', '24 Klg', 'BMB-922', 'PORTER',  '2027-04-30'],
+                ['EXT-25', '25 Klg', 'BXG-750', '',        '2027-05-30'],
+                ['EXT-26', '26 Klg', 'BMC-750', '',        '2027-05-30'],
+                ['EXT-27', '27 Klg', 'D0M-840', '',        '2026-12-31'],
+                ['EXT-28', '28 Klg', 'D8X-891', '',        '2027-03-31'],
+            ];
+            foreach ($rows as $r) {
+                db()->query(
+                    "INSERT INTO chk_unidades (componente_id, codigo, nombre, placa, ruta, tipo_agente, capacidad, vencimiento, estado_operativo, activo)
+                     VALUES (?, ?, ?, ?, ?, 'PQS/NITR - ABC', ?, ?, 'operativo', 1)",
+                    [$compId, $r[0], 'Extintor ' . substr($r[0], 4), $r[2] ?: null, $r[3] ?: null, $r[1], $r[4]]);
+            }
+        }
+    } catch (Throwable $e) {
+        error_log('[seedExtintoresT2] ' . $e->getMessage());
     }
 }
 

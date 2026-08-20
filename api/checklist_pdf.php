@@ -25,7 +25,14 @@ $resRows = db()->fetchAll("SELECT item_id, resultado, observacion, vencimiento F
 $res = [];
 foreach ($resRows as $r) $res[(int)$r['item_id']] = $r;
 foreach ($comps as &$c) {
-    $c['items'] = db()->fetchAll("SELECT id, texto FROM chk_items WHERE componente_id = ? ORDER BY orden ASC, id ASC", [$c['id']]);
+    // Muestra las preguntas activas del componente MÁS cualquier ítem que tenga
+    // respuesta en ESTA inspección (así un histórico con preguntas ya retiradas
+    // sigue mostrando lo que se evaluó, sin arrastrar las viejas a los nuevos).
+    $c['items'] = db()->fetchAll(
+        "SELECT id, texto FROM chk_items
+          WHERE componente_id = ?
+            AND (activo = 1 OR id IN (SELECT item_id FROM chk_resultados WHERE inspeccion_id = ?))
+          ORDER BY orden ASC, id ASC", [$c['id'], $id]);
 }
 unset($c);
 

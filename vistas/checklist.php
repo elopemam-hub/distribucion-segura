@@ -130,12 +130,26 @@
             <input type="text" class="form-control" id="chk_uni_codigo" maxlength="40" placeholder="Ej: CAR-DIA-ALM-01"></div>
           <div class="form-group"><label class="form-label">Nombre / descripción <span style="color:var(--rojo)">*</span></label>
             <input type="text" class="form-control" id="chk_uni_nombre" maxlength="160" placeholder="Ej: Carretilla diaria 01 – Almacén Central"></div>
+          <div class="form-group" id="chk_uni_ext_placa"><label class="form-label">Camión asignado (placa)</label>
+            <input type="text" class="form-control" id="chk_uni_placa" maxlength="20" placeholder="Ej: D8W-880" style="text-transform:uppercase"></div>
+          <div class="form-group" id="chk_uni_ext_ruta"><label class="form-label">Ruta</label>
+            <input type="text" class="form-control" id="chk_uni_ruta" maxlength="40" placeholder="Ej: BK77-01"></div>
+          <div class="form-group" id="chk_uni_ext_agente"><label class="form-label">Tipo de agente</label>
+            <input type="text" class="form-control" id="chk_uni_agente" maxlength="40" placeholder="Ej: PQS/NITR - ABC"></div>
+          <div class="form-group" id="chk_uni_ext_cap"><label class="form-label">Capacidad</label>
+            <input type="text" class="form-control" id="chk_uni_cap" maxlength="30" placeholder="Ej: 06 Klg"></div>
           <div class="form-group"><label class="form-label">Ubicación</label>
             <input type="text" class="form-control" id="chk_uni_ubic" maxlength="120" placeholder="Ej: Almacén Central"></div>
           <div class="form-group"><label class="form-label">Área</label>
             <input type="text" class="form-control" id="chk_uni_area" maxlength="80" placeholder="Ej: Almacén"></div>
-          <div class="form-group"><label class="form-label">Vencimiento</label>
+          <div class="form-group"><label class="form-label" id="chk_uni_venc_lbl">Vencimiento</label>
             <input type="date" class="form-control" id="chk_uni_venc"></div>
+          <div class="form-group" id="chk_uni_ext_mto"><label class="form-label">Último mantenimiento</label>
+            <input type="date" class="form-control" id="chk_uni_mto"></div>
+          <div class="form-group" id="chk_uni_ext_estop"><label class="form-label">Estado operativo</label>
+            <select class="form-control" id="chk_uni_estop">
+              <option value="operativo">Operativo</option><option value="fuera_servicio">Fuera de servicio</option>
+            </select></div>
         </div>
       </div>
       <div class="modal-footer" style="display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--gris-700)">
