@@ -499,14 +499,6 @@ function MatrizApp() {
         </div>
 
         <div style={{display:"flex",gap:7,alignItems:"center",flexWrap:"wrap"}}>
-          {IS_ADMIN && (
-            <span style={{padding:"4px 10px",borderRadius:4,background:"rgba(245,200,0,.1)",border:"1px solid rgba(245,200,0,.3)",color:"#F5C800",fontSize:11,fontWeight:700}}>
-              <i className="fas fa-crown" style={{marginRight:5}}></i>{USER_NAME} · Admin
-            </span>
-          )}
-          <button className="mtz-abtn" onClick={()=>exportCSV(filtered)} style={{...btnBase,background:"var(--mtz-surface-2)",color:"var(--mtz-text-3)",border:"1px solid var(--mtz-border-2)"}}>
-            <i className="fas fa-file-csv"></i> CSV
-          </button>
           <button className="mtz-abtn" onClick={()=>exportXLSX(filtered)} style={{...btnBase,background:"rgba(245,200,0,.08)",color:"#F5C800",border:"1px solid rgba(245,200,0,.3)"}}>
             <i className="fas fa-file-excel"></i> Excel
           </button>

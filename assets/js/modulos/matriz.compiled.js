@@ -1471,33 +1471,7 @@ function MatrizApp() {
       alignItems: "center",
       flexWrap: "wrap"
     }
-  }, IS_ADMIN && /*#__PURE__*/React.createElement("span", {
-    style: {
-      padding: "4px 10px",
-      borderRadius: 4,
-      background: "rgba(245,200,0,.1)",
-      border: "1px solid rgba(245,200,0,.3)",
-      color: "#F5C800",
-      fontSize: 11,
-      fontWeight: 700
-    }
-  }, /*#__PURE__*/React.createElement("i", {
-    className: "fas fa-crown",
-    style: {
-      marginRight: 5
-    }
-  }), USER_NAME, " · Admin"), /*#__PURE__*/React.createElement("button", {
-    className: "mtz-abtn",
-    onClick: () => exportCSV(filtered),
-    style: {
-      ...btnBase,
-      background: "var(--mtz-surface-2)",
-      color: "var(--mtz-text-3)",
-      border: "1px solid var(--mtz-border-2)"
-    }
-  }, /*#__PURE__*/React.createElement("i", {
-    className: "fas fa-file-csv"
-  }), " CSV"), /*#__PURE__*/React.createElement("button", {
+  }, /*#__PURE__*/React.createElement("button", {
     className: "mtz-abtn",
     onClick: () => exportXLSX(filtered),
     style: {
