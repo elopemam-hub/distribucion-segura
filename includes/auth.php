@@ -791,8 +791,72 @@ function setupChecklist(): void {
 
         // Banco de preguntas oficial de extintores + inventario de 28 unidades.
         seedExtintoresT2();
+        // Banco de contenido de botiquín + inventario de 28 unidades (1 por camión).
+        seedBotiquinT2();
     } catch (Exception $e) {
         error_log('[setupChecklist] ' . $e->getMessage());
+    }
+}
+
+// Placas/rutas de los 28 camiones (compartidas por extintores y botiquines: un
+// equipo de cada tipo por camión). [codigo_sufijo, placa, ruta].
+function _chkFlotaT2(): array {
+    return [
+        ['01', 'D8W-880', 'BK77-01'], ['02', 'BNN-921', 'BK77-02'], ['03', 'BTT-893', 'BK77-03'],
+        ['04', 'CAE-720', 'BK77-05'], ['05', 'CAD-777', 'BK77-06'], ['06', 'C9G-909', 'BK77-07'],
+        ['07', 'D8Y-857', 'BK77-08'], ['08', 'BMD-795', 'BK77-09'], ['09', 'CAD-782', 'BK77-10'],
+        ['10', 'D8Y-729', 'BK77-13'], ['11', 'C9H-906', 'BK77-14'], ['12', 'CHD-926', 'BK77-16'],
+        ['13', 'D6M-720', 'BK77-17'], ['14', 'C9I-941', 'BK77-18'], ['15', 'CAD-788', 'BK77-21'],
+        ['16', 'F6F-862', 'BK77-22'], ['17', 'D0L-840', 'BK77-24'], ['18', 'C9J-885', 'BK77-25'],
+        ['19', 'CAE-717', 'BK77-26'], ['20', 'CAD-854', 'BK77-29'], ['21', 'BTT-892', 'BK77-32'],
+        ['22', 'BMT-924', 'BK77-33'], ['23', 'C2C-806', 'CREE'],    ['24', 'BMB-922', 'PORTER'],
+        ['25', 'BXG-750', ''],        ['26', 'BMC-750', ''],        ['27', 'D0M-840', ''],
+        ['28', 'D8X-891', ''],
+    ];
+}
+
+// ============================================================
+// Siembra específica de BOTIQUINES (proyecto T2): reemplaza el banco genérico
+// del componente Botiquín por su contenido normado (9 ítems, R.M. 1275-2021-SA)
+// y crea 28 unidades (una por camión). Idempotente (guardas por existencia).
+// ============================================================
+function seedBotiquinT2(): void {
+    try {
+        $comp = db()->fetchOne("SELECT id FROM chk_componentes WHERE nombre LIKE '%otiqu%' ORDER BY id ASC LIMIT 1");
+        if (!$comp) return;
+        $compId = (int)$comp['id'];
+
+        // ── 9 ítems de contenido (cada uno lleva su vencimiento por fila) ──
+        $items = [
+            'Alcohol de 70° de 500 ml — Cantidad: 1',
+            'Gasa esterilizada fraccionada 10 cm x 10 cm — Cantidad: 10',
+            'Esparadrapo 2.5 cm x 5 m — Cantidad: 1',
+            'Vendas elásticas 4" x 5 yardas — Cantidad: 1',
+            'Jabón antiséptico — Cantidad: 1',
+            'Bandas adhesivas (curitas) — Cantidad: 5',
+            'Tijera punta roma de 3 pulgadas — Cantidad: 1',
+            'Guantes quirúrgicos esterilizados (7 ½) — Cantidad: 2',
+            'Algodón por 50 gramos — Cantidad: 1',
+        ];
+        $yaItem = db()->fetchOne("SELECT id FROM chk_items WHERE componente_id = ? AND texto = ? LIMIT 1", [$compId, $items[0]]);
+        if (!$yaItem) {
+            db()->query("UPDATE chk_items SET activo = 0 WHERE componente_id = ?", [$compId]);
+            $o = 0;
+            foreach ($items as $t) { $o++; db()->query("INSERT INTO chk_items (componente_id, texto, orden, activo) VALUES (?, ?, ?, 1)", [$compId, $t, $o]); }
+        }
+
+        // ── 28 unidades BOT-01…BOT-28 (una por camión) ──
+        $yaUni = db()->fetchOne("SELECT id FROM chk_unidades WHERE codigo = 'BOT-01' LIMIT 1");
+        if (!$yaUni) {
+            foreach (_chkFlotaT2() as $f) {
+                db()->query(
+                    "INSERT INTO chk_unidades (componente_id, codigo, nombre, placa, ruta, estado_operativo, activo)
+                     VALUES (?, ?, ?, ?, ?, 'operativo', 1)",
+                    [$compId, 'BOT-' . $f[0], 'Botiquín ' . $f[0], $f[1] ?: null, $f[2] ?: null]);
+            }
+        }
+    } catch (Throwable $e) {
+        error_log('[seedBotiquinT2] ' . $e->getMessage());
     }
 }
 

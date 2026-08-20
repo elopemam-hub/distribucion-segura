@@ -735,11 +735,13 @@ function _chkEqRenderEvo(evo) {
 // ── Inventario de unidades (CRUD) ──
 function chkNuevaUni() { _chkAbrirUni(null); }
 function chkEditarUni(id) { const u = _chkEqUnidadesAll.find(x => +x.id === +id); _chkAbrirUni(u || null); }
-// ¿El tipo de equipo actual es "Extintor"? (activa los campos de gestión propios)
+// Tipo de equipo actual (por nombre del componente).
 function _chkEqEsExtintor() { return /extint/i.test((_chkEqData && _chkEqData.componente && _chkEqData.componente.nombre) || ''); }
+function _chkEqEsBotiquin() { return /botiqu/i.test((_chkEqData && _chkEqData.componente && _chkEqData.componente.nombre) || ''); }
 
 function _chkAbrirUni(u) {
   const ext = _chkEqEsExtintor();
+  const asignable = ext || _chkEqEsBotiquin();   // equipos con camión asignado (placa/ruta)
   document.getElementById('chkUniTitulo').textContent = u ? 'Editar unidad' : 'Nueva unidad';
   document.getElementById('chk_uni_id').value = u ? u.id : '';
   document.getElementById('chk_uni_comp').value = _chkEqComp;
@@ -754,9 +756,10 @@ function _chkAbrirUni(u) {
   document.getElementById('chk_uni_venc').value = u ? (u.vencimiento || '') : '';
   document.getElementById('chk_uni_mto').value = u ? (u.ultimo_mantenimiento || '') : '';
   document.getElementById('chk_uni_estop').value = u ? (u.estado_operativo || 'operativo') : 'operativo';
-  // Muestra/oculta los campos propios de extintor.
-  ['chk_uni_ext_placa', 'chk_uni_ext_ruta', 'chk_uni_ext_agente', 'chk_uni_ext_cap', 'chk_uni_ext_mto', 'chk_uni_ext_estop']
-    .forEach(id => { const el = document.getElementById(id); if (el) el.style.display = ext ? '' : 'none'; });
+  // Camión/ruta/mantenimiento/estado: extintor y botiquín. Agente/capacidad: solo extintor.
+  const setDisp = (id, on) => { const el = document.getElementById(id); if (el) el.style.display = on ? '' : 'none'; };
+  ['chk_uni_ext_placa', 'chk_uni_ext_ruta', 'chk_uni_ext_mto', 'chk_uni_ext_estop'].forEach(id => setDisp(id, asignable));
+  ['chk_uni_ext_agente', 'chk_uni_ext_cap'].forEach(id => setDisp(id, ext));
   const vl = document.getElementById('chk_uni_venc_lbl'); if (vl) vl.textContent = ext ? 'Próxima recarga / vencimiento' : 'Vencimiento';
   abrirModal('modalChkUni');
 }
@@ -788,6 +791,8 @@ function chkEtiquetaUni(id) {
   if (!u) { toast('Unidad no encontrada', 'error'); return; }
   if (typeof QRCode === 'undefined') { toast('Librería QR no disponible', 'error'); return; }
   const url = location.origin + location.pathname + '?chkuni=' + u.id;
+  const tipoNom = (_chkEqData && _chkEqData.componente && _chkEqData.componente.nombre) || 'EQUIPO';
+  const icono = /extint/i.test(tipoNom) ? '🧯' : (/botiqu/i.test(tipoNom) ? '⛑️' : '📦');
   const tmp = document.createElement('div');
   new QRCode(tmp, { text: url, width: 240, height: 240, correctLevel: QRCode.CorrectLevel.M });
   setTimeout(() => {
@@ -805,7 +810,7 @@ function chkEtiquetaUni(id) {
       .foot{margin-top:10px;font-size:11px;color:#333}
       @media print{.noprint{display:none}}</style></head><body>
       <div class="lbl">
-        <div class="hd">🧯 EXTINTOR</div>
+        <div class="hd">${icono} ${esc(tipoNom.toUpperCase())}</div>
         <div class="cod">${esc(u.codigo)}</div>
         <img src="${src}" style="width:200px;height:200px" alt="QR">
         <table>
