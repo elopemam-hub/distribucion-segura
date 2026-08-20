@@ -171,7 +171,11 @@ $distribucionHora = db()->fetchAll(
     [$anio, $mesN]
 );
 
+// Último mes con inspecciones registradas (para no mostrar un mes vacío al abrir).
+$ultimoMes = db()->fetchOne("SELECT DATE_FORMAT(MAX(fecha), '%Y-%m') AS m FROM inspecciones")['m'] ?? null;
+
 jsonResponse(true, '', [
+    'ultimoMes'        => $ultimoMes,
     'kpis'             => $kpis,
     'kpisAnt'          => $kpisAnt,
     'eppGlobal'        => $eppGlobal,

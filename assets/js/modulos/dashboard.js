@@ -5,8 +5,10 @@
 let chartTendencia = null;
 let chartDonut     = null;
 
+let _dashAutoMes = false;   // solo auto-ajusta el mes una vez, al abrir
 async function cargarDashboard() {
-  const mes = document.getElementById('filtroMes')?.value || new Date().toISOString().slice(0,7);
+  const mesInput = document.getElementById('filtroMes');
+  const mes = mesInput?.value || new Date().toISOString().slice(0,7);
   // esqueletos mientras carga
   document.getElementById('kpiGrid').innerHTML = Array(6).fill('<div class="dash-kpi-skeleton"></div>').join('');
   try {
@@ -14,6 +16,14 @@ async function cargarDashboard() {
     const data = await resp.json();
     if (!data.success) return;
     const d = data.data;
+    // Al abrir: si el mes elegido está vacío, salta al último mes con datos.
+    if (!_dashAutoMes) {
+      _dashAutoMes = true;
+      if ((+d.kpis?.total_inspecciones || 0) === 0 && d.ultimoMes && d.ultimoMes !== mes && mesInput) {
+        mesInput.value = d.ultimoMes;
+        return cargarDashboard();
+      }
+    }
     renderKPIs(d);
     renderTendencia(d.tendencia, mes);
     renderDonut(d.kpis, d.totalHallazgos, d.hallazgosCrit);
