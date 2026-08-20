@@ -527,19 +527,21 @@ function equipoDash() {
 
     $pct = fn($c, $nc) => ($c + $nc) > 0 ? (int)round($c / ($c + $nc) * 100) : null;
 
-    // Unidades activas del tipo.
-    $unidades = db()->fetchAll(
+    // Inventario del tipo (metadata: nombre, área, ubicación, vencimiento).
+    $inv = db()->fetchAll(
         "SELECT id, codigo, nombre, ubicacion, area, vencimiento FROM chk_unidades
           WHERE componente_id = ? AND activo = 1 ORDER BY codigo ASC", [$comp]);
-    $totalUnid = count($unidades);
+    $invByCode = [];
+    foreach ($inv as $u) { $invByCode[strtoupper($u['codigo'])] = $u; }
 
     // Ítems (preguntas) activos del tipo.
     $items = db()->fetchAll(
         "SELECT id, texto FROM chk_items WHERE componente_id = ? AND activo = 1 ORDER BY orden ASC, id ASC", [$comp]);
 
-    // Filtro común de resultados: este tipo, año, con unidad vinculada.
+    // Base: TODAS las inspecciones del tipo en el año. La "unidad" es la placa/código
+    // (al inspeccionar por inventario, placa = código; por camión, placa = placa).
     $baseFrom = "FROM chk_resultados r JOIN chk_inspecciones i ON i.id = r.inspeccion_id
-                 WHERE i.componente_id = ? AND i.unidad_id IS NOT NULL AND i.periodo LIKE ?";
+                 WHERE i.componente_id = ? AND i.periodo LIKE ?";
     $bp = [$comp, $like];
 
     // Evolución mensual (todos los ítems).
@@ -570,17 +572,32 @@ function equipoDash() {
         return ['id' => (int)$it['id'], 'texto' => $it['texto'], 'meses' => $meses, 'prom' => $pct($cT, $ncT)];
     }, $items);
 
-    // Estado por unidad × mes.
+    // Resultados por unidad (placa/código) × mes.
     $uniRaw = [];
-    foreach (db()->fetchAll("SELECT i.unidad_id, SUBSTRING(i.periodo,6,2) mes,
-            SUM(r.resultado='conforme') c, SUM(r.resultado='no_conforme') nc $baseFrom GROUP BY i.unidad_id, mes", $bp) as $r) {
-        $uniRaw[(int)$r['unidad_id']][(int)$r['mes']] = ['c' => (int)$r['c'], 'nc' => (int)$r['nc']];
+    foreach (db()->fetchAll("SELECT UPPER(i.placa) placa, SUBSTRING(i.periodo,6,2) mes,
+            SUM(r.resultado='conforme') c, SUM(r.resultado='no_conforme') nc $baseFrom GROUP BY UPPER(i.placa), mes", $bp) as $r) {
+        $uniRaw[$r['placa']][(int)$r['mes']] = ['c' => (int)$r['c'], 'nc' => (int)$r['nc']];
     }
+
+    // Universo de unidades = inventario ∪ placas inspeccionadas (sin duplicar).
+    $universe = [];
+    foreach ($inv as $u) {
+        $universe[] = ['id' => (int)$u['id'], 'codigo' => $u['codigo'], 'nombre' => $u['nombre'],
+                       'ubicacion' => $u['ubicacion'], 'area' => $u['area'], 'vencimiento' => $u['vencimiento'],
+                       'key' => strtoupper($u['codigo'])];
+    }
+    foreach (array_keys($uniRaw) as $pk) {
+        if (!isset($invByCode[$pk])) {
+            $universe[] = ['id' => 0, 'codigo' => $pk, 'nombre' => '', 'ubicacion' => null,
+                           'area' => null, 'vencimiento' => null, 'key' => $pk];
+        }
+    }
+
     $hoy = new DateTime('today');
     $unidadesOut = array_map(function ($u) use ($uniRaw, $pct, $hoy) {
         $meses = []; $cT = 0; $ncT = 0;
         for ($m = 1; $m <= 12; $m++) {
-            $x = $uniRaw[(int)$u['id']][$m] ?? ['c' => 0, 'nc' => 0];
+            $x = $uniRaw[$u['key']][$m] ?? ['c' => 0, 'nc' => 0];
             $cT += $x['c']; $ncT += $x['nc'];
             $meses[] = $pct($x['c'], $x['nc']);
         }
@@ -589,18 +606,20 @@ function equipoDash() {
             $v = DateTime::createFromFormat('Y-m-d', $u['vencimiento']);
             if ($v) { $dias = (int)$hoy->diff($v)->format('%r%a'); $estVenc = $dias < 0 ? 'vencido' : ($dias <= 90 ? 'por_vencer' : 'ok'); }
         }
-        return ['id' => (int)$u['id'], 'codigo' => $u['codigo'], 'nombre' => $u['nombre'],
+        return ['id' => $u['id'], 'codigo' => $u['codigo'], 'nombre' => $u['nombre'],
                 'area' => $u['area'], 'ubicacion' => $u['ubicacion'], 'vencimiento' => $u['vencimiento'],
                 'est_venc' => $estVenc, 'meses' => $meses, 'prom' => $pct($cT, $ncT)];
-    }, $unidades);
+    }, $universe);
+    $totalUnid = count($universe);
 
-    // Cumplimiento por área (año).
+    // Cumplimiento por área (año). Placas sin inventario → "Sin área".
     $porArea = [];
     foreach (db()->fetchAll("SELECT COALESCE(NULLIF(u.area,''),'Sin área') area,
             SUM(r.resultado='conforme') c, SUM(r.resultado='no_conforme') nc
             FROM chk_resultados r JOIN chk_inspecciones i ON i.id = r.inspeccion_id
-            JOIN chk_unidades u ON u.id = i.unidad_id
-            WHERE i.componente_id = ? AND i.periodo LIKE ? GROUP BY u.area ORDER BY u.area ASC", $bp) as $r) {
+            LEFT JOIN chk_unidades u ON UPPER(u.codigo) = UPPER(i.placa) AND u.componente_id = i.componente_id
+            WHERE i.componente_id = ? AND i.periodo LIKE ?
+            GROUP BY COALESCE(NULLIF(u.area,''),'Sin área') ORDER BY area ASC", $bp) as $r) {
         $porArea[] = ['area' => $r['area'], 'pct' => $pct((int)$r['c'], (int)$r['nc'])];
     }
 
@@ -608,9 +627,9 @@ function equipoDash() {
     $tot = db()->fetchOne("SELECT SUM(r.resultado='conforme') c, SUM(r.resultado='no_conforme') nc $baseFrom", $bp);
     $cumpl = $pct((int)($tot['c'] ?? 0), (int)($tot['nc'] ?? 0));
     $nInsp = (int)(db()->fetchOne(
-        "SELECT COUNT(*) n FROM chk_inspecciones WHERE componente_id = ? AND unidad_id IS NOT NULL AND periodo LIKE ?", $bp)['n'] ?? 0);
+        "SELECT COUNT(*) n FROM chk_inspecciones WHERE componente_id = ? AND periodo LIKE ?", $bp)['n'] ?? 0);
     $vencidos = 0; $porVencer = 0; $areasSet = [];
-    foreach ($unidades as $u) {
+    foreach ($inv as $u) {
         if (!empty($u['area'])) $areasSet[$u['area']] = 1;
         if (!empty($u['vencimiento'])) {
             $v = DateTime::createFromFormat('Y-m-d', $u['vencimiento']);
@@ -619,7 +638,7 @@ function equipoDash() {
     }
 
     $anios = array_column(db()->fetchAll(
-        "SELECT DISTINCT LEFT(periodo,4) anio FROM chk_inspecciones WHERE componente_id = ? AND unidad_id IS NOT NULL ORDER BY anio DESC", [$comp]), 'anio');
+        "SELECT DISTINCT LEFT(periodo,4) anio FROM chk_inspecciones WHERE componente_id = ? ORDER BY anio DESC", [$comp]), 'anio');
 
     jsonResponse(true, '', [
         'componente' => $comprow,

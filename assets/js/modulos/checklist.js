@@ -652,12 +652,14 @@ function _chkEqEstadoUnidad(d, puede) {
   const rows = us.map(u => {
     const cells = (u.meses || []).map(v => `<td style="text-align:center">${_chkPctTxt(v)}</td>`).join('');
     const vi = _chkVencInfo(u.vencimiento);
-    const acc = puede ? `<td style="text-align:right;white-space:nowrap">
+    const esInv = +u.id > 0;   // unidad de inventario (no una placa suelta)
+    const acc = puede ? `<td style="text-align:right;white-space:nowrap">${esInv ? `
         <button class="btn btn-outline btn-sm" onclick="chkEditarUni(${u.id})" title="Editar"><i class="fas fa-pen"></i></button>
-        ${_chkAdmin() ? `<button class="btn btn-outline btn-sm" onclick="chkEliminarUni(${u.id})" title="Eliminar"><i class="fas fa-trash" style="color:var(--rojo)"></i></button>` : ''}</td>` : '';
+        ${_chkAdmin() ? `<button class="btn btn-outline btn-sm" onclick="chkEliminarUni(${u.id})" title="Eliminar"><i class="fas fa-trash" style="color:var(--rojo)"></i></button>` : ''}` : ''}</td>` : '';
+    const nombre = u.nombre ? _chkEsc(u.nombre) : (esInv ? '' : '<span class="muted" style="font-size:11px">placa sin inventario</span>');
     return `<tr>
       <td style="font-weight:700;color:var(--gris-100);white-space:nowrap">${_chkEsc(u.codigo)}</td>
-      <td class="muted" style="min-width:180px">${_chkEsc(u.nombre || '')}</td>
+      <td class="muted" style="min-width:180px">${nombre}</td>
       <td>${u.area ? '<span class="badge badge-secondary">' + _chkEsc(u.area) + '</span>' : '—'}</td>
       <td><span class="badge ${vi.cls}">${vi.txt}</span></td>
       ${cells}
