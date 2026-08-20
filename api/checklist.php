@@ -631,19 +631,26 @@ function equipoDash() {
     }
 
     // Universo de unidades = inventario ∪ placas inspeccionadas (sin duplicar).
+    // Cada unidad se identifica por su código Y su placa (camión): una inspección
+    // pudo registrarse con cualquiera de las dos, y ambas deben caer en la misma fila.
+    $invKeys = [];
     $universe = [];
     foreach ($inv as $u) {
+        $keys = [strtoupper($u['codigo'])];
+        if (!empty($u['placa'])) $keys[] = strtoupper($u['placa']);
+        foreach ($keys as $k) $invKeys[$k] = true;
         $universe[] = ['id' => (int)$u['id'], 'codigo' => $u['codigo'], 'nombre' => $u['nombre'],
                        'placa' => $u['placa'], 'ruta' => $u['ruta'], 'capacidad' => $u['capacidad'],
                        'tipo_agente' => $u['tipo_agente'], 'estado_operativo' => $u['estado_operativo'],
                        'ubicacion' => $u['ubicacion'], 'area' => $u['area'], 'vencimiento' => $u['vencimiento'],
-                       'key' => strtoupper($u['codigo'])];
+                       'keys' => $keys];
     }
+    // Solo se listan como "sin inventario" las placas que no cruzan con ninguna unidad.
     foreach (array_keys($uniRaw) as $pk) {
-        if (!isset($invByCode[$pk])) {
+        if (!isset($invKeys[$pk])) {
             $universe[] = ['id' => 0, 'codigo' => $pk, 'nombre' => '', 'placa' => null, 'ruta' => null,
                            'capacidad' => null, 'tipo_agente' => null, 'estado_operativo' => null, 'ubicacion' => null,
-                           'area' => $placaArea[$pk] ?? null, 'vencimiento' => null, 'key' => $pk];
+                           'area' => $placaArea[$pk] ?? null, 'vencimiento' => null, 'keys' => [$pk]];
         }
     }
 
@@ -651,9 +658,10 @@ function equipoDash() {
     $unidadesOut = array_map(function ($u) use ($uniRaw, $pct, $hoy) {
         $meses = []; $cT = 0; $ncT = 0;
         for ($m = 1; $m <= 12; $m++) {
-            $x = $uniRaw[$u['key']][$m] ?? ['c' => 0, 'nc' => 0];
-            $cT += $x['c']; $ncT += $x['nc'];
-            $meses[] = $pct($x['c'], $x['nc']);
+            $c = 0; $nc = 0;
+            foreach ($u['keys'] as $k) { $x = $uniRaw[$k][$m] ?? null; if ($x) { $c += $x['c']; $nc += $x['nc']; } }
+            $cT += $c; $ncT += $nc;
+            $meses[] = $pct($c, $nc);
         }
         $estVenc = 'ok';
         if (!empty($u['vencimiento'])) {
