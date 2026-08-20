@@ -810,7 +810,7 @@ async function nuevaInspeccion(compId) {
   document.getElementById('chk_placa').value = '';
   document.getElementById('chk_area').value = '';
   document.getElementById('chk_unidad_id').value = ''; _chkPreUnidad = null;
-  _chkLlenarAreas();
+  _chkLlenarAreas(true);
   document.getElementById('chk_periodo').value = document.getElementById('chkFiltroPeriodo')?.value || new Date().toISOString().slice(0, 7);
   document.getElementById('chk_fecha').value = new Date().toISOString().slice(0, 10);
   document.getElementById('chk_estado').value = 'apto';
@@ -926,20 +926,20 @@ function chkSelUnidad() {
   }
 }
 
-// Llena el datalist de áreas con las áreas ya usadas (inventario e inspecciones).
-let _chkAreasCache = null;
-async function _chkLlenarAreas() {
-  const dl = document.getElementById('chkAreasList'); if (!dl) return;
-  if (_chkAreasCache === null) {
-    _chkAreasCache = [];
-    try {
-      const r = await fetch('api/checklist.php?action=uni_list'); const d = await r.json();
-      const set = new Set();
-      if (d && d.success) (d.data.unidades || []).forEach(u => { if (u.area) set.add(u.area); });
-      _chkAreasCache = Array.from(set).sort();
-    } catch (e) { _chkAreasCache = []; }
+// Llena el datalist de áreas desde el empleador (centro de trabajo) + las ya
+// usadas. Si prefill=true (inspección nueva) y el campo está vacío, coloca el
+// área del empleador por defecto.
+let _chkAreas = null;
+async function _chkLlenarAreas(prefill) {
+  const dl = document.getElementById('chkAreasList'), inp = document.getElementById('chk_area');
+  if (!dl) return;
+  if (_chkAreas === null) {
+    _chkAreas = { areas: [], default: '' };
+    try { const r = await fetch('api/checklist.php?action=areas'); const d = await r.json(); if (d && d.success) _chkAreas = d.data; }
+    catch (e) {}
   }
-  dl.innerHTML = _chkAreasCache.map(a => `<option value="${_chkEsc(a)}">`).join('');
+  dl.innerHTML = (_chkAreas.areas || []).map(a => `<option value="${_chkEsc(a)}">`).join('');
+  if (prefill && inp && !inp.value && _chkAreas.default) inp.value = _chkAreas.default;
 }
 
 function chkMarcarTodo(val) {

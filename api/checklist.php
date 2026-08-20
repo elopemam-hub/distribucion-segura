@@ -43,6 +43,7 @@ try {
         case 'foto_del':    fotoDel();      break;
         case 'cumplimiento': cumplimiento(); break;
         case 'dashboard':    dashboard();    break;
+        case 'areas':        areas();        break;
         case 'uni_list':     uniList();      break;
         case 'uni_save':     uniSave();      break;
         case 'uni_toggle':   uniToggle();    break;
@@ -457,6 +458,26 @@ function dashboard() {
         'sin_inspeccion'=> $sinInsp,
         'periodos'      => $periodos,
     ]);
+}
+
+// Áreas para el formulario: del empleador (centro de trabajo, epp_config.ct_area)
+// + las ya usadas en inventario e inspecciones. 'default' = área del empleador.
+function areas() {
+    $set = [];
+    $default = '';
+    try {
+        $row = db()->fetchOne("SELECT valor FROM epp_config WHERE clave = 'ct_area'");
+        $val = trim($row['valor'] ?? '');
+        if ($val !== '') {
+            $default = $val;
+            foreach (preg_split('/[,;\n]+/', $val) as $a) { $a = trim($a); if ($a !== '') $set[$a] = 1; }
+        }
+    } catch (Throwable $e) { /* EPP no configurado: se omite */ }
+    foreach (db()->fetchAll("SELECT DISTINCT area FROM chk_unidades WHERE area IS NOT NULL AND area <> ''") as $r) $set[$r['area']] = 1;
+    foreach (db()->fetchAll("SELECT DISTINCT area FROM chk_inspecciones WHERE area IS NOT NULL AND area <> ''") as $r) $set[$r['area']] = 1;
+    $areas = array_keys($set);
+    sort($areas, SORT_NATURAL | SORT_FLAG_CASE);
+    jsonResponse(true, '', ['areas' => $areas, 'default' => $default]);
 }
 
 // ============================================================

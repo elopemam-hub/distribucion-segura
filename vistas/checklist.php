@@ -17,7 +17,7 @@
       <button class="tab-btn chk-tab-btn" id="chk-btn-formularios" onclick="switchChkTab('formularios')"><i class="fas fa-table-cells-large"></i> Formularios</button>
       <button class="tab-btn chk-tab-btn" id="chk-btn-inspecciones" onclick="switchChkTab('inspecciones')"><i class="fas fa-list-check"></i> Inspecciones</button>
       <button class="tab-btn chk-tab-btn" id="chk-btn-cumplimiento" onclick="switchChkTab('cumplimiento')"><i class="fas fa-table-cells"></i> Cumplimiento</button>
-      <button class="tab-btn chk-tab-btn" id="chk-btn-equipos" onclick="switchChkTab('equipos')"><i class="fas fa-boxes-stacked"></i> Equipos</button>
+      <button class="tab-btn chk-tab-btn" id="chk-btn-equipos" onclick="switchChkTab('equipos')"><i class="fas fa-chart-column"></i> Equipos</button>
       <button class="tab-btn chk-tab-btn" id="chk-btn-config" onclick="switchChkTab('config')"><i class="fas fa-sliders"></i> Configuración</button>
     </div>
 
