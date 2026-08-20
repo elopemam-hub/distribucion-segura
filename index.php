@@ -1934,7 +1934,7 @@ $csrf = csrfToken();
 <!-- ===== MODAL GEOCERCAS ===== -->
 <?php if (tieneAccesoModulo('geocercas')): ?>
 <div class="modal-overlay" id="modalGeo">
-  <div class="modal-box" style="max-width:700px">
+  <div class="modal-box" style="max-width:1040px;width:97%">
     <div class="modal-header">
       <h3><i class="fas fa-draw-polygon" style="color:var(--primary)"></i> <span id="modalGeoTitulo">Nueva Geocerca</span></h3>
       <button class="modal-close" onclick="cerrarModal('modalGeo');if(geoDrawMap){geoDrawMap.remove();geoDrawMap=null;}"><i class="fas fa-times"></i></button>
@@ -2020,7 +2020,7 @@ $csrf = csrfToken();
 
         <!-- Mapa de dibujo -->
         <div style="border-radius:4px;overflow:hidden;border:1px solid var(--gris-600)">
-          <div id="geoDrawMap" style="height:360px;width:100%"></div>
+          <div id="geoDrawMap" style="height:60vh;min-height:420px;width:100%"></div>
         </div>
 
         <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px">
