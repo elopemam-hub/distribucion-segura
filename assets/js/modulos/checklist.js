@@ -1025,7 +1025,7 @@ async function _chkToggleUnidadSel(compId) {
   }
   if (units.length) {
     sel.innerHTML = '<option value="">— Selecciona unidad —</option>' + units.map(u =>
-      `<option value="${u.id}" data-codigo="${_chkEsc(u.codigo)}" data-area="${_chkEsc(u.area || '')}">${_chkEsc(u.codigo)} · ${_chkEsc(u.nombre)}</option>`).join('');
+      `<option value="${u.id}" data-codigo="${_chkEsc(u.codigo)}" data-area="${_chkEsc(u.area || '')}" data-venc="${_chkEsc(u.vencimiento || '')}">${_chkEsc(u.codigo)} · ${_chkEsc(u.nombre)}</option>`).join('');
     if (_chkPreUnidad) sel.value = _chkPreUnidad;
     wrapU.style.display = ''; wrapP.style.display = 'none';
     if (sel.value) chkSelUnidad();
@@ -1042,6 +1042,10 @@ function chkSelUnidad() {
     document.getElementById('chk_placa').value = opt.getAttribute('data-codigo') || '';
     const ar = opt.getAttribute('data-area') || '';
     if (ar) document.getElementById('chk_area').value = ar;   // autocompleta el área de la unidad
+    // Autocompleta el vencimiento (recarga) del extintor desde el inventario.
+    const venc = opt.getAttribute('data-venc') || '';
+    const vencInp = document.getElementById('chk_vencimiento');
+    if (vencInp && vencInp.closest('#chk_vencimiento_wrap')?.style.display !== 'none') vencInp.value = venc;
   }
 }
 
