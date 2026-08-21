@@ -60,7 +60,7 @@ function renderKPIs(d) {
 
   const cards = [
     {
-      icon: 'fas fa-clipboard-check', label: 'Inspecciones', color: 'amarillo',
+      icon: 'fas fa-clipboard-check', label: 'Abordajes', color: 'amarillo',
       value: total,
       sub: `${unids} unidad${unids!==1?'es':''} · ${cond} conductor${cond!==1?'es':''}`,
       delta: totalAnt > 0 ? total - totalAnt : null, deltaSuf: '',
@@ -198,7 +198,7 @@ function renderTendencia(data, mes) {
       labels,
       datasets: [
         {
-          type: 'bar', label: 'Inspecciones',
+          type: 'bar', label: 'Abordajes',
           data: totales,
           backgroundColor: 'rgba(21,101,192,0.55)',
           borderColor: '#1565C0', borderWidth: 1,
@@ -223,7 +223,7 @@ function renderTendencia(data, mes) {
           callbacks: {
             label: ctx => ctx.dataset.yAxisID === 'y1'
               ? ` ${ctx.raw ?? '—'}%`
-              : ` ${ctx.raw} inspección${ctx.raw!==1?'es':''}`,
+              : ` ${ctx.raw} abordaje${ctx.raw!==1?'s':''}`,
           }
         }
       },
@@ -242,7 +242,7 @@ function renderTendencia(data, mes) {
   // leyenda manual
   const leg = document.getElementById('dashTendLegend');
   if (leg) leg.innerHTML = `
-    <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;background:#1565C0;border-radius:2px;display:inline-block"></span>Inspecciones</span>
+    <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;background:#1565C0;border-radius:2px;display:inline-block"></span>Abordajes</span>
     <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:3px;background:#2EB85C;display:inline-block;border-radius:2px"></span>% Cumplimiento</span>`;
 }
 

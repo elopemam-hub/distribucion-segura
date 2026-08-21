@@ -70,7 +70,7 @@ $colorPct = floatval($kpis['promedio']) >= 80 ? '#2ECC71' : (floatval($kpis['pro
 <div class="header">
   <div>
     <h1>🛡 Reporte Mensual SST</h1>
-    <p>Inspección en Ruta · Centro de Distribución Juliaca</p>
+    <p>Abordaje en Ruta · Centro de Distribución Juliaca</p>
   </div>
   <div class="periodo">
     <?= strtoupper($nombreMes) ?> <?= $anio ?>
@@ -79,7 +79,7 @@ $colorPct = floatval($kpis['promedio']) >= 80 ? '#2ECC71' : (floatval($kpis['pro
 </div>
 
 <div class="kpi-row">
-  <div class="kpi"><div class="val"><?= $kpis['total'] ?></div><div class="lbl">Inspecciones</div></div>
+  <div class="kpi"><div class="val"><?= $kpis['total'] ?></div><div class="lbl">Abordajes</div></div>
   <div class="kpi"><div class="val" style="color:<?= $colorPct ?>"><?= $kpis['promedio'] ?>%</div><div class="lbl">% Cumplimiento</div></div>
   <div class="kpi"><div class="val" style="color:#2ECC71"><?= $kpis['aprobadas'] ?></div><div class="lbl">Aprobadas ≥80%</div></div>
   <div class="kpi"><div class="val" style="color:#E74C3C"><?= $kpis['observadas'] ?></div><div class="lbl">Observadas</div></div>
@@ -90,7 +90,7 @@ $colorPct = floatval($kpis['promedio']) >= 80 ? '#2ECC71' : (floatval($kpis['pro
 <div class="content">
 
   <!-- LISTADO -->
-  <div class="section-title">Detalle de Inspecciones</div>
+  <div class="section-title">Detalle de Abordajes</div>
   <table>
     <thead><tr><th>#</th><th>Unidad</th><th>Fecha</th><th>Conductor</th><th>Dirección</th><th>Cumplimiento</th><th>Inspector</th></tr></thead>
     <tbody>
@@ -111,7 +111,7 @@ $colorPct = floatval($kpis['promedio']) >= 80 ? '#2ECC71' : (floatval($kpis['pro
   <!-- RANKING -->
   <div class="section-title">Ranking de Conductores</div>
   <table>
-    <thead><tr><th>Pos.</th><th>Conductor</th><th>Inspecciones</th><th>Promedio</th></tr></thead>
+    <thead><tr><th>Pos.</th><th>Conductor</th><th>Abordajes</th><th>Promedio</th></tr></thead>
     <tbody>
       <?php foreach ($ranking as $k => $r): $p = floatval($r['promedio']); ?>
       <tr>

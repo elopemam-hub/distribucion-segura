@@ -51,7 +51,7 @@ $todosEpp = ['Casco','Chaleco reflectivo','Zapatos de seguridad','Lentes','Guant
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Inspección #<?= $id ?> · <?= htmlspecialchars($inspeccion['unidad']) ?></title>
+<title>Abordaje #<?= $id ?> · <?= htmlspecialchars($inspeccion['unidad']) ?></title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=Barlow:wght@400;600;700&display=swap');
 @page { size: A4 landscape; margin: 6mm; }
@@ -174,13 +174,13 @@ html, body {
 <table class="root-table" style="background:#0a0a0a">
   <tr>
     <td class="hdr">
-      <h1>🛡 Inspección en Ruta</h1>
+      <h1>🛡 Abordaje en Ruta</h1>
       <p>Centro de Distribución Juliaca · Seguridad y Salud en el Trabajo</p>
     </td>
     <td style="text-align:right;padding:9px 16px">
       <div class="hdr-num">
         #<?= str_pad($id,4,'0',STR_PAD_LEFT) ?>
-        <small>N° de Inspección</small>
+        <small>N° de Abordaje</small>
       </div>
     </td>
   </tr>
@@ -358,7 +358,7 @@ html, body {
 <!-- FOOTER -->
 <div class="footer">
   <table><tr>
-    <td>Distribución Segura · Inspección #<?= str_pad($id,4,'0',STR_PAD_LEFT) ?> · Juliaca SST</td>
+    <td>Distribución Segura · Abordaje #<?= str_pad($id,4,'0',STR_PAD_LEFT) ?> · Juliaca SST</td>
     <td style="text-align:right">Generado el <?= date('d/m/Y H:i') ?></td>
   </tr></table>
 </div>

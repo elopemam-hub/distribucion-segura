@@ -301,7 +301,7 @@ $csrf = csrfToken();
         <i class="fas fa-clipboard-check" style="color:#F5C800"></i>
       </div>
       <div class="txt">
-        <strong>Inspecciones en ruta</strong>
+        <strong>Abordajes en ruta</strong>
         Registro digital con GPS y firma
       </div>
     </div>

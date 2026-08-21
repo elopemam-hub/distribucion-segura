@@ -152,7 +152,7 @@ $csrf = csrfToken();
     <?php endif; ?>
     <?php if (tieneAccesoModulo('inspecciones')): ?>
     <a class="nav-item" data-page="inspecciones" onclick="showPage('inspecciones')">
-      <i class="fas fa-clipboard-check"></i> Inspecciones
+      <i class="fas fa-clipboard-check"></i> Abordajes
     </a>
     <?php endif; ?>
     <?php if (tieneAccesoModulo('personal')): ?>
@@ -366,9 +366,9 @@ $csrf = csrfToken();
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px">
       <div>
         <h2 style="font-family:var(--font-display);font-size:24px;font-weight:800;color:var(--gris-100)">
-          <i class="fas fa-clipboard-list" style="color:var(--amarillo)"></i> Inspecciones
+          <i class="fas fa-clipboard-list" style="color:var(--amarillo)"></i> Abordajes
         </h2>
-        <p style="color:var(--gris-400);font-size:13px;margin-top:2px">Listado y registro de inspecciones en ruta</p>
+        <p style="color:var(--gris-400);font-size:13px;margin-top:2px">Listado y registro de abordajes en ruta</p>
       </div>
     </div>
 
@@ -378,13 +378,13 @@ $csrf = csrfToken();
         <i class="fas fa-clipboard-list"></i> Listado
       </button>
       <button class="tab-btn insp-tab-btn" id="insp-btn-nueva" onclick="switchInspeccionTab('nueva')">
-        <i class="fas fa-plus-circle"></i> Nueva Inspección
+        <i class="fas fa-plus-circle"></i> Nuevo Abordaje
       </button>
     </div>
 
     <!-- ── PANEL: NUEVA INSPECCIÓN ── -->
     <div class="tab-panel insp-tab-panel" id="insp-panel-nueva">
-      <p style="color:var(--gris-400);font-size:13px;margin-bottom:20px">Registro de inspección en ruta</p>
+      <p style="color:var(--gris-400);font-size:13px;margin-bottom:20px">Registro de abordaje en ruta</p>
 
     <form id="formInspeccion">
       <!-- PASO 1: Datos generales -->
@@ -572,7 +572,7 @@ $csrf = csrfToken();
           <i class="fas fa-times"></i> Cancelar
         </button>
         <button type="submit" class="btn btn-primary" id="btnGuardar">
-          <i class="fas fa-save"></i> Guardar Inspección
+          <i class="fas fa-save"></i> Guardar Abordaje
         </button>
       </div>
     </form>
@@ -1845,7 +1845,7 @@ $csrf = csrfToken();
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="checkboxModulos">
             <label class="modulo-check"><input type="checkbox" value="dashboard" disabled checked> <i class="fas fa-gauge-high"></i> Dashboard</label>
-            <label class="modulo-check"><input type="checkbox" value="inspecciones" id="mod_inspecciones"> <i class="fas fa-clipboard-list"></i> Inspecciones</label>
+            <label class="modulo-check"><input type="checkbox" value="inspecciones" id="mod_inspecciones"> <i class="fas fa-clipboard-list"></i> Abordajes</label>
             <label class="modulo-check"><input type="checkbox" value="personal" id="mod_personal"> <i class="fas fa-id-card"></i> Personal</label>
             <label class="modulo-check"><input type="checkbox" value="matriz" id="mod_matriz"> <i class="fas fa-bolt"></i> Matriz Consecuencias</label>
             <label class="modulo-check"><input type="checkbox" value="amonestaciones" id="mod_amonestaciones"> <i class="fas fa-file-signature"></i> Amonestaciones</label>
