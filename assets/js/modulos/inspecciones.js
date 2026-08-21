@@ -17,7 +17,7 @@ function buscarVehiculo(q) {
   if (q.length < 2) { box.style.display = 'none'; box.innerHTML = ''; return; }
   _vehTimer = setTimeout(async () => {
     try {
-      const r = await fetch('api/vehiculos.php?action=buscar&q=' + encodeURIComponent(q));
+      const r = await fetch('api/vehiculos.php?action=buscar&solo_activos=1&q=' + encodeURIComponent(q));
       const j = await r.json();
       const rows = (j && j.success) ? (j.data || []) : [];
       if (!rows.length) { box.style.display = 'none'; box.innerHTML = ''; return; }
