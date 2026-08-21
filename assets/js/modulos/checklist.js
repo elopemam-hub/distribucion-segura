@@ -45,6 +45,7 @@ function initChecklist() {
     if (uniId) { switchChkTab('equipos'); _chkAbrirInspDesdeUnidad(uniId); }
     else switchChkTab('dashboard');
   });
+  _chkCargarBadgeAlertas();   // conteo de alertas en la pestaña
 }
 
 // Abre la inspección de una unidad concreta (llegada por el QR ?chkuni=ID).
@@ -83,8 +84,10 @@ function switchChkTab(tab) {
   show('chkFiltroTipoWrap', tab === 'cumplimiento');
   show('chkDashboard', tab === 'dashboard');
   show('chkEquipos', tab === 'equipos');
-  show('chkTablaCard', tab !== 'dashboard' && tab !== 'equipos');
+  show('chkAlertasPanel', tab === 'alertas');
+  show('chkTablaCard', tab !== 'dashboard' && tab !== 'equipos' && tab !== 'alertas');
   if (tab === 'dashboard') cargarChkDashboard();
+  else if (tab === 'alertas') renderChkAlertas();
   else if (tab === 'equipos') renderEquiposGaleria();
   else if (tab === 'formularios') renderFormularios();
   else if (tab === 'inspecciones') cargarChecklist();
@@ -293,7 +296,6 @@ async function cargarChkDashboard() {
   } catch (e) { console.error(e); }
   if (!d) { if (kpiG) kpiG.innerHTML = '<p class="muted" style="padding:20px">No se pudo cargar el dashboard.</p>'; return; }
   if (_chkDashLlenarSelects(d)) return;   // se autoseleccionó camión y disparó recarga
-  renderChkDashAlertas();
   renderChkDashKpis(d);
   renderChkDashTend(d.tendencia || []);
   renderChkDashEstado(d.estado || {});
@@ -322,10 +324,31 @@ function _chkDashLlenarSelects(d) {
   return false;
 }
 
-// ── Alerta de vencimientos (extintores por unidad + insumos de botiquín por ítem) ──
-async function renderChkDashAlertas() {
-  const cont = document.getElementById('chkDashAlertas');
+// Actualiza el contador rojo de la pestaña Alertas.
+function _chkActualizarBadgeAlertas(n) {
+  const b = document.getElementById('chkAlertasBadge');
+  if (!b) return;
+  if (+n > 0) { b.textContent = n; b.style.display = ''; } else b.style.display = 'none';
+}
+
+// Carga solo el conteo para el badge (sin pintar el panel), al iniciar el módulo.
+async function _chkCargarBadgeAlertas() {
+  try {
+    const [e, b] = await Promise.all([
+      fetch('api/checklist.php?action=vencimientos&dias=90&_t=' + Date.now()).then(r => r.json()),
+      fetch('api/checklist.php?action=vencimientos_botiquin&dias=90&_t=' + Date.now()).then(r => r.json()),
+    ]);
+    const ce = (e && e.success) ? ((e.data.vencidos || []).length + (e.data.por_vencer || []).length) : 0;
+    const cb = (b && b.success) ? ((b.data.vencidos || []).length + (b.data.por_vencer || []).length) : 0;
+    _chkActualizarBadgeAlertas(ce + cb);
+  } catch (err) {}
+}
+
+// ── Sub-módulo Alertas: vencimientos (extintores por unidad + insumos de botiquín por ítem) ──
+async function renderChkAlertas() {
+  const cont = document.getElementById('chkAlertasPanel');
   if (!cont) return;
+  cont.innerHTML = '<p class="muted" style="text-align:center;padding:28px">Cargando alertas…</p>';
   const pedir = async (accion) => {
     try { const r = await fetch('api/checklist.php?action=' + accion + '&dias=90&_t=' + Date.now()); const j = await r.json(); return (j && j.success) ? j.data : null; }
     catch (e) { return null; }
@@ -333,7 +356,11 @@ async function renderChkDashAlertas() {
   const [ext, bot] = await Promise.all([pedir('vencimientos'), pedir('vencimientos_botiquin')]);
   const eV = (ext && ext.vencidos) || [], eP = (ext && ext.por_vencer) || [];
   const bV = (bot && bot.vencidos) || [], bP = (bot && bot.por_vencer) || [];
-  if (!eV.length && !eP.length && !bV.length && !bP.length) { cont.innerHTML = ''; return; }
+  _chkActualizarBadgeAlertas(eV.length + eP.length + bV.length + bP.length);
+  if (!eV.length && !eP.length && !bV.length && !bP.length) {
+    cont.innerHTML = '<div class="card"><div class="card-body" style="padding:28px;text-align:center"><i class="fas fa-circle-check" style="color:var(--verde);font-size:28px"></i><p style="color:var(--gris-100);font-weight:700;margin-top:8px">Todo al día</p><p class="muted" style="font-size:13px">No hay extintores ni insumos de botiquín vencidos o por vencer en los próximos 90 días.</p></div></div>';
+    return;
+  }
 
   const cuando = d => { const n = Math.abs(+d); return (+d < 0 ? 'venció hace ' : 'en ') + n + ' día' + (n !== 1 ? 's' : ''); };
   const camion = p => p ? `<span class="badge badge-info" style="font-size:10px"><i class="fas fa-truck"></i> ${_chkEsc(p)}</span>` : '';

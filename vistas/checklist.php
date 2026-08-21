@@ -14,6 +14,7 @@
 
     <div class="tabs" style="margin-bottom:18px">
       <button class="tab-btn chk-tab-btn active" id="chk-btn-dashboard" onclick="switchChkTab('dashboard')"><i class="fas fa-gauge-high"></i> Dashboard</button>
+      <button class="tab-btn chk-tab-btn" id="chk-btn-alertas" onclick="switchChkTab('alertas')"><i class="fas fa-bell"></i> Alertas <span id="chkAlertasBadge" class="badge badge-danger" style="display:none;margin-left:4px"></span></button>
       <button class="tab-btn chk-tab-btn" id="chk-btn-formularios" onclick="switchChkTab('formularios')"><i class="fas fa-table-cells-large"></i> Formularios</button>
       <button class="tab-btn chk-tab-btn" id="chk-btn-inspecciones" onclick="switchChkTab('inspecciones')"><i class="fas fa-list-check"></i> Inspecciones</button>
       <button class="tab-btn chk-tab-btn" id="chk-btn-cumplimiento" onclick="switchChkTab('cumplimiento')"><i class="fas fa-table-cells"></i> Cumplimiento</button>
@@ -50,6 +51,9 @@
       <div id="chkPagWrap"></div>
     </div></div>
 
+    <!-- ===== ALERTAS DE VENCIMIENTO (sub-módulo) ===== -->
+    <div id="chkAlertasPanel" style="display:none"></div>
+
     <!-- ===== DASHBOARD DE INSPECCIÓN DE EQUIPOS ===== -->
     <div id="chkDashboard" style="display:none">
       <div class="card" style="margin-bottom:16px"><div class="card-body" style="padding:12px 18px">
@@ -62,9 +66,6 @@
             <select class="form-control" id="chkDashEquipo" onchange="cargarChkDashboard()"><option value="">Todos</option></select></div>
         </div>
       </div></div>
-
-      <!-- Alerta de vencimientos (extintores por vencer / vencidos) -->
-      <div id="chkDashAlertas" style="margin-bottom:16px"></div>
 
       <!-- KPIs -->
       <div id="chkDashKpis" class="dash-kpi-grid" style="margin-bottom:18px"></div>
