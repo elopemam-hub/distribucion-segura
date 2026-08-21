@@ -42,9 +42,12 @@ try {
     if ($action === 'buscar') {
         $q = trim($_GET['q'] ?? '');
         if ($q === '') { jsonResponse(true, '', []); }
+        // solo_activos=1 excluye vehículos inactivos (p. ej. inspección de checklist).
+        $soloActivos = ($_GET['solo_activos'] ?? '') === '1';
+        $extra = $soloActivos ? " AND (estado IS NULL OR LOWER(estado) NOT LIKE 'inactiv%')" : '';
         $rows = $vigAll(
             "SELECT id, placa, tipo, marca, modelo, anio, estado
-               FROM vehiculos WHERE placa LIKE ? ORDER BY placa ASC LIMIT 15",
+               FROM vehiculos WHERE placa LIKE ?" . $extra . " ORDER BY placa ASC LIMIT 15",
             ["%$q%"]
         );
         jsonResponse(true, '', $rows);

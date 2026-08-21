@@ -1250,7 +1250,7 @@ function chkBuscarPlaca(q) {
   _chkPlacaTimer = setTimeout(async () => {
     let rows = [];
     try {
-      const r = await fetch('api/vehiculos.php?action=buscar&q=' + encodeURIComponent(q.trim()));
+      const r = await fetch('api/vehiculos.php?action=buscar&solo_activos=1&q=' + encodeURIComponent(q.trim()));
       const d = await r.json();
       rows = (d && d.success) ? (Array.isArray(d.data) ? d.data : (d.data.vehiculos || d.data.items || [])) : [];
     } catch (e) { rows = []; }
@@ -1258,7 +1258,7 @@ function chkBuscarPlaca(q) {
     cont.innerHTML = rows.slice(0, 15).map(v => {
       const placa = (v.placa || v.PLACA || '').toString();
       const extra = [v.marca || v.MARCA, v.modelo || v.MODELO].filter(Boolean).join(' ');
-      return `<div onclick="chkSelPlaca('${placa.replace(/'/g, "")}')" style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--gris-700)" onmouseover="this.style.background='var(--gris-700)'" onmouseout="this.style.background=''">
+      return `<div onmousedown="event.preventDefault();chkSelPlaca('${placa.replace(/'/g, "")}')" style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--gris-700)" onmouseover="this.style.background='var(--gris-700)'" onmouseout="this.style.background=''">
         <span style="font-weight:700;color:var(--gris-100)">${_chkEsc(placa)}</span>${extra ? '<span class="muted" style="font-size:11px;margin-left:6px">' + _chkEsc(extra) + '</span>' : ''}</div>`;
     }).join('');
     cont.style.display = 'block';
