@@ -185,7 +185,7 @@
           <div class="form-group" id="chk_unidad_wrap" style="display:none"><label class="form-label">Unidad (inventario) <span style="color:var(--rojo)">*</span></label>
             <select class="form-control" id="chk_unidad" onchange="chkSelUnidad()"></select></div>
           <div class="form-group" id="chk_placa_wrap" style="position:relative"><label class="form-label">Unidad (placa) <span style="color:var(--rojo)">*</span></label>
-            <input type="text" class="form-control" id="chk_placa" placeholder="Buscar placa…" autocomplete="off" oninput="chkBuscarPlaca(this.value)">
+            <input type="text" class="form-control" id="chk_placa" placeholder="Buscar placa…" autocomplete="off" oninput="chkBuscarPlaca(this.value)" onblur="setTimeout(function(){var c=document.getElementById('chkPlacaResultados');if(c)c.style.display='none';},200)">
             <div id="chkPlacaResultados" style="display:none;position:absolute;z-index:20;left:0;right:0;background:var(--gris-800);border:1px solid var(--gris-600);border-radius:6px;max-height:200px;overflow:auto;box-shadow:0 8px 24px rgba(0,0,0,.35)"></div>
           </div>
           <div class="form-group"><label class="form-label">Área</label>

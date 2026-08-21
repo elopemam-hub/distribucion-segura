@@ -1135,12 +1135,33 @@ function chkSelUnidad() {
   if (sel.value && opt) {
     document.getElementById('chk_placa').value = opt.getAttribute('data-codigo') || '';
     const ar = opt.getAttribute('data-area') || '';
-    if (ar) document.getElementById('chk_area').value = ar;   // autocompleta el área de la unidad
+    // Área: la de la unidad si la tiene; si no, la del empleador (centro de trabajo).
+    if (ar) document.getElementById('chk_area').value = ar;
+    else if (_chkAreas && _chkAreas.default) document.getElementById('chk_area').value = _chkAreas.default;
     // Autocompleta el vencimiento (recarga) del extintor desde el inventario.
     const venc = opt.getAttribute('data-venc') || '';
     const vencInp = document.getElementById('chk_vencimiento');
     if (vencInp && vencInp.closest('#chk_vencimiento_wrap')?.style.display !== 'none') vencInp.value = venc;
+    // Botiquín: autocompleta la fecha de cada insumo desde lo guardado en la unidad.
+    if (document.querySelector('#chkItemsCont .chk-item-venc')) _chkAutollenarItemsVenc(sel.value);
   }
+}
+
+// Vuelca las fechas de vencimiento por insumo (chk_unidad_items) de una unidad
+// (botiquín) a las filas del banco de preguntas de la inspección.
+async function _chkAutollenarItemsVenc(uniId) {
+  if (!uniId) return;
+  let items = [];
+  try {
+    const r = await fetch('api/checklist.php?action=uni_items&id=' + uniId);
+    const d = await r.json();
+    items = (d && d.success) ? (d.data.items || []) : [];
+  } catch (e) { return; }
+  items.forEach(it => {
+    const row = document.querySelector('.chk-item-row[data-item="' + it.id + '"]');
+    const inp = row && row.querySelector('.chk-item-venc');
+    if (inp) inp.value = it.vencimiento || '';   // refleja la unidad elegida (limpia la anterior)
+  });
 }
 
 // Llena el datalist de áreas desde el empleador (centro de trabajo) + las ya
