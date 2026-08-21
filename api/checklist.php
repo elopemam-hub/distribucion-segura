@@ -47,6 +47,7 @@ try {
         case 'vencimientos': vencimientos(); break;
         case 'vencimientos_botiquin': vencimientosBotiquin(); break;
         case 'uni_list':     uniList();      break;
+        case 'uni_items':    uniItems();     break;
         case 'uni_save':     uniSave();      break;
         case 'uni_toggle':   uniToggle();    break;
         case 'uni_del':      uniDel();       break;
@@ -512,8 +513,8 @@ function vencimientos() {
 }
 
 // Alerta de vencimientos de BOTIQUÍN: los insumos vencen POR PRODUCTO, guardados
-// en chk_resultados.vencimiento. Se toma la ÚLTIMA inspección de cada botiquín y
-// se listan los productos vencidos o próximos a caducar (≤ N días).
+// por unidad en chk_unidad_items (editable en el modal del botiquín). Lista los
+// insumos vencidos o próximos a caducar (≤ N días).
 function vencimientosBotiquin() {
     $dias = (int)($_GET['dias'] ?? 90);
     if ($dias < 1 || $dias > 365) $dias = 90;
@@ -522,41 +523,43 @@ function vencimientosBotiquin() {
     if (!$comps) { jsonResponse(true, '', ['vencidos' => [], 'por_vencer' => [], 'dias' => $dias]); }
     $in = implode(',', $comps);
 
-    // Última inspección (id máx) por placa/código dentro de botiquín.
-    $latest = [];
-    foreach (db()->fetchAll("SELECT UPPER(placa) placa, MAX(id) maxid
-              FROM chk_inspecciones WHERE componente_id IN ($in) GROUP BY UPPER(placa)") as $r) {
-        $latest[$r['placa']] = (int)$r['maxid'];
-    }
-    if (!$latest) { jsonResponse(true, '', ['vencidos' => [], 'por_vencer' => [], 'dias' => $dias]); }
-    $ids = implode(',', array_values($latest));
-
-    // Mapa placa/código → unidad (para mostrar código de botiquín y su camión).
-    $uni = [];
-    foreach (db()->fetchAll("SELECT id, codigo, nombre, placa FROM chk_unidades
-              WHERE componente_id IN ($in) AND activo = 1") as $u) {
-        $uni[strtoupper($u['codigo'])] = $u;
-        if (!empty($u['placa'])) $uni[strtoupper($u['placa'])] = $u;
-    }
-
     $rows = db()->fetchAll(
-        "SELECT i.placa, r.vencimiento, DATEDIFF(r.vencimiento, CURDATE()) AS dias, it.texto AS item
-           FROM chk_resultados r
-           JOIN chk_inspecciones i ON i.id = r.inspeccion_id
-           JOIN chk_items it ON it.id = r.item_id
-          WHERE r.inspeccion_id IN ($ids) AND r.vencimiento IS NOT NULL
-            AND DATEDIFF(r.vencimiento, CURDATE()) <= ?
-          ORDER BY r.vencimiento ASC", [$dias]);
+        "SELECT u.id, u.codigo, u.nombre, u.placa, it.texto AS item,
+                cui.vencimiento, DATEDIFF(cui.vencimiento, CURDATE()) AS dias
+           FROM chk_unidad_items cui
+           JOIN chk_unidades u ON u.id = cui.unidad_id AND u.activo = 1
+           JOIN chk_items it ON it.id = cui.item_id
+          WHERE u.componente_id IN ($in) AND cui.vencimiento IS NOT NULL
+            AND DATEDIFF(cui.vencimiento, CURDATE()) <= ?
+          ORDER BY cui.vencimiento ASC", [$dias]);
 
     $vencidos = []; $porVencer = [];
     foreach ($rows as $r) {
-        $u = $uni[strtoupper($r['placa'])] ?? null;
-        $r['id']     = (int)($u['id'] ?? 0);
-        $r['codigo'] = $u['codigo'] ?? $r['placa'];
-        $r['placa']  = $u['placa'] ?? null;   // camión
         if ((int)$r['dias'] < 0) $vencidos[] = $r; else $porVencer[] = $r;
     }
     jsonResponse(true, '', ['vencidos' => $vencidos, 'por_vencer' => $porVencer, 'dias' => $dias]);
+}
+
+// Ítems de contenido de una unidad (botiquín): preguntas activas del componente
+// + la fecha de vencimiento guardada por insumo para ESTA unidad.
+function uniItems() {
+    $uniId = (int)($_GET['id'] ?? 0);
+    $comp  = (int)($_GET['componente_id'] ?? 0);
+    if ($comp <= 0 && $uniId > 0) {
+        $u = db()->fetchOne("SELECT componente_id FROM chk_unidades WHERE id = ?", [$uniId]);
+        $comp = (int)($u['componente_id'] ?? 0);
+    }
+    if ($comp <= 0) { jsonResponse(true, '', ['items' => []]); }
+    $saved = [];
+    if ($uniId > 0) {
+        foreach (db()->fetchAll("SELECT item_id, vencimiento FROM chk_unidad_items WHERE unidad_id = ?", [$uniId]) as $r) {
+            $saved[(int)$r['item_id']] = $r['vencimiento'];
+        }
+    }
+    $items = db()->fetchAll("SELECT id, texto FROM chk_items WHERE componente_id = ? AND activo = 1 ORDER BY orden ASC, id ASC", [$comp]);
+    foreach ($items as &$it) { $it['vencimiento'] = $saved[(int)$it['id']] ?? null; }
+    unset($it);
+    jsonResponse(true, '', ['items' => $items]);
 }
 
 function uniList() {
@@ -607,6 +610,20 @@ function uniSave() {
             [$comp, $codigo, $nombre, $placa ?: null, $ruta ?: null, $tipoAg ?: null, $capac ?: null, $ubic ?: null, $area ?: null, $vencVal, $ultMtoVal, $estOp]);
         $id = (int)db()->lastInsertId();
     }
+    // Vencimiento por insumo (botiquín): upsert en chk_unidad_items.
+    $itemsVenc = json_decode($_POST['items_venc'] ?? '[]', true);
+    if (is_array($itemsVenc)) {
+        foreach ($itemsVenc as $iv) {
+            $itemId = (int)($iv['item_id'] ?? 0);
+            if ($itemId <= 0) continue;
+            $v  = trim($iv['vencimiento'] ?? '');
+            $vv = preg_match('/^\d{4}-\d{2}-\d{2}$/', $v) ? $v : null;
+            db()->query(
+                "INSERT INTO chk_unidad_items (unidad_id, item_id, vencimiento) VALUES (?, ?, ?)
+                 ON DUPLICATE KEY UPDATE vencimiento = VALUES(vencimiento)",
+                [$id, $itemId, $vv]);
+        }
+    }
     jsonResponse(true, 'Unidad guardada.', ['id' => $id]);
 }
 
@@ -621,6 +638,7 @@ function uniDel() {
     $id = (int)($_POST['id'] ?? 0);
     if ($id <= 0) jsonResponse(false, 'ID inválido.', null, 400);
     db()->query("UPDATE chk_inspecciones SET unidad_id = NULL WHERE unidad_id = ?", [$id]);  // conserva el historial
+    db()->query("DELETE FROM chk_unidad_items WHERE unidad_id = ?", [$id]);                  // vencimientos por insumo
     db()->query("DELETE FROM chk_unidades WHERE id = ?", [$id]);
     jsonResponse(true, 'Unidad eliminada.');
 }

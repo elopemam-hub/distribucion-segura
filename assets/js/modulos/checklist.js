@@ -810,17 +810,45 @@ function _chkAbrirUni(u) {
   document.getElementById('chk_uni_mto').value = u ? (u.ultimo_mantenimiento || '') : '';
   document.getElementById('chk_uni_estop').value = u ? (u.estado_operativo || 'operativo') : 'operativo';
   // Camión/ruta/mantenimiento/estado: extintor y botiquín. Agente/capacidad: solo extintor.
+  const esBot = _chkEqEsBotiquin();
   const setDisp = (id, on) => { const el = document.getElementById(id); if (el) el.style.display = on ? '' : 'none'; };
   ['chk_uni_ext_placa', 'chk_uni_ext_ruta', 'chk_uni_ext_mto', 'chk_uni_ext_estop'].forEach(id => setDisp(id, asignable));
   ['chk_uni_ext_agente', 'chk_uni_ext_cap'].forEach(id => setDisp(id, ext));
+  // En botiquín el vencimiento es por insumo (no a nivel de unidad): se oculta el campo único.
+  setDisp('chk_uni_venc_grp', !esBot);
+  setDisp('chk_uni_items_wrap', esBot);
   const vl = document.getElementById('chk_uni_venc_lbl'); if (vl) vl.textContent = ext ? 'Próxima recarga / vencimiento' : 'Vencimiento';
+  // Carga los insumos del botiquín (con su vencimiento por unidad) desde Configuración.
+  if (esBot) _chkCargarUniItems(u ? u.id : 0); else { const c = document.getElementById('chk_uni_items'); if (c) c.innerHTML = ''; }
   abrirModal('modalChkUni');
+}
+
+// Renderiza los insumos (ítems activos del componente) con un campo de fecha por unidad.
+async function _chkCargarUniItems(uniId) {
+  const cont = document.getElementById('chk_uni_items');
+  if (!cont) return;
+  cont.innerHTML = '<p class="muted" style="font-size:12px;padding:6px">Cargando insumos…</p>';
+  let items = [];
+  try {
+    const r = await fetch('api/checklist.php?action=uni_items&id=' + (uniId || 0) + '&componente_id=' + _chkEqComp);
+    const d = await r.json();
+    items = (d && d.success) ? (d.data.items || []) : [];
+  } catch (e) { items = []; }
+  if (!items.length) { cont.innerHTML = '<p class="muted" style="font-size:12px;padding:6px">Sin insumos. Agrégalos en Configuración.</p>'; return; }
+  cont.innerHTML = items.map(it =>
+    `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--gris-700)">
+      <span style="flex:1;font-size:12.5px;color:var(--gris-200)">${_chkEsc(it.texto)}</span>
+      <input type="date" class="form-control chk-uni-item-venc" data-item="${it.id}" value="${_chkEsc(it.vencimiento || '')}" style="width:150px;font-size:12px;padding:4px 8px">
+    </div>`).join('');
 }
 async function chkGuardarUni() {
   const codigo = document.getElementById('chk_uni_codigo').value.trim();
   const nombre = document.getElementById('chk_uni_nombre').value.trim();
   if (!codigo) { toast('El código es obligatorio', 'warning'); return; }
   if (!nombre) { toast('El nombre es obligatorio', 'warning'); return; }
+  // Vencimiento por insumo (botiquín): recolecta las fechas de cada fila.
+  const itemsVenc = Array.from(document.querySelectorAll('#chk_uni_items .chk-uni-item-venc'))
+    .map(inp => ({ item_id: +inp.getAttribute('data-item'), vencimiento: inp.value || '' }));
   const r = await _chkPost({
     action: 'uni_save', id: document.getElementById('chk_uni_id').value || '0',
     componente_id: document.getElementById('chk_uni_comp').value,
@@ -834,6 +862,7 @@ async function chkGuardarUni() {
     vencimiento: document.getElementById('chk_uni_venc').value || '',
     ultimo_mantenimiento: document.getElementById('chk_uni_mto').value || '',
     estado_operativo: document.getElementById('chk_uni_estop').value || 'operativo',
+    items_venc: JSON.stringify(itemsVenc),
   });
   if (r && r.success) { toast('Unidad guardada', 'success'); cerrarModal('modalChkUni'); delete _chkUnidadesCache[_chkEqComp]; cargarEquipoDash(); }
 }

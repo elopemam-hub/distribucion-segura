@@ -147,7 +147,7 @@
             <input type="text" class="form-control" id="chk_uni_ubic" maxlength="120" placeholder="Ej: Almacén Central"></div>
           <div class="form-group"><label class="form-label">Área</label>
             <input type="text" class="form-control" id="chk_uni_area" maxlength="80" placeholder="Ej: Almacén"></div>
-          <div class="form-group"><label class="form-label" id="chk_uni_venc_lbl">Vencimiento</label>
+          <div class="form-group" id="chk_uni_venc_grp"><label class="form-label" id="chk_uni_venc_lbl">Vencimiento</label>
             <input type="date" class="form-control" id="chk_uni_venc"></div>
           <div class="form-group" id="chk_uni_ext_mto"><label class="form-label">Último mantenimiento</label>
             <input type="date" class="form-control" id="chk_uni_mto"></div>
@@ -155,6 +155,11 @@
             <select class="form-control" id="chk_uni_estop">
               <option value="operativo">Operativo</option><option value="fuera_servicio">Fuera de servicio</option>
             </select></div>
+        </div>
+        <!-- Contenido del botiquín: fecha de vencimiento por insumo (desde Configuración) -->
+        <div id="chk_uni_items_wrap" style="display:none;margin-top:6px">
+          <label class="form-label" style="display:block;margin-bottom:6px"><i class="fas fa-briefcase-medical" style="color:var(--primary)"></i> Vencimiento por insumo</label>
+          <div id="chk_uni_items" style="max-height:280px;overflow:auto;border:1px solid var(--gris-700);border-radius:8px;padding:6px 10px"></div>
         </div>
       </div>
       <div class="modal-footer" style="display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--gris-700)">

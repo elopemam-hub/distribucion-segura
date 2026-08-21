@@ -740,6 +740,14 @@ function setupChecklist(): void {
               WHERE table_schema = DATABASE() AND table_name = 'chk_inspecciones' AND column_name = 'area'");
         if (!$exA) db()->query("ALTER TABLE chk_inspecciones ADD COLUMN area VARCHAR(80) NULL AFTER placa", []);
 
+        // Vencimiento de cada insumo POR UNIDAD (botiquín: cada botiquín guarda la
+        // caducidad de sus productos, editable desde el modal de la unidad).
+        db()->query("CREATE TABLE IF NOT EXISTS chk_unidad_items (
+            id INT AUTO_INCREMENT PRIMARY KEY, unidad_id INT NOT NULL, item_id INT NOT NULL,
+            vencimiento DATE NULL, creado_en DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_uniitem (unidad_id, item_id), KEY idx_cui_uni (unidad_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", []);
+
         // Fecha de vencimiento a nivel de inspección (extintor: recarga/prueba
         // hidrostática — una sola fecha para todo el equipo).
         $exV = db()->fetchOne("SELECT 1 FROM information_schema.columns
