@@ -31,7 +31,7 @@ function _chkPagBar(total, pagina, porPag, fn) {
     `<button onclick="${fn}(${pagina + 1})" ${pagina === totalPags ? 'disabled' : ''}>&#8250;</button>`;
   return '<div class="amon-pag-bar"><span class="amon-pag-info">' + (total ? `Mostrando ${desde}–${hasta} de ${total}` : '') + '</span><div class="amon-pag-btns">' + (totalPags > 1 ? btns : '') + '</div></div>';
 }
-function irChkPagina(n) { _chkPag = n; renderChecklist(); }
+function irChkPagina(n) { _chkPag = n; renderChkTabla(); }
 
 function initChecklist() {
   const p = document.getElementById('chkFiltroPeriodo');
@@ -141,10 +141,12 @@ async function cargarChecklist() {
     _chkData = (d && d.success && d.data && d.data.items) ? d.data.items : [];
   } catch (e) { _chkData = []; }
   _chkPag = 1;
-  renderChecklist();
+  renderChkTabla();
 }
 
-function renderChecklist() {
+// Tabla de inspecciones del módulo Checklist (renombrada de renderChecklist para
+// no colisionar con la renderChecklist del abordaje definida en core.js).
+function renderChkTabla() {
   const wrap = document.getElementById('chkTablaWrap'), pag = document.getElementById('chkPagWrap');
   if (!wrap) return;
   if (!_chkData.length) { wrap.innerHTML = '<p class="muted" style="text-align:center;padding:28px">Sin inspecciones. Crea una con “Nueva inspección”.</p>'; if (pag) pag.innerHTML = ''; return; }
