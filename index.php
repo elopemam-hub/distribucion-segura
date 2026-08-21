@@ -680,6 +680,7 @@ $csrf = csrfToken();
     <!-- Sub-pestañas de Personal -->
     <div class="tabs" style="margin-bottom:20px">
       <button class="tab-btn personal-tab-btn active" id="personal-btn-listado" onclick="switchPersonalTab('listado')"><i class="fas fa-list"></i> Listado</button>
+      <button class="tab-btn personal-tab-btn" id="personal-btn-docs" onclick="switchPersonalTab('docs')"><i class="fas fa-id-card"></i> DNI y Licencia <span id="personalDocsBadge" class="badge badge-danger" style="display:none;margin-left:4px"></span></button>
       <button class="tab-btn personal-tab-btn" id="personal-btn-cumplimiento" onclick="switchPersonalTab('cumplimiento')"><i class="fas fa-clipboard-check"></i> Cumplimiento</button>
       <button class="tab-btn personal-tab-btn" id="personal-btn-cumpleanos" onclick="switchPersonalTab('cumpleanos')"><i class="fas fa-cake-candles"></i> Cumpleaños</button>
     </div>
@@ -808,6 +809,24 @@ $csrf = csrfToken();
     </div>
 
     <!-- ══════════ PANEL: CUMPLEAÑOS ══════════ -->
+    <!-- ===== SUB-MÓDULO: DNI Y LICENCIA ===== -->
+    <div class="tab-panel personal-tab-panel" id="personal-panel-docs">
+      <div class="card" style="margin-bottom:16px"><div class="card-body" style="padding:14px 20px">
+        <div class="filter-bar">
+          <div class="form-group"><label class="form-label">Buscar</label>
+            <input type="text" class="form-control" id="personalDocsBuscar" placeholder="Nombre o DNI…" oninput="renderPersonalDocs()"></div>
+          <div class="form-group"><label class="form-label">Mostrar</label>
+            <select class="form-control" id="personalDocsFiltro" onchange="renderPersonalDocs()">
+              <option value="todos">Todos</option>
+              <option value="conductor">Solo conductores</option>
+              <option value="alertas">Solo por vencer / vencidos</option>
+            </select></div>
+        </div>
+      </div></div>
+      <div id="personalDocsAlertas" style="margin-bottom:16px"></div>
+      <div id="personalDocsLista"><p class="muted" style="text-align:center;padding:28px">Cargando…</p></div>
+    </div>
+
     <div class="tab-panel personal-tab-panel" id="personal-panel-cumpleanos">
       <div class="kpi-grid" id="cumpleKpis" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin-bottom:18px"></div>
       <div class="card" style="margin-bottom:18px">
@@ -1675,12 +1694,20 @@ $csrf = csrfToken();
         <p style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--gris-400);letter-spacing:.08em;margin:18px 0 10px">Documentos</p>
         <div class="form-grid">
           <div class="form-group">
-            <label class="form-label">DNI (archivo) <a id="personal_doc_dni_link" href="#" onclick="verDocumento(this.href);return false;" style="display:none;font-weight:400;font-size:11px;color:var(--primary);margin-left:6px"><i class="fas fa-eye"></i> ver actual</a> <a id="personal_doc_dni_del" href="#" onclick="eliminarDocPersonal('doc_dni');return false;" style="display:none;font-weight:400;font-size:11px;color:var(--rojo);margin-left:8px"><i class="fas fa-trash"></i> quitar</a></label>
+            <label class="form-label">DNI · anverso <a id="personal_doc_dni_link" href="#" onclick="verDocumento(this.href);return false;" style="display:none;font-weight:400;font-size:11px;color:var(--primary);margin-left:6px"><i class="fas fa-eye"></i> ver actual</a> <a id="personal_doc_dni_del" href="#" onclick="eliminarDocPersonal('doc_dni');return false;" style="display:none;font-weight:400;font-size:11px;color:var(--rojo);margin-left:8px"><i class="fas fa-trash"></i> quitar</a></label>
             <input type="file" class="form-control" id="personal_doc_dni" accept="image/*,application/pdf">
           </div>
+          <div class="form-group">
+            <label class="form-label">DNI · reverso <a id="personal_doc_dni_reverso_link" href="#" onclick="verDocumento(this.href);return false;" style="display:none;font-weight:400;font-size:11px;color:var(--primary);margin-left:6px"><i class="fas fa-eye"></i> ver actual</a> <a id="personal_doc_dni_reverso_del" href="#" onclick="eliminarDocPersonal('doc_dni_reverso');return false;" style="display:none;font-weight:400;font-size:11px;color:var(--rojo);margin-left:8px"><i class="fas fa-trash"></i> quitar</a></label>
+            <input type="file" class="form-control" id="personal_doc_dni_reverso" accept="image/*,application/pdf">
+          </div>
           <div class="form-group" id="personalDocLicenciaWrap">
-            <label class="form-label">Licencia (archivo) <a id="personal_doc_licencia_link" href="#" onclick="verDocumento(this.href);return false;" style="display:none;font-weight:400;font-size:11px;color:var(--primary);margin-left:6px"><i class="fas fa-eye"></i> ver actual</a> <a id="personal_doc_licencia_del" href="#" onclick="eliminarDocPersonal('doc_licencia');return false;" style="display:none;font-weight:400;font-size:11px;color:var(--rojo);margin-left:8px"><i class="fas fa-trash"></i> quitar</a></label>
+            <label class="form-label">Licencia · anverso <a id="personal_doc_licencia_link" href="#" onclick="verDocumento(this.href);return false;" style="display:none;font-weight:400;font-size:11px;color:var(--primary);margin-left:6px"><i class="fas fa-eye"></i> ver actual</a> <a id="personal_doc_licencia_del" href="#" onclick="eliminarDocPersonal('doc_licencia');return false;" style="display:none;font-weight:400;font-size:11px;color:var(--rojo);margin-left:8px"><i class="fas fa-trash"></i> quitar</a></label>
             <input type="file" class="form-control" id="personal_doc_licencia" accept="image/*,application/pdf">
+          </div>
+          <div class="form-group" id="personalDocLicenciaRevWrap">
+            <label class="form-label">Licencia · reverso <a id="personal_doc_licencia_reverso_link" href="#" onclick="verDocumento(this.href);return false;" style="display:none;font-weight:400;font-size:11px;color:var(--primary);margin-left:6px"><i class="fas fa-eye"></i> ver actual</a> <a id="personal_doc_licencia_reverso_del" href="#" onclick="eliminarDocPersonal('doc_licencia_reverso');return false;" style="display:none;font-weight:400;font-size:11px;color:var(--rojo);margin-left:8px"><i class="fas fa-trash"></i> quitar</a></label>
+            <input type="file" class="form-control" id="personal_doc_licencia_reverso" accept="image/*,application/pdf">
           </div>
           <div class="form-group">
             <label class="form-label">Certijoven (archivo) <a id="personal_doc_certijoven_link" href="#" onclick="verDocumento(this.href);return false;" style="display:none;font-weight:400;font-size:11px;color:var(--primary);margin-left:6px"><i class="fas fa-eye"></i> ver actual</a> <a id="personal_doc_certijoven_del" href="#" onclick="eliminarDocPersonal('doc_certijoven');return false;" style="display:none;font-weight:400;font-size:11px;color:var(--rojo);margin-left:8px"><i class="fas fa-trash"></i> quitar</a></label>

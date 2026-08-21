@@ -12,7 +12,7 @@ requireLogin();
 header('Content-Type: application/json; charset=utf-8');
 
 // Columnas de documentos adjuntos del personal (una fuente de verdad).
-const PERSONAL_DOC_COLS = ['doc_dni', 'doc_licencia', 'doc_certijoven', 'doc_sctr', 'doc_verif_ref'];
+const PERSONAL_DOC_COLS = ['doc_dni', 'doc_dni_reverso', 'doc_licencia', 'doc_licencia_reverso', 'doc_certijoven', 'doc_sctr', 'doc_verif_ref'];
 
 // Auto-provisión de columnas de documentos.
 setupPersonalDocs();
@@ -243,15 +243,16 @@ function guardar() {
                 (dni, nombre, cargo, empresa, empresa_id, telefono, fecha_nacimiento,
                  fecha_ingreso, dni_vencimiento, num_licencia, categoria_licencia,
                  vencimiento_brevete, foto, observaciones, activo, tipo_contrato,
-                 doc_dni, doc_licencia, doc_certijoven, doc_sctr, doc_verif_ref)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                 doc_dni, doc_dni_reverso, doc_licencia, doc_licencia_reverso, doc_certijoven, doc_sctr, doc_verif_ref)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 $dni, $nombre, $cargo, $empresa ?: null, $empresaId ?: null, $tel ?: null,
                 $fechaNac ?: null, $fechaIng ?: null, $dniVenc ?: null,
                 $numLicencia ?: null, $catLicencia ?: null, $vencBrevete ?: null,
                 $fotoNombre, $obs ?: null, $activo, $tipoContrato ?: null,
-                $docs['doc_dni'] ?? null, $docs['doc_licencia'] ?? null, $docs['doc_certijoven'] ?? null,
-                $docs['doc_sctr'] ?? null, $docs['doc_verif_ref'] ?? null
+                $docs['doc_dni'] ?? null, $docs['doc_dni_reverso'] ?? null,
+                $docs['doc_licencia'] ?? null, $docs['doc_licencia_reverso'] ?? null,
+                $docs['doc_certijoven'] ?? null, $docs['doc_sctr'] ?? null, $docs['doc_verif_ref'] ?? null
             ]
         );
         jsonResponse(true, 'Personal creado.', ['id' => db()->lastInsertId()]);

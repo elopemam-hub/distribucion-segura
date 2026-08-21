@@ -7,7 +7,7 @@ let personalData = [];
 let personalPagina = 1;
 const PERSONAL_PAGE_SIZE = 15;
 // Documentos adjuntos (misma lista que el backend PERSONAL_DOC_COLS).
-const PERSONAL_DOCS = ['doc_dni','doc_licencia','doc_certijoven','doc_sctr','doc_verif_ref'];
+const PERSONAL_DOCS = ['doc_dni','doc_dni_reverso','doc_licencia','doc_licencia_reverso','doc_certijoven','doc_sctr','doc_verif_ref'];
 
 // Barra de paginación reutilizable (mismas clases que el listado). Devuelve HTML;
 // los botones llaman a la función global fnName(nroPagina).
@@ -44,8 +44,10 @@ function togglePersonalLicencia() {
   const esConductor = document.getElementById('personal_cargo')?.value === 'conductor';
   const sec = document.getElementById('personalLicenciaSec');
   const doc = document.getElementById('personalDocLicenciaWrap');
+  const docRev = document.getElementById('personalDocLicenciaRevWrap');
   if (sec) sec.style.display = esConductor ? '' : 'none';
   if (doc) doc.style.display = esConductor ? '' : 'none';
+  if (docRev) docRev.style.display = esConductor ? '' : 'none';
 }
 
 function actualizarResumenPersonal(todos) {
@@ -76,6 +78,20 @@ async function cargarPersonal() {
     actualizarResumenPersonal(personalData);
     renderPersonalTabla();
   } catch { toast('Error al cargar personal','error'); }
+  if (!window._persBadgeDocsCargado) { window._persBadgeDocsCargado = true; _persActualizarBadgeDocs(); }
+}
+
+// Carga el conteo de DNI/licencias por vencer o vencidas para el badge de la pestaña.
+function _persActualizarBadgeDocs() {
+  cargarResumenPersonal(() => {
+    const activos = (_resumenData || []).filter(p => +p.activo === 1);
+    let n = 0;
+    activos.forEach(p => {
+      if (p.dni_vencimiento && p.dias_vencer_dni !== null && parseInt(p.dias_vencer_dni) <= 30) n++;
+      if (p.cargo === 'conductor' && p.vencimiento_brevete && p.dias_vencer_brevete !== null && parseInt(p.dias_vencer_brevete) <= 30) n++;
+    });
+    _persDocsBadge(n);
+  });
 }
 
 function diasParaVencer(fechaStr) { if(!fechaStr)return null; const hoy=new Date();hoy.setHours(0,0,0,0);return Math.round((new Date(fechaStr+'T00:00:00')-hoy)/86400000); }
@@ -596,6 +612,103 @@ function switchPersonalTab(tab) {
   document.getElementById('personal-btn-' + tab)?.classList.add('active');
   if (tab === 'cumplimiento') cargarResumenPersonal(renderCumplimiento);
   if (tab === 'cumpleanos')   cargarResumenPersonal(renderCumpleanos);
+  if (tab === 'docs')         cargarResumenPersonal(renderPersonalDocs);
+}
+
+// ══════════════════════════════════════════════════════════════
+// SUB-MÓDULO: DNI Y LICENCIA (documentos + vencimientos)
+// ══════════════════════════════════════════════════════════════
+function _persFecha(f) { if (!f) return ''; const p = String(f).slice(0, 10).split('-'); return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : f; }
+
+function _persVencBadge(fecha, dias) {
+  if (!fecha) return '<span class="badge badge-secondary" style="font-size:10px">Sin fecha</span>';
+  const d = parseInt(dias);
+  const cls = d < 0 ? 'badge-danger' : d <= 30 ? 'badge-warning' : 'badge-success';
+  const txt = d < 0 ? ('venció hace ' + Math.abs(d) + ' d') : ('en ' + d + ' d');
+  return `<span class="badge ${cls}" style="font-size:10px">${_persFecha(fecha)} · ${txt}</span>`;
+}
+
+// Miniatura de un documento (imagen) o tarjeta PDF; vacío si no hay archivo.
+function _persDocThumb(ruta, label) {
+  if (!ruta) return `<div style="width:132px;height:84px;border:1px dashed var(--gris-600);border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--gris-500);font-size:11px;text-align:center">Sin ${escapeHtml(label)}</div>`;
+  const url = UPLOAD_URL + ruta;
+  const ext = (ruta.split('.').pop() || '').toLowerCase();
+  const esImg = ['jpg', 'jpeg', 'png', 'webp'].includes(ext);
+  const cap = `<div style="font-size:10px;color:var(--gris-400);text-align:center;margin-top:2px">${escapeHtml(label)}</div>`;
+  if (esImg) return `<div><img src="${url}" onclick="verDocumento('${encodeURI(url)}')" title="${escapeHtml(label)}" style="width:132px;height:84px;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid var(--gris-600)">${cap}</div>`;
+  return `<div><a href="#" onclick="verDocumento('${encodeURI(url)}');return false;" title="${escapeHtml(label)}" style="width:132px;height:84px;border:1px solid var(--gris-600);border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--primary);text-decoration:none"><i class="fas fa-file-pdf" style="font-size:26px"></i></a>${cap}</div>`;
+}
+
+function _persDocsBadge(n) {
+  const b = document.getElementById('personalDocsBadge');
+  if (!b) return;
+  if (+n > 0) { b.textContent = n; b.style.display = ''; } else b.style.display = 'none';
+}
+
+function renderPersonalDocs() {
+  const wrap = document.getElementById('personalDocsLista');
+  const alertCont = document.getElementById('personalDocsAlertas');
+  if (!wrap) return;
+  const activos = (_resumenData || []).filter(p => +p.activo === 1);
+
+  // ── Alertas (≤30 días o vencidos): DNI de todos, Licencia solo conductores ──
+  const alertas = [];
+  activos.forEach(p => {
+    if (p.dni_vencimiento && p.dias_vencer_dni !== null && parseInt(p.dias_vencer_dni) <= 30)
+      alertas.push({ tipo: 'DNI', nombre: p.nombre, id: p.id, fecha: p.dni_vencimiento, dias: parseInt(p.dias_vencer_dni) });
+    if (p.cargo === 'conductor' && p.vencimiento_brevete && p.dias_vencer_brevete !== null && parseInt(p.dias_vencer_brevete) <= 30)
+      alertas.push({ tipo: 'Licencia', nombre: p.nombre, id: p.id, fecha: p.vencimiento_brevete, dias: parseInt(p.dias_vencer_brevete) });
+  });
+  alertas.sort((a, b) => a.dias - b.dias);
+  _persDocsBadge(alertas.length);
+  if (alertCont) {
+    if (!alertas.length) alertCont.innerHTML = '';
+    else {
+      const filas = alertas.map(a => `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--gris-700);flex-wrap:wrap">
+        <span class="badge ${a.tipo === 'DNI' ? 'badge-info' : 'badge-secondary'}" style="font-size:10px;min-width:58px;text-align:center">${a.tipo}</span>
+        <span style="flex:1;min-width:160px;font-weight:600;color:var(--gris-100)">${escapeHtml(a.nombre)}</span>
+        ${_persVencBadge(a.fecha, a.dias)}
+        <button class="btn btn-outline btn-sm" onclick="editarPersonal(${a.id})" title="Editar"><i class="fas fa-pen"></i></button>
+      </div>`).join('');
+      alertCont.innerHTML = `<div class="card" style="border-left:4px solid var(--naranja)"><div class="card-body" style="padding:10px 16px">
+        <div style="font-weight:700;color:var(--gris-100);margin-bottom:4px"><i class="fas fa-bell" style="color:var(--naranja)"></i> DNI / Licencias por vencer o vencidos <span class="badge badge-warning">${alertas.length}</span></div>${filas}</div></div>`;
+    }
+  }
+
+  // ── Galería de documentos ──
+  const q = (document.getElementById('personalDocsBuscar')?.value || '').trim().toLowerCase();
+  const filtro = document.getElementById('personalDocsFiltro')?.value || 'todos';
+  const alertaIds = new Set(alertas.map(a => a.id));
+  let lista = activos.filter(p => {
+    if (q && !((p.nombre || '').toLowerCase().includes(q) || String(p.dni || '').includes(q))) return false;
+    if (filtro === 'conductor' && p.cargo !== 'conductor') return false;
+    if (filtro === 'alertas' && !alertaIds.has(p.id)) return false;
+    return true;
+  });
+  lista.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+
+  if (!lista.length) { wrap.innerHTML = '<p class="muted" style="text-align:center;padding:28px">Sin resultados.</p>'; return; }
+
+  wrap.innerHTML = lista.map(p => {
+    const esConductor = p.cargo === 'conductor';
+    const dniBlock = `<div style="flex:1;min-width:300px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--gris-400);letter-spacing:.05em;margin-bottom:6px"><i class="fas fa-id-card" style="color:var(--primary)"></i> DNI ${p.dni ? '· ' + escapeHtml(p.dni) : ''} &nbsp; ${_persVencBadge(p.dni_vencimiento, p.dias_vencer_dni)}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">${_persDocThumb(p.doc_dni, 'Anverso')}${_persDocThumb(p.doc_dni_reverso, 'Reverso')}</div>
+    </div>`;
+    const licBlock = esConductor ? `<div style="flex:1;min-width:300px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--gris-400);letter-spacing:.05em;margin-bottom:6px"><i class="fas fa-id-badge" style="color:var(--primary)"></i> Licencia ${p.num_licencia ? '· ' + escapeHtml(p.num_licencia) : ''} ${p.categoria_licencia ? '<span class="badge badge-secondary" style="font-size:10px">' + escapeHtml(p.categoria_licencia) + '</span>' : ''} &nbsp; ${_persVencBadge(p.vencimiento_brevete, p.dias_vencer_brevete)}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">${_persDocThumb(p.doc_licencia, 'Anverso')}${_persDocThumb(p.doc_licencia_reverso, 'Reverso')}</div>
+    </div>` : '';
+    return `<div class="card" style="margin-bottom:12px"><div class="card-body" style="padding:14px 18px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:10px;flex-wrap:wrap">
+        <div><strong style="color:var(--gris-100);font-size:15px">${escapeHtml(p.nombre)}</strong>
+          <span class="badge badge-info" style="font-size:10px;margin-left:6px">${escapeHtml(p.cargo || '')}</span>
+          ${p.empresa_nombre ? '<span class="muted" style="font-size:11px;margin-left:6px">' + escapeHtml(p.empresa_nombre) + '</span>' : ''}</div>
+        <button class="btn btn-outline btn-sm" onclick="editarPersonal(${p.id})"><i class="fas fa-pen"></i> Editar</button>
+      </div>
+      <div style="display:flex;gap:22px;flex-wrap:wrap">${dniBlock}${licBlock}</div>
+    </div></div>`;
+  }).join('');
 }
 
 // Carga TODOS los activos.

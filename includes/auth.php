@@ -585,6 +585,13 @@ function setupEmpresas(): void {
         );
         if (!$existe) db()->query("ALTER TABLE personal ADD COLUMN empresa_id INT NULL AFTER empresa", []);
 
+        // Reverso de DNI y licencia (anverso = doc_dni / doc_licencia existentes).
+        foreach (['doc_dni_reverso', 'doc_licencia_reverso'] as $col) {
+            $exR = db()->fetchOne("SELECT 1 FROM information_schema.columns
+                  WHERE table_schema = DATABASE() AND table_name = 'personal' AND column_name = ?", [$col]);
+            if (!$exR) db()->query("ALTER TABLE personal ADD COLUMN `$col` VARCHAR(255) NULL", []);
+        }
+
         // Migración: convierte los textos distintos de personal.empresa en filas de
         // empresas y enlaza empresa_id. Solo corre si aún hay trabajadores con
         // empresa (texto) pero sin empresa_id — así es segura de repetir.
