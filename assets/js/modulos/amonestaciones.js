@@ -164,6 +164,9 @@ function renderPaginacionAmon(tipo, total) {
     `<button onclick="irPaginaAmon('${tipo}',${pagActual+1})" ${pagActual===totalPags?'disabled':''}>&#8250;</button>`;
 }
 
+// Formatea una fecha YYYY-MM-DD → DD/MM/YYYY (completa, sin cortar).
+function _amonFecha(f) { if (!f) return '—'; const p = String(f).slice(0, 10).split('-'); return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : f; }
+
 function renderTablaAmon(tipo) {
   const todasFilas = amonDatos[tipo] || [];
   const total = todasFilas.length;
@@ -173,9 +176,9 @@ function renderTablaAmon(tipo) {
   if (tipo==='bancarizacion') {
     // Orden: Fecha | DNI | Nombre y Apellidos | Nombre cliente | Cód.Cliente | Motivo | Importe | Reincidente | Plan | Estado | F.Cierre | Obs | Docs | Opciones
     document.getElementById('tbodyBancarizacion').innerHTML=filas.length?filas.map(a=>`<tr>
-      <td style="font-size:12px">${a.fecha}</td>
+      <td style="font-size:12px;white-space:nowrap">${_amonFecha(a.fecha)}</td>
       <td style="font-size:12px;color:var(--primary);font-weight:600">${escapeHtml(a.personal_dni||'—')}</td>
-      <td><strong>${escapeHtml(a.personal_nombre)}</strong><br><span style="font-size:11px;color:var(--gris-400)">${escapeHtml(a.personal_cargo||'')}</span></td>
+      <td style="white-space:nowrap"><strong>${escapeHtml(a.personal_nombre||'—')}</strong><br><span style="font-size:11px;color:var(--gris-400)">${escapeHtml(a.personal_cargo||'')}</span></td>
       <td style="font-size:12px">${escapeHtml(a.cliente||'—')}</td>
       <td style="font-size:12px;font-weight:600">${escapeHtml(a.codigo_cliente||'—')}</td>
       <td>${motivoCodBadge(a.motivo_codigo)}</td>
@@ -183,7 +186,7 @@ function renderTablaAmon(tipo) {
       <td style="text-align:center">${a.reincidente==1?'<span class="badge badge-danger">SÍ</span>':'<span class="badge badge-success">NO</span>'}</td>
       <td style="min-width:170px">${planAccionesBadges(a.plan_acciones)}</td>
       <td>${AMON_ESTADO_BADGE[a.estado]||'<span style="color:var(--gris-400)">—</span>'}</td>
-      <td style="font-size:12px">${a.fecha_cierre||'—'}</td>
+      <td style="font-size:12px;white-space:nowrap">${a.fecha_cierre?_amonFecha(a.fecha_cierre):'—'}</td>
       <td style="font-size:12px;color:var(--gris-300);max-width:130px">${escapeHtml(a.observaciones||'—')}</td>
       <td>${amonDocs(a)}</td>
       <td><div style="display:flex;gap:4px"><button class="btn btn-outline btn-sm btn-icon" onclick="editarAmon(${a.id})" title="Editar"><i class="fas fa-edit"></i></button>${USER_ROL==='administrador'?`<button class="btn btn-danger btn-sm btn-icon" onclick="eliminarAmon(${a.id})" title="Eliminar"><i class="fas fa-trash"></i></button>`:''}</div></td>
@@ -191,16 +194,16 @@ function renderTablaAmon(tipo) {
   } else if (tipo==='n3') {
     // Orden: Fecha | DNI | Nombre y Apellidos | Cliente N3 | Cód.Cliente | Motivo | Reincidente | Plan | Estado | F.Cierre | Obs | Docs | Opciones
     document.getElementById('tbodyN3').innerHTML=filas.length?filas.map(a=>`<tr>
-      <td style="font-size:12px">${a.fecha}</td>
+      <td style="font-size:12px;white-space:nowrap">${_amonFecha(a.fecha)}</td>
       <td style="font-size:12px;color:var(--primary);font-weight:600">${escapeHtml(a.personal_dni||'—')}</td>
-      <td><strong>${escapeHtml(a.personal_nombre)}</strong><br><span style="font-size:11px;color:var(--gris-400)">${escapeHtml(a.personal_cargo||'')}</span></td>
+      <td style="white-space:nowrap"><strong>${escapeHtml(a.personal_nombre||'—')}</strong><br><span style="font-size:11px;color:var(--gris-400)">${escapeHtml(a.personal_cargo||'')}</span></td>
       <td style="font-size:12px">${escapeHtml(a.cliente||'—')}</td>
       <td style="font-size:12px;font-weight:600">${escapeHtml(a.codigo_cliente||'—')}</td>
       <td>${motivoCodBadge(a.motivo_codigo)}</td>
       <td style="text-align:center">${a.reincidente==1?'<span class="badge badge-danger">SÍ</span>':'<span class="badge badge-success">NO</span>'}</td>
       <td style="min-width:170px">${planAccionesBadges(a.plan_acciones)}</td>
       <td>${AMON_ESTADO_BADGE[a.estado]||'<span style="color:var(--gris-400)">—</span>'}</td>
-      <td style="font-size:12px">${a.fecha_cierre||'—'}</td>
+      <td style="font-size:12px;white-space:nowrap">${a.fecha_cierre?_amonFecha(a.fecha_cierre):'—'}</td>
       <td style="font-size:12px;color:var(--gris-300);max-width:130px">${escapeHtml(a.observaciones||'—')}</td>
       <td>${amonDocs(a)}</td>
       <td><div style="display:flex;gap:4px"><button class="btn btn-outline btn-sm btn-icon" onclick="editarAmon(${a.id})" title="Editar"><i class="fas fa-edit"></i></button>${USER_ROL==='administrador'?`<button class="btn btn-danger btn-sm btn-icon" onclick="eliminarAmon(${a.id})" title="Eliminar"><i class="fas fa-trash"></i></button>`:''}</div></td>
@@ -208,9 +211,9 @@ function renderTablaAmon(tipo) {
   } else if (tipo==='telemetria') {
     // Orden: Fecha | Placa | Nombre | Regla | T.Sanción | Nivel | Reincidente | Imagen | Estado | Plan | F.Cierre | Obs | Docs | Acciones
     document.getElementById('tbodyTelemetria').innerHTML=filas.length?filas.map(a=>`<tr style="${a.reincidente==1?'background:rgba(220,38,38,0.04);border-left:3px solid #EF4444;':''}">
-      <td style="font-size:12px">${a.fecha}</td>
+      <td style="font-size:12px;white-space:nowrap">${_amonFecha(a.fecha)}</td>
       <td><span class="badge" style="font-weight:800;background:var(--primary-light);color:var(--primary)">${escapeHtml(a.unidad||'—')}</span></td>
-      <td><strong style="font-size:13px">${escapeHtml(a.personal_nombre)}</strong><br><span style="font-size:11px;color:var(--gris-400)">${escapeHtml(a.personal_cargo||'')}</span></td>
+      <td style="white-space:nowrap"><strong style="font-size:13px">${escapeHtml(a.personal_nombre||'—')}</strong><br><span style="font-size:11px;color:var(--gris-400)">${escapeHtml(a.personal_cargo||'')}</span></td>
       <td>${amonReglaBadge(a.evento_tele)}</td>
       <td>${a.tipo_sancion?`<span class="badge badge-info" style="font-size:11px">${escapeHtml(a.tipo_sancion)}</span>`:'—'}</td>
       <td>${nivelSancionBadge(a.tipo_sancion_nivel)}</td>
@@ -218,7 +221,7 @@ function renderTablaAmon(tipo) {
       <td>${a.imagen_evento?`<img src="${UPLOAD_URL}${a.imagen_evento}" style="width:72px;height:48px;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid var(--gris-500)" onclick="verFotoLightbox('${UPLOAD_URL}${a.imagen_evento}')">`:'<span style="color:var(--gris-400);font-size:11px">—</span>'}</td>
       <td>${AMON_ESTADO_BADGE[a.estado]||'<span style="color:var(--gris-400)">—</span>'}</td>
       <td style="font-size:11px;color:var(--gris-300);max-width:160px;line-height:1.6">${escapeHtml(a.plan_acciones||'—')}</td>
-      <td style="font-size:12px">${a.fecha_cierre||'—'}</td>
+      <td style="font-size:12px;white-space:nowrap">${a.fecha_cierre?_amonFecha(a.fecha_cierre):'—'}</td>
       <td style="font-size:12px;color:var(--gris-300);max-width:130px">${escapeHtml(a.observaciones||'—')}</td>
       <td>${amonDocs(a)}</td>
       <td><div style="display:flex;gap:4px"><button class="btn btn-outline btn-sm btn-icon" onclick="editarAmon(${a.id})" title="Editar"><i class="fas fa-edit"></i></button>${USER_ROL==='administrador'?`<button class="btn btn-danger btn-sm btn-icon" onclick="eliminarAmon(${a.id})" title="Eliminar"><i class="fas fa-trash"></i></button>`:''}</div></td>
@@ -237,7 +240,24 @@ function abrirModalAmon(tipo) {
   document.getElementById('modalAmonTitulo').textContent='Nueva — '+AMON_TITULOS[tipo];
   const prev=document.getElementById('amon_imagen_preview'); if(prev) prev.style.display='none';
   const archDiv=document.getElementById('amon_archivo_actual'); if(archDiv) archDiv.style.display='none';
+  _amonModoSoloDoc(false);   // alta: formulario completo (según permiso de la API)
   mostrarSeccionAmon(tipo); cerrarAmonAC(); abrirModal('modalAmon');
+}
+
+// Modo "solo documento": para usuarios NO administradores, al editar una
+// amonestación existente todos los campos quedan bloqueados y solo pueden
+// adjuntar el documento de amonestación.
+function _amonModoSoloDoc(activar) {
+  const form = document.getElementById('formAmon');
+  if (!form) return;
+  const docInputs = ['amon_archivo_doc', 'amon_archivo_banc', 'amon_archivo_n3'];
+  form.querySelectorAll('input, select, textarea').forEach(el => {
+    if (el.type === 'hidden') return;               // no tocar los ocultos (id, tipo, personal_id…)
+    if (docInputs.includes(el.id)) { el.disabled = false; return; }
+    el.disabled = activar;
+  });
+  const aviso = document.getElementById('amonAvisoSoloDoc');
+  if (aviso) aviso.style.display = activar ? 'block' : 'none';
 }
 
 function mostrarSeccionAmon(tipo) {
@@ -295,6 +315,8 @@ async function editarAmon(id) {
     if(a.archivo_amonestacion&&archDiv&&archLink&&archNom){archLink.href='api/documento.php?f='+encodeURIComponent(a.archivo_amonestacion);archNom.textContent=a.archivo_amonestacion.split('/').pop();archDiv.style.display='block';}else if(archDiv)archDiv.style.display='none';
   }
   document.getElementById('modalAmonTitulo').textContent='Editar — '+AMON_TITULOS[a.tipo];
+  // Usuarios no administradores: solo pueden adjuntar el documento (campos bloqueados).
+  _amonModoSoloDoc(typeof USER_ROL !== 'undefined' && USER_ROL !== 'administrador');
   mostrarSeccionAmon(a.tipo); abrirModal('modalAmon');
 }
 

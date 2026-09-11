@@ -1288,6 +1288,10 @@ $csrf = csrfToken();
         <input type="hidden" id="amon_id">
         <input type="hidden" id="amon_tipo">
 
+        <div id="amonAvisoSoloDoc" style="display:none;background:rgba(212,165,0,.12);border:1px solid var(--primary);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12.5px;color:var(--gris-100)">
+          <i class="fas fa-lock" style="color:var(--primary)"></i> Solo puedes <strong>adjuntar el documento de amonestación</strong>. Los demás campos son de solo lectura (edición reservada al administrador).
+        </div>
+
         <!-- Datos comunes -->
         <p style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--gris-400);letter-spacing:.08em;margin-bottom:10px">Datos generales</p>
         <div class="form-grid">

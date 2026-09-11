@@ -198,6 +198,19 @@ function guardar() {
     }
 
     if ($id > 0) {
+        // Un usuario NO administrador solo puede adjuntar el documento (y su imagen)
+        // a una amonestación existente; no puede modificar los demás campos.
+        if (($creador['rol'] ?? '') !== 'administrador') {
+            $upd = [];
+            if (isset($data['archivo_amonestacion'])) $upd['archivo_amonestacion'] = $data['archivo_amonestacion'];
+            if (isset($data['imagen_evento']))        $upd['imagen_evento']        = $data['imagen_evento'];
+            if (!$upd) jsonResponse(false, 'Adjunta el documento de amonestación (no puedes modificar los demás campos).', null, 422);
+            $sets   = implode(', ', array_map(fn($k) => "$k = ?", array_keys($upd)));
+            $params = array_values($upd);
+            $params[] = $id;
+            db()->query("UPDATE amonestaciones SET $sets WHERE id = ?", $params);
+            jsonResponse(true, 'Documento adjuntado.', ['id' => $id]);
+        }
         // En update, solo sobreescribir imagen si se sube una nueva
         $sets   = implode(', ', array_map(fn($k) => "$k = ?", array_keys($data)));
         $params = array_values($data);
