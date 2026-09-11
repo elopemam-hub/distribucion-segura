@@ -694,6 +694,13 @@ function setupCapacitaciones(): void {
 // R.M. 050-2013-TR (EPP), R.M. 1275-2021-SA (botiquín). Idempotente.
 // ============================================================
 function setupChecklist(): void {
+    // Guarda de versión: la provisión (DDL + information_schema + siembras) es
+    // costosa y NO debe correr en cada request. Solo se ejecuta cuando cambia la
+    // versión del esquema; el resto de las veces retorna de inmediato.
+    // ▸ Sube CHK_SETUP_VER cuando agregues/cambies tablas o columnas del checklist.
+    $ver    = 'chk-2026-09-11';
+    $marker = sys_get_temp_dir() . '/dseg_chksetup_' . md5(__DIR__ . '|' . (defined('DB_NAME') ? DB_NAME : ''));
+    if (@is_file($marker) && trim((string)@file_get_contents($marker)) === $ver) return;
     try {
         db()->query("CREATE TABLE IF NOT EXISTS chk_componentes (
             id INT AUTO_INCREMENT PRIMARY KEY, nombre VARCHAR(120) NOT NULL, orden INT NOT NULL DEFAULT 0,
@@ -808,6 +815,8 @@ function setupChecklist(): void {
         seedExtintoresT2();
         // Banco de contenido de botiquín + inventario de 28 unidades (1 por camión).
         seedBotiquinT2();
+        // Marca la versión como provisionada (evita repetir en los próximos requests).
+        @file_put_contents($marker, $ver);
     } catch (Exception $e) {
         error_log('[setupChecklist] ' . $e->getMessage());
     }
