@@ -255,11 +255,32 @@ function _chkFlota(string $tipo = '', bool $soloActivos = false): array {
     return ['placas' => $placas, 'tipos' => $tipos];
 }
 
+// Peor estado entre dos (para consolidar): no_apto > observado > apto.
+function _chkPeorEstado(?string $a, ?string $b): string {
+    $rank = ['apto' => 1, 'observado' => 2, 'no_apto' => 3];
+    return (($rank[$b] ?? 0) > ($rank[$a] ?? 0)) ? ($b ?: 'apto') : ($a ?: 'apto');
+}
+
 // Mapa placa (mayúsculas) => [componente_id => estado] para un periodo.
+// Los equipos de inventario (extintor/botiquín) se inspeccionan por su código
+// (EXT-XX/BOT-XX); esa inspección también cuenta para el camión al que está
+// asignado el equipo (chk_unidades.placa), para que la matriz de cumplimiento
+// —que cruza por placa de camión— no lo marque como pendiente.
 function _chkMapaMes(string $periodo): array {
+    $codToPlaca = [];
+    foreach (db()->fetchAll("SELECT codigo, placa FROM chk_unidades WHERE placa IS NOT NULL AND placa <> '' AND activo = 1") as $u) {
+        $codToPlaca[strtoupper($u['codigo'])] = strtoupper($u['placa']);
+    }
     $mapa = [];
     foreach (db()->fetchAll("SELECT placa, componente_id, estado FROM chk_inspecciones WHERE periodo = ?", [$periodo]) as $x) {
-        $mapa[strtoupper($x['placa'])][(int)$x['componente_id']] = $x['estado'];
+        $key = strtoupper($x['placa']);
+        $cid = (int)$x['componente_id'];
+        $mapa[$key][$cid] = isset($mapa[$key][$cid]) ? _chkPeorEstado($mapa[$key][$cid], $x['estado']) : $x['estado'];
+        // Traslada la inspección por código de inventario al camión asignado.
+        if (isset($codToPlaca[$key])) {
+            $cam = $codToPlaca[$key];
+            $mapa[$cam][$cid] = isset($mapa[$cam][$cid]) ? _chkPeorEstado($mapa[$cam][$cid], $x['estado']) : $x['estado'];
+        }
     }
     return $mapa;
 }
