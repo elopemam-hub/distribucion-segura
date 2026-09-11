@@ -64,7 +64,8 @@ try {
     } elseif ($action === 'list') {
         $q      = trim($_GET['q'] ?? '');
         $estado = trim($_GET['estado'] ?? '');
-        $where = ['1=1']; $params = [];
+        // El catálogo de Vehículos muestra SOLO camiones (flota de reparto).
+        $where = ["LOWER(tipo) LIKE 'cami%'"]; $params = [];
         if ($q !== '') {
             $where[] = '(placa LIKE ? OR marca LIKE ? OR n_serie LIKE ?)';
             $params[] = "%$q%"; $params[] = "%$q%"; $params[] = "%$q%";
