@@ -82,6 +82,17 @@ try {
         $rows = $vigAll("SELECT DISTINCT estado FROM vehiculos WHERE estado IS NOT NULL AND estado <> '' ORDER BY estado");
         jsonResponse(true, '', array_column($rows, 'estado'));
 
+    } elseif ($action === 'stats') {
+        // Conteo de camiones por estado (para las tarjetas resumen del catálogo).
+        $rows = $vigAll(
+            "SELECT estado, COUNT(*) n FROM vehiculos
+              WHERE LOWER(tipo) LIKE 'cami%'
+              GROUP BY estado ORDER BY n DESC"
+        );
+        $total = 0; $porEstado = [];
+        foreach ($rows as $r) { $n = (int)$r['n']; $total += $n; $porEstado[] = ['estado' => $r['estado'] ?: 'Sin estado', 'n' => $n]; }
+        jsonResponse(true, '', ['total' => $total, 'por_estado' => $porEstado]);
+
     } else {
         jsonResponse(false, 'Acción no válida.', null, 400);
     }

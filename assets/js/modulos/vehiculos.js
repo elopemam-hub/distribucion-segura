@@ -8,8 +8,42 @@ let _vehListTimer = null;
 
 function initVehiculos() {
   cargarEstadosVehiculo();
+  cargarStatsVehiculos();
   cargarVehiculos();
   _vehInit = true;
+}
+
+// Tarjetas resumen: total de camiones + conteo por estado (clic = filtrar).
+async function cargarStatsVehiculos() {
+  const cont = document.getElementById('vehKpis');
+  if (!cont) return;
+  let d = null;
+  try { const r = await fetch('api/vehiculos.php?action=stats'); const j = await r.json(); if (j && j.success) d = j.data; }
+  catch { /* sin datos */ }
+  if (!d) { cont.innerHTML = ''; return; }
+  const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const color = est => { const e = (est || '').toLowerCase(); if (/dispon/.test(e)) return 'var(--verde)'; if (/inact|vend|baja/.test(e)) return 'var(--rojo)'; if (/ruta/.test(e)) return '#1565C0'; return 'var(--primary)'; };
+  const icono = est => { const e = (est || '').toLowerCase(); if (/dispon/.test(e)) return 'fa-circle-check'; if (/inact|vend|baja/.test(e)) return 'fa-ban'; if (/ruta/.test(e)) return 'fa-route'; return 'fa-truck'; };
+  const card = (label, valor, col, filtro, ic) => `
+    <div onclick="filtrarVehPorEstado('${String(filtro || '').replace(/'/g, "\\'")}')" title="Ver ${esc(label)}"
+      style="background:var(--gris-800);border:1px solid var(--gris-600);border-left:4px solid ${col};border-radius:10px;padding:14px 16px;cursor:pointer;transition:border-color .15s"
+      onmouseover="this.style.borderColor='${col}'" onmouseout="this.style.borderColor='var(--gris-600)';this.style.borderLeftColor='${col}'">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--gris-400);font-weight:700">${esc(label)}</span>
+        <i class="fas ${ic}" style="color:${col}"></i>
+      </div>
+      <div style="font-size:28px;font-weight:800;color:${col};line-height:1.2">${valor}</div>
+    </div>`;
+  cont.innerHTML =
+    card('Total camiones', d.total || 0, 'var(--primary)', '', 'fa-truck') +
+    (d.por_estado || []).map(e => card(e.estado, e.n, color(e.estado), e.estado === 'Sin estado' ? '' : e.estado, icono(e.estado))).join('');
+}
+
+// Clic en una tarjeta: filtra el listado por ese estado.
+function filtrarVehPorEstado(estado) {
+  const sel = document.getElementById('vehFiltroEstado');
+  if (sel) sel.value = estado || '';
+  cargarVehiculos();
 }
 
 function vehBuscarDebounced() {

@@ -12,6 +12,9 @@
       </div>
     </div>
 
+    <!-- Tarjetas resumen (conteos por estado) -->
+    <div class="kpi-grid" id="vehKpis" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:18px"></div>
+
     <!-- Filtros -->
     <div class="card" style="margin-bottom:18px">
       <div class="card-body" style="padding:16px 22px">
