@@ -524,6 +524,7 @@ function cabeceraEmpresa(?int $empresaId): array {
         'doc_version'      => $pick($emp['doc_version']    ?? '', 'doc_version'),
         'doc_fecha'        => $pick($emp['doc_fecha']      ?? '', 'doc_fecha'),
         'emp_responsable'  => $pick($emp['resp_registro']  ?? '', 'emp_responsable'),
+        'resp_cargo'       => $pick($emp['resp_cargo']     ?? '', 'resp_cargo'),
         'emp_logo'         => (!empty($emp['logo'])) ? $emp['logo'] : ($cfg['emp_logo'] ?? ''),
     ];
 }
@@ -605,7 +606,7 @@ function eppSeedEmpresa(int $empresaId): array {
 function setupEmpresas(): void {
     // Guarda de versión (evita reprovisionar en cada request). Sube EMP_SETUP_VER
     // al cambiar tablas/columnas de empresas.
-    $ver    = 'emp-2026-09-12';
+    $ver    = 'emp-2026-09-13';
     $marker = sys_get_temp_dir() . '/dseg_empsetup_' . md5(__DIR__ . '|' . (defined('DB_NAME') ? DB_NAME : ''));
     if (@is_file($marker) && trim((string)@file_get_contents($marker)) === $ver) return;
     try {
@@ -638,6 +639,7 @@ function setupEmpresas(): void {
             'doc_version'    => "VARCHAR(20) NULL",
             'doc_fecha'      => "VARCHAR(30) NULL",
             'resp_registro'  => "VARCHAR(200) NULL",
+            'resp_cargo'     => "VARCHAR(120) NULL",
         ];
         foreach ($empCols as $col => $ddl) {
             $exC = db()->fetchOne("SELECT 1 FROM information_schema.columns

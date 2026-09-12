@@ -126,9 +126,15 @@
             <input type="text" class="form-control" id="empresa_doc_fecha" maxlength="30" placeholder="Ej: 22/04/2016">
           </div>
         </div>
-        <div class="form-group">
-          <label class="form-label">Responsable del registro (nombre y cargo)</label>
-          <input type="text" class="form-control" id="empresa_resp_registro" maxlength="200" placeholder="Ej: Beatriz Rojas Benavente - Asistente Social">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div class="form-group">
+            <label class="form-label">Responsable del registro (nombre)</label>
+            <input type="text" class="form-control" id="empresa_resp_registro" maxlength="200" placeholder="Ej: Beatriz Rojas Benavente">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Cargo del responsable</label>
+            <input type="text" class="form-control" id="empresa_resp_cargo" maxlength="120" placeholder="Ej: Asistente Social">
+          </div>
         </div>
 
         <div class="form-group">

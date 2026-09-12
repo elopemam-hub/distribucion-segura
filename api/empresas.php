@@ -90,6 +90,7 @@ function guardar() {
     $docVersion   = trim($_POST['doc_version'] ?? '');
     $docFecha     = trim($_POST['doc_fecha'] ?? '');
     $respRegistro = trim($_POST['resp_registro'] ?? '');
+    $respCargo    = trim($_POST['resp_cargo'] ?? '');
 
     if ($razon === '') jsonResponse(false, 'La razón social es obligatoria.', null, 422);
     if ($id > 0 && !empresaEsPermitida($id)) jsonResponse(false, 'Sin acceso a esta empresa.', null, 403);
@@ -106,14 +107,14 @@ function guardar() {
                $actividad ?: null, $responsable ?: null, $telefono ?: null, $email ?: null, $color ?: null,
                $empNumTrab ?: null, $ctNombre ?: null, $ctDomicilio ?: null, $ctResp ?: null,
                $ctNumTrab ?: null, $ctArea ?: null, $docCodigo ?: null, $docVersion ?: null,
-               $docFecha ?: null, $respRegistro ?: null];
+               $docFecha ?: null, $respRegistro ?: null, $respCargo ?: null];
 
     if ($id > 0) {
         db()->query(
             "UPDATE empresas SET razon_social=?, ruc=?, tipo=?, domicilio=?, actividad=?,
                     responsable=?, telefono=?, email=?, color=?,
                     emp_num_trab=?, ct_nombre=?, ct_domicilio=?, ct_responsable=?,
-                    ct_num_trab=?, ct_area=?, doc_codigo=?, doc_version=?, doc_fecha=?, resp_registro=? WHERE id=?",
+                    ct_num_trab=?, ct_area=?, doc_codigo=?, doc_version=?, doc_fecha=?, resp_registro=?, resp_cargo=? WHERE id=?",
             array_merge($campos, [$id])
         );
     } else {
@@ -121,8 +122,8 @@ function guardar() {
             "INSERT INTO empresas (razon_social, ruc, tipo, domicilio, actividad,
                     responsable, telefono, email, color,
                     emp_num_trab, ct_nombre, ct_domicilio, ct_responsable,
-                    ct_num_trab, ct_area, doc_codigo, doc_version, doc_fecha, resp_registro)
-             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                    ct_num_trab, ct_area, doc_codigo, doc_version, doc_fecha, resp_registro, resp_cargo)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             $campos
         );
         $id = (int)db()->lastInsertId();

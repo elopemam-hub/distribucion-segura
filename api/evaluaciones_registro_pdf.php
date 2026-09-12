@@ -116,7 +116,7 @@ $fechaComun = '';
 $fechasSel = array_unique(array_map(fn($r) => $r['fecha'], $rows));
 if (count($fechasSel) === 1) $fechaComun = $fmt(reset($fechasSel));
 
-$minRows = 16;
+$minRows = 12;
 $fill = max(0, $minRows - count($rows));
 ?>
 <!DOCTYPE html>
@@ -135,23 +135,24 @@ $fill = max(0, $minRows - count($rows));
   .toolbar button { font: inherit; font-size: 13px; padding: 8px 16px; border: 0; border-radius: 6px; cursor: pointer; }
   .btn-print { background: #1565C0; color: #fff; } .btn-back { background: #e5e7eb; color: #111; }
 
+  /* Tamaño de letra UNIFORME (10px) en todo el formato. */
   table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-  td, th { border: 1px solid #000; padding: 2px 4px; vertical-align: middle; word-wrap: break-word; }
-  .band { background: #d9d9d9; font-weight: 700; text-transform: uppercase; text-align: center; font-size: 10px; }
+  td, th { border: 1px solid #000; padding: 3px 5px; vertical-align: middle; word-wrap: break-word; font-size: 10px; }
+  .band { background: #d9d9d9; font-weight: 700; text-transform: uppercase; text-align: center; }
   .lbl { background: #f2f2f2; text-align: center; font-weight: 700; }
   .val { color: #1f4e79; text-align: center; font-weight: 600; }
-  .titulo { text-align: center; font-weight: 700; font-size: 12px; text-transform: uppercase; line-height: 1.15; }
+  .titulo { text-align: center; font-weight: 700; text-transform: uppercase; line-height: 1.2; }
   .logo { text-align: center; } .logo img { max-height: 46px; max-width: 100%; }
-  .mk { text-align: center; font-weight: 700; font-size: 13px; height: 22px; }
+  .mk { text-align: center; font-weight: 700; height: 22px; }
   .hl { background: #ffff00; }
-  .tema { text-align: center; font-weight: 700; font-size: 12px; }
-  .asis th { background: #f2f2f2; font-size: 8.5px; text-transform: uppercase; text-align: center; }
-  .asis td { height: 30px; font-size: 9px; vertical-align: middle; }
-  .cnum { width: 4%; text-align: center; } .cdni { width: 10%; text-align: center; }
-  .cap1 { width: 14%; } .cap2 { width: 14%; } .cnom { width: 17%; }
-  .ccargo { width: 13%; } .carea { width: 9%; text-align: center; }
-  .cfirma { width: 11%; text-align: center; } .cobs { width: 8%; }
-  .foot { font-size: 9px; }
+  .tema { text-align: left; font-weight: 600; line-height: 1.35; }
+  .asis th { background: #f2f2f2; text-transform: uppercase; text-align: center; }
+  .asis td { height: 42px; vertical-align: top; padding-top: 4px; }
+  .cnum { width: 4%; text-align: center; } .cdni { width: 9%; text-align: center; }
+  .cap1 { width: 13%; } .cap2 { width: 13%; } .cnom { width: 15%; }
+  .ccargo { width: 12%; } .carea { width: 9%; text-align: center; }
+  .cfirma { width: 16%; text-align: center; } .cobs { width: 9%; }
+  .foot { }
   [contenteditable]:empty { background: #fffef2; }
   @media print { body { background: #fff; } .toolbar { display: none; } .sheet { width: auto; padding: 0; } [contenteditable] { background: transparent !important; } }
 </style>
@@ -283,7 +284,7 @@ $fill = max(0, $minRows - count($rows));
       </tr>
       <tr style="height:22px">
         <td class="lbl">Cargo:</td>
-        <td class="val" contenteditable="true">&nbsp;</td>
+        <td class="val" contenteditable="true"><?= $g('resp_cargo') !== '' ? $h($g('resp_cargo')) : '&nbsp;' ?></td>
         <td class="lbl">Fecha:</td>
         <td class="val" contenteditable="true"><?= $fechaComun ? $h($fechaComun) : '&nbsp;' ?></td>
       </tr>
