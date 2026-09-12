@@ -161,9 +161,9 @@ $fill = max(0, $minRows - count($rows));
   .tema { text-align: left; font-weight: 600; line-height: 1.35; }
   .asis th { background: #f2f2f2; text-transform: uppercase; text-align: center; }
   .asis td { height: 42px; vertical-align: top; padding-top: 4px; }
-  .cnum { width: 4%; text-align: center; } .cdni { width: 8%; text-align: center; }
-  .cap1 { width: 15%; } .cap2 { width: 15%; } .cnom { width: 15%; }
-  .ccargo { width: 11%; } .carea { width: 7%; text-align: center; }
+  .cnum { width: 3%; text-align: center; } .cdni { width: 8%; text-align: center; }
+  .cap1 { width: 15%; } .cap2 { width: 15%; } .cnom { width: 16%; }
+  .ccargo { width: 11%; text-transform: uppercase; } .carea { width: 7%; text-align: center; }
   .cfirma { width: 18%; text-align: center; } .cobs { width: 7%; }
   .asis td, .asis th { line-height: 1.15; }
   .foot { }

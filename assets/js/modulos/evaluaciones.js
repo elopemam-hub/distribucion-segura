@@ -769,7 +769,16 @@ function evalToggleAll(on) {
 function evalRegistroPdf() {
   const ids = [...document.querySelectorAll('.eval-check:checked')].map(c => c.value);
   if (!ids.length) { toast('Marca al menos una evaluación para imprimir el registro.', 'warning'); return; }
-  window.open('api/evaluaciones_registro_pdf.php?ids=' + encodeURIComponent(ids.join(',')), '_blank');
+  const url = 'api/evaluaciones_registro_pdf.php?ids=' + encodeURIComponent(ids.join(','));
+  const fr = document.getElementById('evalPdfFrame'); if (fr) fr.src = url;
+  const ab = document.getElementById('evalPdfAbrir'); if (ab) ab.href = url;
+  abrirModal('modalEvalRegistroPdf');
+}
+
+function evalImprimirRegistro() {
+  const f = document.getElementById('evalPdfFrame');
+  try { f.contentWindow.focus(); f.contentWindow.print(); }
+  catch (e) { window.open(f.src, '_blank'); }
 }
 
 async function cargarListadoEval(page = 1) {

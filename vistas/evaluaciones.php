@@ -170,6 +170,23 @@
 
   </div><!-- /page-evaluaciones -->
 
+  <!-- ===== MODAL: VISOR DEL REGISTRO PDF (en la misma pantalla) ===== -->
+  <div class="modal-overlay" id="modalEvalRegistroPdf" style="z-index:1200">
+    <div class="modal-box" style="max-width:1000px;width:97%">
+      <div class="modal-header">
+        <h3><i class="fas fa-file-lines" style="color:var(--primary)"></i> Registro de asistencia</h3>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn btn-primary btn-sm" onclick="evalImprimirRegistro()"><i class="fas fa-print"></i> Imprimir / PDF</button>
+          <a class="btn btn-secondary btn-sm" id="evalPdfAbrir" href="#" target="_blank" rel="noopener" title="Abrir en pestaña nueva"><i class="fas fa-up-right-from-square"></i></a>
+          <button class="modal-close" onclick="cerrarModal('modalEvalRegistroPdf')"><i class="fas fa-times"></i></button>
+        </div>
+      </div>
+      <div class="modal-body" style="padding:0;background:#525659;min-height:74vh">
+        <iframe id="evalPdfFrame" title="Registro" style="width:100%;height:74vh;border:0;background:#fff"></iframe>
+      </div>
+    </div>
+  </div>
+
   <!-- ══════════════════════════════════════
        MODAL: VER / REVISAR EVALUACIÓN
   ══════════════════════════════════════ -->
