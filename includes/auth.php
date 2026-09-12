@@ -183,6 +183,11 @@ function setupEvalFormularios(): void {
         $exEC = db()->fetchOne("SELECT 1 FROM information_schema.columns
               WHERE table_schema = DATABASE() AND table_name = 'eval_formularios' AND column_name = 'empresa_cabecera_id'");
         if (!$exEC) db()->query("ALTER TABLE eval_formularios ADD COLUMN empresa_cabecera_id INT NULL", []);
+
+        // Tema fijo del registro R.M. 050 por formulario (multilínea): aparece en el PDF.
+        $exTM = db()->fetchOne("SELECT 1 FROM information_schema.columns
+              WHERE table_schema = DATABASE() AND table_name = 'eval_formularios' AND column_name = 'tema'");
+        if (!$exTM) db()->query("ALTER TABLE eval_formularios ADD COLUMN tema TEXT NULL", []);
     } catch (Exception $e) {
         error_log('[setupEvalFormularios] ' . $e->getMessage());
     }

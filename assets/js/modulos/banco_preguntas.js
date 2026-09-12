@@ -671,6 +671,7 @@ function bpNuevaEvaluacion() {
   document.getElementById('bpFrmOrden').value       = String((bpFormulariosCache.length + 1) * 10);
   document.getElementById('bpFrmBtnEliminar').style.display = 'none';
   document.getElementById('bpFormularioModalTitulo').textContent = 'Nueva Evaluación';
+  const temaN = document.getElementById('bpFrmTema'); if (temaN) temaN.value = '';
   bpCargarEmpresasCabecera('');
   bpPreviewIcono();
   abrirModal('modalBpFormulario');
@@ -704,6 +705,7 @@ function bpEditarFormulario(formularioId) {
   const reservados = ['manejo_practica','examen_defensiva','induccion_t2'];
   document.getElementById('bpFrmBtnEliminar').style.display = reservados.includes(formularioId) ? 'none' : '';
   document.getElementById('bpFormularioModalTitulo').textContent = 'Editar Evaluación';
+  const temaE = document.getElementById('bpFrmTema'); if (temaE) temaE.value = f.tema || '';
   bpCargarEmpresasCabecera(f.empresa_cabecera_id || '');
   bpPreviewIcono();
   abrirModal('modalBpFormulario');
@@ -730,6 +732,7 @@ async function bpGuardarFormulario() {
   fd.append('color',         document.getElementById('bpFrmColor').value);
   fd.append('orden',         document.getElementById('bpFrmOrden').value);
   fd.append('empresa_cabecera_id', document.getElementById('bpFrmEmpresaCabecera').value || '');
+  fd.append('tema',          document.getElementById('bpFrmTema')?.value || '');
   fd.append('es_edicion',    document.getElementById('bpFrmEsEdicion').value);
 
   try {

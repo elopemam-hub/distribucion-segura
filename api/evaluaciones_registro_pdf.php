@@ -94,10 +94,24 @@ $splitNombre = function ($full) {
     return [$w[$n - 2], $w[$n - 1], implode(' ', array_slice($w, 0, $n - 2))];
 };
 
-// Tema por defecto: tipos distintos de las evaluaciones seleccionadas.
-$tiposSel = [];
-foreach ($rows as $r) { $tiposSel[$tipoLbl($r['tipo'])] = 1; }
-$temaDefault = $tiposSel ? implode(' · ', array_keys($tiposSel)) : '';
+// Tema fijo por formulario (si está definido); respaldo al título del tipo.
+$formTema = [];
+try { foreach (db()->fetchAll("SELECT formulario_id, tema FROM eval_formularios WHERE tema IS NOT NULL AND tema <> ''") as $f) $formTema[$f['formulario_id']] = $f['tema']; }
+catch (Throwable $e) {}
+$temasSel = [];
+foreach ($rows as $r) { $temasSel[!empty($formTema[$r['tipo']]) ? $formTema[$r['tipo']] : $tipoLbl($r['tipo'])] = 1; }
+$temaDefault = $temasSel ? implode("\n", array_keys($temasSel)) : '';
+
+// Cargo de cada asistente: del registro de Personal (por DNI); respaldo a puesto.
+$cargoByDni = [];
+$dnis = array_values(array_unique(array_filter(array_map(fn($r) => trim((string)$r['dni']), $rows))));
+if ($dnis) {
+    try {
+        $ph = implode(',', array_fill(0, count($dnis), '?'));
+        foreach (db()->fetchAll("SELECT dni, cargo FROM personal WHERE dni IN ($ph)", $dnis) as $p) $cargoByDni[$p['dni']] = $p['cargo'];
+    } catch (Throwable $e) {}
+}
+
 $fechaComun = '';
 $fechasSel = array_unique(array_map(fn($r) => $r['fecha'], $rows));
 if (count($fechasSel) === 1) $fechaComun = $fmt(reset($fechasSel));
@@ -214,7 +228,7 @@ $fill = max(0, $minRows - count($rows));
       <tr><td class="band" colspan="6">Tema / Horarios / Capacitador</td></tr>
       <tr style="height:30px">
         <td class="lbl" style="width:14%">Tema:</td>
-        <td class="tema" colspan="3" contenteditable="true"><?= $temaDefault ? $h($temaDefault) : '&nbsp;' ?></td>
+        <td class="tema" colspan="3" contenteditable="true" style="text-align:left"><?= $temaDefault ? nl2br($h($temaDefault)) : '&nbsp;' ?></td>
         <td class="lbl" style="width:10%">Fecha:</td>
         <td class="val" style="width:14%" contenteditable="true"><?= $fechaComun ? $h($fechaComun) : '&nbsp;' ?></td>
       </tr>
@@ -248,7 +262,7 @@ $fill = max(0, $minRows - count($rows));
         <td class="cap1"><?= $h($ap1) ?></td>
         <td class="cap2"><?= $h($ap2) ?></td>
         <td class="cnom"><?= $h($nom) ?></td>
-        <td class="ccargo"><?= $h($r['puesto']) ?></td>
+        <td class="ccargo"><?= $h($cargoByDni[$r['dni']] ?? $r['puesto']) ?></td>
         <td class="carea"><?= $g('ct_area') !== '' ? $h($g('ct_area')) : '' ?></td>
         <td class="cfirma"></td>
         <td class="cobs"></td>

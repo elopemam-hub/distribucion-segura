@@ -7,7 +7,7 @@ header('Content-Type: application/json; charset=utf-8');
 setupEvalFormularios();
 
 $rows = db()->fetchAll(
-    "SELECT formulario_id, titulo, icono, color, orden, empresa_cabecera_id
+    "SELECT formulario_id, titulo, icono, color, orden, empresa_cabecera_id, tema
      FROM eval_formularios
      WHERE activo = 1
      ORDER BY orden, id",

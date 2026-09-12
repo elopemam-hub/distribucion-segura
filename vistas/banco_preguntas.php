@@ -192,6 +192,12 @@
         <small class="muted" style="font-size:11px">Si eliges una empresa, el Registro PDF de esta evaluación usará SIEMPRE su cabecera R.M. 050 (p. ej. inducciones → Backus), sin importar la empresa del trabajador.</small>
       </div>
 
+      <div class="form-group" style="margin-top:12px">
+        <label class="form-label">Tema del registro (R.M. 050) <span class="muted" style="font-weight:400;font-size:11px">· opcional, una línea por punto</span></label>
+        <textarea class="form-control" id="bpFrmTema" rows="4" placeholder="Ej:&#10;PROTOCOLO DE INDUCCIÓN BÁSICA DE SEGURIDAD PARA EL ACCESO DC - JULIACA&#10;RUTAS CRÍTICAS - TELEMETRÍA, ESTACIONAMIENTO EN POC&#10;USO DE EPPs, SEGURIDAD EN LA OPERACIÓN" style="resize:vertical"></textarea>
+        <small class="muted" style="font-size:11px">Aparece fijo en el campo "Tema" del registro PDF de esta evaluación.</small>
+      </div>
+
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:20px">
         <button class="btn btn-outline btn-sm" style="color:var(--rojo);border-color:var(--rojo)"
                 id="bpFrmBtnEliminar" style="display:none" onclick="bpEliminarFormulario()">
