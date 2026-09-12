@@ -161,10 +161,11 @@ $fill = max(0, $minRows - count($rows));
   .tema { text-align: left; font-weight: 600; line-height: 1.35; }
   .asis th { background: #f2f2f2; text-transform: uppercase; text-align: center; }
   .asis td { height: 42px; vertical-align: top; padding-top: 4px; }
-  .cnum { width: 4%; text-align: center; } .cdni { width: 9%; text-align: center; }
-  .cap1 { width: 13%; } .cap2 { width: 13%; } .cnom { width: 15%; }
-  .ccargo { width: 12%; } .carea { width: 9%; text-align: center; }
-  .cfirma { width: 16%; text-align: center; } .cobs { width: 9%; }
+  .cnum { width: 4%; text-align: center; } .cdni { width: 8%; text-align: center; }
+  .cap1 { width: 15%; } .cap2 { width: 15%; } .cnom { width: 15%; }
+  .ccargo { width: 11%; } .carea { width: 7%; text-align: center; }
+  .cfirma { width: 18%; text-align: center; } .cobs { width: 7%; }
+  .asis td, .asis th { line-height: 1.15; }
   .foot { }
   [contenteditable]:empty { background: #fffef2; }
   @media print { body { background: #fff; } .toolbar { display: none; } .sheet { width: auto; padding: 0; } [contenteditable] { background: transparent !important; } }
@@ -267,7 +268,7 @@ $fill = max(0, $minRows - count($rows));
       <tr>
         <th class="cnum">N°</th><th class="cdni">DNI</th><th class="cap1">Primer Apellido</th>
         <th class="cap2">Segundo Apellido</th><th class="cnom">Nombre</th><th class="ccargo">Cargo</th>
-        <th class="carea">Área</th><th class="cfirma">Firma</th><th class="cobs">Observaciones</th>
+        <th class="carea">Área</th><th class="cfirma">Firma</th><th class="cobs">Obs.</th>
       </tr>
       <?php $n = 0; foreach ($rows as $r): $n++; [$ap1, $ap2, $nom] = $splitNombre($r['nombre']); ?>
       <tr>
@@ -276,7 +277,7 @@ $fill = max(0, $minRows - count($rows));
         <td class="cap1"><?= $h($ap1) ?></td>
         <td class="cap2"><?= $h($ap2) ?></td>
         <td class="cnom"><?= $h($nom) ?></td>
-        <td class="ccargo"><?= $h($cargoByDni[$r['dni']] ?? $r['puesto']) ?></td>
+        <td class="ccargo" contenteditable="true"><?= $h($cargoByDni[$r['dni']] ?? $r['puesto']) ?: '&nbsp;' ?></td>
         <td class="carea"><?= $g('ct_area') !== '' ? $h($g('ct_area')) : '' ?></td>
         <td class="cfirma"></td>
         <td class="cobs"></td>
