@@ -112,9 +112,15 @@ if ($dnis) {
     } catch (Throwable $e) {}
 }
 
-$fechaComun = '';
-$fechasSel = array_unique(array_map(fn($r) => $r['fecha'], $rows));
-if (count($fechasSel) === 1) $fechaComun = $fmt(reset($fechasSel));
+// Fecha del registro = día de la evaluación (si varían, la más reciente).
+$fechasSel = array_values(array_filter(array_map(fn($r) => (string)$r['fecha'], $rows)));
+$fechaComun = $fechasSel ? $fmt(max($fechasSel)) : '';
+
+// ¿Todas las filas son de tipo INDUCCIÓN? → se marca (X) automáticamente.
+$esInduccion = count($rows) > 0;
+foreach ($rows as $r) {
+    if (!preg_match('/induc/i', $r['tipo'] . ' ' . $tipoLbl($r['tipo']))) { $esInduccion = false; break; }
+}
 
 $minRows = 12;
 $fill = max(0, $minRows - count($rows));
@@ -217,7 +223,7 @@ $fill = max(0, $minRows - count($rows));
         <td class="lbl" style="width:20%">Otros</td>
       </tr>
       <tr>
-        <td class="mk" contenteditable="true">&nbsp;</td>
+        <td class="mk" contenteditable="true"><?= $esInduccion ? 'X' : '&nbsp;' ?></td>
         <td class="mk" contenteditable="true">&nbsp;</td>
         <td class="mk" contenteditable="true">&nbsp;</td>
         <td class="mk" contenteditable="true">&nbsp;</td>
