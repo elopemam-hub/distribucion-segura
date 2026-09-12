@@ -671,8 +671,24 @@ function bpNuevaEvaluacion() {
   document.getElementById('bpFrmOrden').value       = String((bpFormulariosCache.length + 1) * 10);
   document.getElementById('bpFrmBtnEliminar').style.display = 'none';
   document.getElementById('bpFormularioModalTitulo').textContent = 'Nueva Evaluación';
+  bpCargarEmpresasCabecera('');
   bpPreviewIcono();
   abrirModal('modalBpFormulario');
+}
+
+// Llena el selector de "empresa de cabecera" con las empresas activas.
+let _bpEmpresasCache = null;
+async function bpCargarEmpresasCabecera(selectedId) {
+  const sel = document.getElementById('bpFrmEmpresaCabecera');
+  if (!sel) return;
+  if (_bpEmpresasCache === null) {
+    try { const r = await fetch('api/empresas.php?action=list&activas=1'); const d = await r.json();
+      _bpEmpresasCache = (d && d.success) ? (d.data.empresas || []) : []; }
+    catch (e) { _bpEmpresasCache = []; }
+  }
+  sel.innerHTML = '<option value="">Automático (empresa del trabajador)</option>' +
+    _bpEmpresasCache.map(e => `<option value="${e.id}">${bpEsc(e.razon_social)}</option>`).join('');
+  sel.value = selectedId ? String(selectedId) : '';
 }
 
 function bpEditarFormulario(formularioId) {
@@ -688,6 +704,7 @@ function bpEditarFormulario(formularioId) {
   const reservados = ['manejo_practica','examen_defensiva','induccion_t2'];
   document.getElementById('bpFrmBtnEliminar').style.display = reservados.includes(formularioId) ? 'none' : '';
   document.getElementById('bpFormularioModalTitulo').textContent = 'Editar Evaluación';
+  bpCargarEmpresasCabecera(f.empresa_cabecera_id || '');
   bpPreviewIcono();
   abrirModal('modalBpFormulario');
 }
@@ -712,6 +729,7 @@ async function bpGuardarFormulario() {
   fd.append('icono',         document.getElementById('bpFrmIcono').value);
   fd.append('color',         document.getElementById('bpFrmColor').value);
   fd.append('orden',         document.getElementById('bpFrmOrden').value);
+  fd.append('empresa_cabecera_id', document.getElementById('bpFrmEmpresaCabecera').value || '');
   fd.append('es_edicion',    document.getElementById('bpFrmEsEdicion').value);
 
   try {

@@ -41,22 +41,35 @@ catch (Throwable $e) {}
 $tipoLabels += ['manejo_practica' => 'Manejo Práctica', 'examen_defensiva' => 'Examen Defensiva', 'induccion_t2' => 'Inducción T2'];
 $tipoLbl = fn($t) => $tipoLabels[$t] ?? ucwords(str_replace('_', ' ', (string)$t));
 
-// Cabecera por EMPRESA (automático): se toma la empresa de las filas seleccionadas.
-$empresasSel = array_values(array_unique(array_filter(array_map(fn($r) => trim((string)$r['empresa']), $rows))));
-if (count($empresasSel) > 1) {
+// Cabecera por EMPRESA. Precedencia por fila: (1) empresa de cabecera FIJA del
+// formulario (p. ej. inducciones → Backus); (2) empresa del trabajador (por razón
+// social). Todas las filas seleccionadas deben resolver a la misma empresa.
+$formPin = [];
+try { foreach (db()->fetchAll("SELECT formulario_id, empresa_cabecera_id FROM eval_formularios WHERE empresa_cabecera_id IS NOT NULL") as $f) $formPin[$f['formulario_id']] = (int)$f['empresa_cabecera_id']; }
+catch (Throwable $e) {}
+$razonCache = [];
+$resolveRazon = function ($razon) use (&$razonCache) {
+    $razon = trim((string)$razon);
+    if ($razon === '') return null;
+    if (array_key_exists($razon, $razonCache)) return $razonCache[$razon];
+    try { $r = db()->fetchOne("SELECT id FROM empresas WHERE razon_social = ? LIMIT 1", [$razon]); } catch (Throwable $e) { $r = null; }
+    return $razonCache[$razon] = (!empty($r['id']) ? (int)$r['id'] : null);
+};
+$empKeys = [];  // clave 'global' o id → valor null|id
+foreach ($rows as $r) {
+    $eid = $formPin[$r['tipo']] ?? $resolveRazon($r['empresa']);
+    $empKeys[$eid ? (int)$eid : 'global'] = $eid ? (int)$eid : null;
+}
+if (count($empKeys) > 1) {
     http_response_code(409);
     die('<div style="font-family:Arial;padding:40px;text-align:center;color:#333">'
-        . '<h2>Selecciona evaluaciones de UNA sola empresa</h2>'
-        . '<p>El registro R.M. 050 lleva una sola cabecera de empleador. Has seleccionado registros de varias empresas:</p>'
-        . '<p><strong>' . htmlspecialchars(implode(' · ', $empresasSel), ENT_QUOTES) . '</strong></p>'
-        . '<p>Vuelve al listado y marca solo las de una empresa.</p>'
+        . '<h2>Los registros no comparten la misma cabecera</h2>'
+        . '<p>El registro R.M. 050 lleva una sola cabecera de empleador. Los registros seleccionados corresponden a distintas empresas '
+        . '(recuerda que las inducciones usan la cabecera de su empresa fija).</p>'
+        . '<p>Vuelve al listado y marca registros de una sola empresa (o del mismo tipo).</p>'
         . '<button onclick="history.back()" style="margin-top:12px;padding:8px 18px;cursor:pointer">← Volver</button></div>');
 }
-$empId = null;
-if (count($empresasSel) === 1) {
-    try { $row = db()->fetchOne("SELECT id FROM empresas WHERE razon_social = ? LIMIT 1", [$empresasSel[0]]); $empId = $row['id'] ?? null; }
-    catch (Throwable $e) {}
-}
+$empId = $empKeys ? reset($empKeys) : null;
 $hdr = cabeceraEmpresa($empId ? (int)$empId : null);
 $g = fn($k) => $hdr[$k] ?? '';
 

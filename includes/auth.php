@@ -177,6 +177,12 @@ function setupEvalFormularios(): void {
             ('manejo_practica',  'Manejo Práctica',  'fa-truck',          '#FFC107', 1),
             ('examen_defensiva', 'Examen Defensiva', 'fa-shield-halved',  '#1565C0', 2),
             ('induccion_t2',     'Inducción T2',     'fa-graduation-cap', '#28A745', 3)", []);
+
+        // Empresa de cabecera (R.M. 050) fija para este formulario: si está definida,
+        // el registro PDF usa SIEMPRE esa empresa (p. ej. inducciones → BACKUS).
+        $exEC = db()->fetchOne("SELECT 1 FROM information_schema.columns
+              WHERE table_schema = DATABASE() AND table_name = 'eval_formularios' AND column_name = 'empresa_cabecera_id'");
+        if (!$exEC) db()->query("ALTER TABLE eval_formularios ADD COLUMN empresa_cabecera_id INT NULL", []);
     } catch (Exception $e) {
         error_log('[setupEvalFormularios] ' . $e->getMessage());
     }

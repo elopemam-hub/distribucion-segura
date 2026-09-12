@@ -17,6 +17,7 @@ $titulo       = trim($_POST['titulo'] ?? '');
 $icono        = trim($_POST['icono']  ?? 'fa-clipboard-list');
 $color        = trim($_POST['color']  ?? '#1565C0');
 $orden        = (int)($_POST['orden'] ?? 0);
+$empCabecera  = (int)($_POST['empresa_cabecera_id'] ?? 0);   // 0 = automático por trabajador
 $esEdicion    = !empty($_POST['es_edicion']);
 
 if (!$formularioId || strlen($formularioId) < 2) {
@@ -35,8 +36,8 @@ try {
         if (!$existe) jsonResponse(false, 'Formulario no encontrado.', null, 404);
 
         db()->query(
-            "UPDATE eval_formularios SET titulo=?, icono=?, color=?, orden=? WHERE formulario_id=?",
-            [$titulo, $icono, $color, $orden, $formularioId]
+            "UPDATE eval_formularios SET titulo=?, icono=?, color=?, orden=?, empresa_cabecera_id=? WHERE formulario_id=?",
+            [$titulo, $icono, $color, $orden, $empCabecera ?: null, $formularioId]
         );
         jsonResponse(true, 'Formulario actualizado.', ['formulario_id' => $formularioId]);
     } else {
@@ -44,8 +45,8 @@ try {
         if ($existe) jsonResponse(false, 'Ya existe un formulario con ese ID.', null, 409);
 
         db()->query(
-            "INSERT INTO eval_formularios (formulario_id, titulo, icono, color, orden) VALUES (?,?,?,?,?)",
-            [$formularioId, $titulo, $icono, $color, $orden]
+            "INSERT INTO eval_formularios (formulario_id, titulo, icono, color, orden, empresa_cabecera_id) VALUES (?,?,?,?,?,?)",
+            [$formularioId, $titulo, $icono, $color, $orden, $empCabecera ?: null]
         );
         jsonResponse(true, 'Formulario creado.', ['formulario_id' => $formularioId]);
     }

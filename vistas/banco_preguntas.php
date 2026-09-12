@@ -184,6 +184,14 @@
         </div>
       </div>
 
+      <div class="form-group" style="margin-top:14px">
+        <label class="form-label">Empresa de cabecera del registro <span class="muted" style="font-weight:400;font-size:11px">· opcional</span></label>
+        <select class="form-control" id="bpFrmEmpresaCabecera">
+          <option value="">Automático (empresa del trabajador)</option>
+        </select>
+        <small class="muted" style="font-size:11px">Si eliges una empresa, el Registro PDF de esta evaluación usará SIEMPRE su cabecera R.M. 050 (p. ej. inducciones → Backus), sin importar la empresa del trabajador.</small>
+      </div>
+
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:20px">
         <button class="btn btn-outline btn-sm" style="color:var(--rojo);border-color:var(--rojo)"
                 id="bpFrmBtnEliminar" style="display:none" onclick="bpEliminarFormulario()">
