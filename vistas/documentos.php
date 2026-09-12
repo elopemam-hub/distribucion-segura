@@ -63,6 +63,22 @@
     </div>
   </div>
 
+  <!-- ===== MODAL: VISOR DE DOCUMENTO (misma pantalla) ===== -->
+  <div class="modal-overlay" id="modalDocVisor" style="z-index:1200">
+    <div class="modal-box" style="max-width:1050px;width:97%">
+      <div class="modal-header">
+        <h3><i class="fas fa-file-lines" style="color:var(--primary)"></i> <span id="docVisorTitulo">Documento</span></h3>
+        <div style="display:flex;gap:8px;align-items:center">
+          <a class="btn btn-secondary btn-sm" id="docVisorAbrir" href="#" target="_blank" rel="noopener" title="Abrir/descargar aparte"><i class="fas fa-up-right-from-square"></i></a>
+          <button class="modal-close" onclick="docCerrarVisor()"><i class="fas fa-times"></i></button>
+        </div>
+      </div>
+      <div class="modal-body" style="padding:0;background:#525659;min-height:76vh">
+        <iframe id="docVisorFrame" title="Documento" style="width:100%;height:76vh;border:0;background:#fff"></iframe>
+      </div>
+    </div>
+  </div>
+
   <!-- ===== MODAL: CATEGORÍAS ===== -->
   <div class="modal-overlay" id="modalDocCategorias">
     <div class="modal-box" style="max-width:520px;width:96%">

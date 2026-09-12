@@ -75,9 +75,7 @@ function renderDocumentos() {
     const [ic, col] = _docIcon(d.ext);
     const url = (typeof UPLOAD_URL !== 'undefined' ? UPLOAD_URL : 'uploads/') + d.archivo;
     const nom = (d.nombre_original || d.archivo).replace(/"/g, '');
-    const verBtn = _docEsPreview(d.ext)
-      ? `<button class="btn btn-outline btn-sm" onclick="verDocumento('${encodeURI(url)}')" title="Ver"><i class="fas fa-eye"></i></button>`
-      : '';
+    const verBtn = `<button class="btn btn-outline btn-sm" onclick="docVer(${d.id})" title="Ver en pantalla"><i class="fas fa-eye"></i></button>`;
     const descBtn = `<a class="btn btn-outline btn-sm" href="${encodeURI(url)}" download="${escapeHtml(nom)}" title="Descargar"><i class="fas fa-download"></i></a>`;
     const delBtn = _docEsAdmin() ? `<button class="btn btn-danger btn-sm" onclick="docEliminar(${d.id},'${escapeHtml(d.titulo).replace(/'/g, "\\'")}')" title="Eliminar"><i class="fas fa-trash"></i></button>` : '';
     return `<tr>
@@ -105,6 +103,33 @@ function _docKpi(icon, color, label, value, sub) {
     <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--gris-400);font-weight:700">${label}</span><i class="fas ${icon}" style="color:var(--${color})"></i></div>
     <div style="font-size:26px;font-weight:800;color:var(--${color})">${value}</div>
     <div class="muted" style="font-size:11px">${sub}</div></div>`;
+}
+
+// ── Visor en la misma pantalla ──
+// PDF/imagen: se muestran nativos en el iframe. Office (Word/Excel/PPT): se
+// embeben con el visor de Microsoft Office Online (requiere que el archivo sea
+// público; en producción lo es).
+function docVer(id) {
+  const d = _docData.find(x => +x.id === +id);
+  if (!d) return;
+  const rel = (typeof UPLOAD_URL !== 'undefined' ? UPLOAD_URL : 'uploads/') + d.archivo;
+  let abs;
+  try { abs = new URL(rel, location.href).href; } catch (e) { abs = rel; }
+  const ext = (d.ext || '').toLowerCase();
+  let src;
+  if (['pdf', 'png', 'jpg', 'jpeg', 'webp'].includes(ext)) {
+    src = abs;   // el navegador lo renderiza directo
+  } else {
+    src = 'https://view.officeapps.live.com/op/embed.aspx?src=' + encodeURIComponent(abs);
+  }
+  const fr = document.getElementById('docVisorFrame'); if (fr) fr.src = src;
+  const tt = document.getElementById('docVisorTitulo'); if (tt) tt.textContent = d.titulo || 'Documento';
+  const ab = document.getElementById('docVisorAbrir'); if (ab) ab.href = abs;
+  abrirModal('modalDocVisor');
+}
+function docCerrarVisor() {
+  const fr = document.getElementById('docVisorFrame'); if (fr) fr.src = 'about:blank';   // libera el visor
+  cerrarModal('modalDocVisor');
 }
 
 // ── Subir ──
