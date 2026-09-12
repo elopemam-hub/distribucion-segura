@@ -122,12 +122,12 @@ function requireCsrf(): void {
 // PERMISOS POR MÓDULO
 // ============================================================
 
-const MODULOS_VALIDOS = ['dashboard', 'inspecciones', 'personal', 'reportes', 'matriz', 'amonestaciones', 'geocercas', 'evaluaciones', 'capacitaciones', 'checklist', 'kpi_analytics', 'epp', 'vehiculos', 'empresas'];
+const MODULOS_VALIDOS = ['dashboard', 'inspecciones', 'personal', 'reportes', 'matriz', 'amonestaciones', 'geocercas', 'evaluaciones', 'capacitaciones', 'checklist', 'kpi_analytics', 'epp', 'vehiculos', 'empresas', 'documentos'];
 
 // Defaults de acceso según rol (cuando el usuario no tiene filas en permisos)
 const ROL_DEFAULTS = [
-    'supervisor' => ['dashboard', 'inspecciones', 'personal', 'reportes', 'matriz', 'amonestaciones', 'geocercas', 'evaluaciones', 'capacitaciones', 'checklist', 'kpi_analytics', 'epp', 'vehiculos', 'empresas'],
-    'inspector'  => ['dashboard', 'inspecciones', 'evaluaciones', 'capacitaciones', 'checklist'],
+    'supervisor' => ['dashboard', 'inspecciones', 'personal', 'reportes', 'matriz', 'amonestaciones', 'geocercas', 'evaluaciones', 'capacitaciones', 'checklist', 'kpi_analytics', 'epp', 'vehiculos', 'empresas', 'documentos'],
+    'inspector'  => ['dashboard', 'inspecciones', 'evaluaciones', 'capacitaciones', 'checklist', 'documentos'],
 ];
 
 function getModulosUsuario(int $userId): array {
@@ -155,6 +155,33 @@ function tieneAccesoModulo(string $modulo): bool {
 
     // Sin permisos explícitos → usar defaults del rol
     return in_array($modulo, ROL_DEFAULTS[$user['rol']] ?? [], true);
+}
+
+// Biblioteca de documentos SST: categorías + archivos (PDF/imagen/Office).
+function setupDocumentos(): void {
+    $ver = 'doc-2026-09-13';
+    $marker = sys_get_temp_dir() . '/dseg_docsetup_' . md5(__DIR__ . '|' . (defined('DB_NAME') ? DB_NAME : ''));
+    if (@is_file($marker) && trim((string)@file_get_contents($marker)) === $ver) return;
+    try {
+        db()->query("CREATE TABLE IF NOT EXISTS doc_categorias (
+            id INT AUTO_INCREMENT PRIMARY KEY, nombre VARCHAR(120) NOT NULL, orden INT NOT NULL DEFAULT 0,
+            activo TINYINT(1) NOT NULL DEFAULT 1, creado_en DATETIME DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", []);
+        db()->query("CREATE TABLE IF NOT EXISTS documentos (
+            id INT AUTO_INCREMENT PRIMARY KEY, categoria_id INT NULL, titulo VARCHAR(200) NOT NULL,
+            descripcion VARCHAR(400) NULL, archivo VARCHAR(255) NOT NULL, nombre_original VARCHAR(255) NULL,
+            ext VARCHAR(10) NULL, tamano INT NULL, empresa_id INT NULL,
+            subido_por INT NULL, subido_nombre VARCHAR(120) NULL, creado_en DATETIME DEFAULT CURRENT_TIMESTAMP,
+            activo TINYINT(1) NOT NULL DEFAULT 1, KEY idx_doc_cat (categoria_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", []);
+        if ((int)(db()->fetchOne("SELECT COUNT(*) c FROM doc_categorias")['c'] ?? 0) === 0) {
+            $o = 0;
+            foreach (['Procedimientos', 'Formatos', 'Políticas', 'Matrices (IPERC / otros)', 'Capacitación', 'Otros'] as $nom) {
+                $o++; db()->query("INSERT INTO doc_categorias (nombre, orden) VALUES (?, ?)", [$nom, $o]);
+            }
+        }
+        @file_put_contents($marker, $ver);
+    } catch (Throwable $e) { error_log('[setupDocumentos] ' . $e->getMessage()); }
 }
 
 // Crea eval_formularios si no existe y siembra los 3 base.

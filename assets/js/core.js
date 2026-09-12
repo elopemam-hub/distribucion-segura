@@ -103,6 +103,7 @@ function showPage(page) {
   if (page === 'capacitaciones' && typeof initCapacitaciones === 'function') initCapacitaciones();
   if (page === 'checklist' && typeof initChecklist === 'function') initChecklist();
   if (page === 'empresas' && typeof initEmpresas === 'function') initEmpresas();
+  if (page === 'documentos' && typeof initDocumentos === 'function') initDocumentos();
 }
 
 function switchInspeccionTab(tab) {
