@@ -79,6 +79,17 @@ function guardar() {
     $telefono     = trim($_POST['telefono'] ?? '');
     $email        = trim($_POST['email'] ?? '');
     $color        = trim($_POST['color'] ?? '');
+    // Cabecera R.M. 050 (por empresa).
+    $empNumTrab   = trim($_POST['emp_num_trab'] ?? '');
+    $ctNombre     = trim($_POST['ct_nombre'] ?? '');
+    $ctDomicilio  = trim($_POST['ct_domicilio'] ?? '');
+    $ctResp       = trim($_POST['ct_responsable'] ?? '');
+    $ctNumTrab    = trim($_POST['ct_num_trab'] ?? '');
+    $ctArea       = trim($_POST['ct_area'] ?? '');
+    $docCodigo    = trim($_POST['doc_codigo'] ?? '');
+    $docVersion   = trim($_POST['doc_version'] ?? '');
+    $docFecha     = trim($_POST['doc_fecha'] ?? '');
+    $respRegistro = trim($_POST['resp_registro'] ?? '');
 
     if ($razon === '') jsonResponse(false, 'La razón social es obligatoria.', null, 422);
     if ($id > 0 && !empresaEsPermitida($id)) jsonResponse(false, 'Sin acceso a esta empresa.', null, 403);
@@ -92,18 +103,26 @@ function guardar() {
     }
 
     $campos = [$razon, $ruc ?: null, $tipo ?: 'tercerizacion', $domicilio ?: null,
-               $actividad ?: null, $responsable ?: null, $telefono ?: null, $email ?: null, $color ?: null];
+               $actividad ?: null, $responsable ?: null, $telefono ?: null, $email ?: null, $color ?: null,
+               $empNumTrab ?: null, $ctNombre ?: null, $ctDomicilio ?: null, $ctResp ?: null,
+               $ctNumTrab ?: null, $ctArea ?: null, $docCodigo ?: null, $docVersion ?: null,
+               $docFecha ?: null, $respRegistro ?: null];
 
     if ($id > 0) {
         db()->query(
             "UPDATE empresas SET razon_social=?, ruc=?, tipo=?, domicilio=?, actividad=?,
-                    responsable=?, telefono=?, email=?, color=? WHERE id=?",
+                    responsable=?, telefono=?, email=?, color=?,
+                    emp_num_trab=?, ct_nombre=?, ct_domicilio=?, ct_responsable=?,
+                    ct_num_trab=?, ct_area=?, doc_codigo=?, doc_version=?, doc_fecha=?, resp_registro=? WHERE id=?",
             array_merge($campos, [$id])
         );
     } else {
         db()->query(
             "INSERT INTO empresas (razon_social, ruc, tipo, domicilio, actividad,
-                    responsable, telefono, email, color) VALUES (?,?,?,?,?,?,?,?,?)",
+                    responsable, telefono, email, color,
+                    emp_num_trab, ct_nombre, ct_domicilio, ct_responsable,
+                    ct_num_trab, ct_area, doc_codigo, doc_version, doc_fecha, resp_registro)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             $campos
         );
         $id = (int)db()->lastInsertId();

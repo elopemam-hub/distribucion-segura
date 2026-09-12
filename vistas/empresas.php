@@ -76,10 +76,61 @@
             <input type="text" class="form-control" id="empresa_telefono" maxlength="30">
           </div>
         </div>
-        <div class="form-group">
-          <label class="form-label">Email</label>
-          <input type="email" class="form-control" id="empresa_email" maxlength="150">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control" id="empresa_email" maxlength="150">
+          </div>
+          <div class="form-group">
+            <label class="form-label">N° trabajadores (empleador)</label>
+            <input type="text" class="form-control" id="empresa_emp_num_trab" maxlength="20" placeholder="Ej: 80">
+          </div>
         </div>
+
+        <p style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--gris-400);letter-spacing:.06em;margin:16px 0 8px"><i class="fas fa-location-dot" style="color:var(--primary)"></i> Centro de trabajo (cabecera R.M. 050)</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div class="form-group">
+            <label class="form-label">Centro de trabajo</label>
+            <input type="text" class="form-control" id="empresa_ct_nombre" maxlength="150" placeholder="Ej: CD Juliaca">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Domicilio del centro</label>
+            <input type="text" class="form-control" id="empresa_ct_domicilio" maxlength="255">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Responsable del centro</label>
+            <input type="text" class="form-control" id="empresa_ct_responsable" maxlength="150">
+          </div>
+          <div class="form-group">
+            <label class="form-label">N° trabajadores (centro)</label>
+            <input type="text" class="form-control" id="empresa_ct_num_trab" maxlength="20">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Área (columna del registro)</label>
+            <input type="text" class="form-control" id="empresa_ct_area" maxlength="120" placeholder="Ej: Distribución">
+          </div>
+        </div>
+
+        <p style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--gris-400);letter-spacing:.06em;margin:16px 0 8px"><i class="fas fa-file-signature" style="color:var(--primary)"></i> Control del documento y responsable del registro</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">
+          <div class="form-group">
+            <label class="form-label">Código</label>
+            <input type="text" class="form-control" id="empresa_doc_codigo" maxlength="60" placeholder="Ej: DJ-REEP-12">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Versión</label>
+            <input type="text" class="form-control" id="empresa_doc_version" maxlength="20" placeholder="Ej: 01">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Fecha del formato</label>
+            <input type="text" class="form-control" id="empresa_doc_fecha" maxlength="30" placeholder="Ej: 22/04/2016">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Responsable del registro (nombre y cargo)</label>
+          <input type="text" class="form-control" id="empresa_resp_registro" maxlength="200" placeholder="Ej: Beatriz Rojas Benavente - Asistente Social">
+        </div>
+
         <div class="form-group">
           <label class="form-label">Logo
             <a id="empresa_logo_ver" href="#" onclick="verDocumento(this.href);return false;" style="display:none;font-weight:400;font-size:11px;color:var(--primary);margin-left:6px"><i class="fas fa-eye"></i> ver actual</a>

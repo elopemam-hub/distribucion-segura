@@ -218,6 +218,9 @@ $csrf = csrfToken();
 
     <?php if ($user['rol'] === 'administrador'): ?>
     <div class="nav-section-title" style="margin-top:12px">Administración</div>
+    <a class="nav-item" data-page="empresas" onclick="showPage('empresas')">
+      <i class="fas fa-building"></i> Empresas
+    </a>
     <a class="nav-item" data-page="usuarios" onclick="showPage('usuarios')">
       <i class="fas fa-user-shield"></i> Usuarios
     </a>

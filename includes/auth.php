@@ -485,6 +485,38 @@ function empresaUnica(): int {
 }
 
 // Empresa activa para operaciones EPP. En modo empresa única siempre es la
+// Cabecera oficial R.M. 050 de una empresa (para los registros PDF). Toma los
+// datos de la fila de `empresas`; cualquier campo vacío cae en respaldo a la
+// configuración global (epp_config). Con $empresaId null → solo config global.
+function cabeceraEmpresa(?int $empresaId): array {
+    $cfg = [];
+    try { foreach (db()->fetchAll("SELECT clave, valor FROM epp_config") as $r) $cfg[$r['clave']] = $r['valor'] ?? ''; }
+    catch (Throwable $e) {}
+    $emp = null;
+    if ($empresaId) { try { $emp = db()->fetchOne("SELECT * FROM empresas WHERE id = ?", [$empresaId]); } catch (Throwable $e) {} }
+    $pick = function ($empVal, $cfgKey) use ($cfg) {
+        $v = trim((string)($empVal ?? ''));
+        return $v !== '' ? $v : ($cfg[$cfgKey] ?? '');
+    };
+    return [
+        'emp_razon_social' => $pick($emp['razon_social']   ?? '', 'emp_razon_social'),
+        'emp_ruc'          => $pick($emp['ruc']            ?? '', 'emp_ruc'),
+        'emp_domicilio'    => $pick($emp['domicilio']      ?? '', 'emp_domicilio'),
+        'emp_actividad'    => $pick($emp['actividad']      ?? '', 'emp_actividad'),
+        'emp_num_trab'     => $pick($emp['emp_num_trab']   ?? '', 'emp_num_trab'),
+        'ct_nombre'        => $pick($emp['ct_nombre']      ?? '', 'ct_nombre'),
+        'ct_domicilio'     => $pick($emp['ct_domicilio']   ?? '', 'ct_domicilio'),
+        'ct_responsable'   => $pick($emp['ct_responsable'] ?? '', 'ct_responsable'),
+        'ct_num_trab'      => $pick($emp['ct_num_trab']    ?? '', 'ct_num_trab'),
+        'ct_area'          => $pick($emp['ct_area']        ?? '', 'ct_area'),
+        'doc_codigo'       => $pick($emp['doc_codigo']     ?? '', 'doc_codigo'),
+        'doc_version'      => $pick($emp['doc_version']    ?? '', 'doc_version'),
+        'doc_fecha'        => $pick($emp['doc_fecha']      ?? '', 'doc_fecha'),
+        'emp_responsable'  => $pick($emp['resp_registro']  ?? '', 'emp_responsable'),
+        'emp_logo'         => (!empty($emp['logo'])) ? $emp['logo'] : ($cfg['emp_logo'] ?? ''),
+    ];
+}
+
 // principal; en multi-empresa viene del selector global (empresa_id).
 function eppEmpresaSel(): int {
     $e = (int)($_GET['empresa_id'] ?? $_POST['empresa_id'] ?? 0);
@@ -560,6 +592,11 @@ function eppSeedEmpresa(int $empresaId): array {
 // empresa (personal.empresa_id). Idempotente, sin SQL manual en el deploy.
 // ============================================================
 function setupEmpresas(): void {
+    // Guarda de versión (evita reprovisionar en cada request). Sube EMP_SETUP_VER
+    // al cambiar tablas/columnas de empresas.
+    $ver    = 'emp-2026-09-12';
+    $marker = sys_get_temp_dir() . '/dseg_empsetup_' . md5(__DIR__ . '|' . (defined('DB_NAME') ? DB_NAME : ''));
+    if (@is_file($marker) && trim((string)@file_get_contents($marker)) === $ver) return;
     try {
         db()->query("CREATE TABLE IF NOT EXISTS empresas (
             id            INT AUTO_INCREMENT PRIMARY KEY,
@@ -577,6 +614,25 @@ function setupEmpresas(): void {
             creado_en     DATETIME     DEFAULT CURRENT_TIMESTAMP,
             UNIQUE KEY uk_empresa_ruc (ruc)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", []);
+
+        // Campos de la cabecera oficial R.M. 050 por empresa (para los registros PDF).
+        $empCols = [
+            'emp_num_trab'   => "VARCHAR(20) NULL",
+            'ct_nombre'      => "VARCHAR(150) NULL",
+            'ct_domicilio'   => "VARCHAR(255) NULL",
+            'ct_responsable' => "VARCHAR(150) NULL",
+            'ct_num_trab'    => "VARCHAR(20) NULL",
+            'ct_area'        => "VARCHAR(120) NULL",
+            'doc_codigo'     => "VARCHAR(60) NULL",
+            'doc_version'    => "VARCHAR(20) NULL",
+            'doc_fecha'      => "VARCHAR(30) NULL",
+            'resp_registro'  => "VARCHAR(200) NULL",
+        ];
+        foreach ($empCols as $col => $ddl) {
+            $exC = db()->fetchOne("SELECT 1 FROM information_schema.columns
+                  WHERE table_schema = DATABASE() AND table_name = 'empresas' AND column_name = ?", [$col]);
+            if (!$exC) db()->query("ALTER TABLE empresas ADD COLUMN `$col` $ddl", []);
+        }
 
         // Enlace del trabajador a su empresa (idempotente).
         $existe = db()->fetchOne(
@@ -621,6 +677,7 @@ function setupEmpresas(): void {
                 );
             }
         }
+        @file_put_contents($marker, $ver);
     } catch (Exception $e) {
         error_log('[setupEmpresas] ' . $e->getMessage());
     }

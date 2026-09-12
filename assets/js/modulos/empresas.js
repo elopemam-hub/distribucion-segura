@@ -72,7 +72,9 @@ function renderEmpresas() {
 function nuevaEmpresa() {
   document.getElementById('empresaModalTitulo').textContent = 'Nueva empresa';
   document.getElementById('empresa_id').value = '';
-  ['razon_social', 'ruc', 'domicilio', 'actividad', 'responsable', 'telefono', 'email'].forEach(k => {
+  ['razon_social', 'ruc', 'domicilio', 'actividad', 'responsable', 'telefono', 'email',
+   'emp_num_trab', 'ct_nombre', 'ct_domicilio', 'ct_responsable', 'ct_num_trab', 'ct_area',
+   'doc_codigo', 'doc_version', 'doc_fecha', 'resp_registro'].forEach(k => {
     const el = document.getElementById('empresa_' + k); if (el) el.value = '';
   });
   document.getElementById('empresa_tipo').value = 'tercerizacion';
@@ -98,6 +100,10 @@ async function editarEmpresa(id) {
     document.getElementById('empresa_responsable').value = e.responsable || '';
     document.getElementById('empresa_telefono').value = e.telefono || '';
     document.getElementById('empresa_email').value = e.email || '';
+    ['emp_num_trab', 'ct_nombre', 'ct_domicilio', 'ct_responsable', 'ct_num_trab', 'ct_area',
+     'doc_codigo', 'doc_version', 'doc_fecha', 'resp_registro'].forEach(k => {
+      const el = document.getElementById('empresa_' + k); if (el) el.value = e[k] || '';
+    });
     document.getElementById('empresa_logo').value = '';
     _empresaLogoActual = e.logo || '';
     _pintarLogoEmpresa();
@@ -131,8 +137,10 @@ async function guardarEmpresa() {
   fd.append('action', 'save');
   fd.append('csrf_token', CSRF_TOKEN);
   fd.append('id', document.getElementById('empresa_id').value || '0');
-  ['razon_social', 'ruc', 'tipo', 'domicilio', 'actividad', 'responsable', 'telefono', 'email'].forEach(k => {
-    fd.append(k, document.getElementById('empresa_' + k).value.trim());
+  ['razon_social', 'ruc', 'tipo', 'domicilio', 'actividad', 'responsable', 'telefono', 'email',
+   'emp_num_trab', 'ct_nombre', 'ct_domicilio', 'ct_responsable', 'ct_num_trab', 'ct_area',
+   'doc_codigo', 'doc_version', 'doc_fecha', 'resp_registro'].forEach(k => {
+    const el = document.getElementById('empresa_' + k); if (el) fd.append(k, el.value.trim());
   });
   const logo = document.getElementById('empresa_logo').files[0];
   if (logo) fd.append('logo', logo);

@@ -41,14 +41,28 @@ catch (Throwable $e) {}
 $tipoLabels += ['manejo_practica' => 'Manejo Práctica', 'examen_defensiva' => 'Examen Defensiva', 'induccion_t2' => 'Inducción T2'];
 $tipoLbl = fn($t) => $tipoLabels[$t] ?? ucwords(str_replace('_', ' ', (string)$t));
 
-// Datos del empleador desde epp_config.
-$cfg = [];
-foreach (db()->fetchAll("SELECT clave, valor FROM epp_config") as $r) $cfg[$r['clave']] = $r['valor'] ?? '';
-$g = fn($k) => $cfg[$k] ?? '';
+// Cabecera por EMPRESA (automático): se toma la empresa de las filas seleccionadas.
+$empresasSel = array_values(array_unique(array_filter(array_map(fn($r) => trim((string)$r['empresa']), $rows))));
+if (count($empresasSel) > 1) {
+    http_response_code(409);
+    die('<div style="font-family:Arial;padding:40px;text-align:center;color:#333">'
+        . '<h2>Selecciona evaluaciones de UNA sola empresa</h2>'
+        . '<p>El registro R.M. 050 lleva una sola cabecera de empleador. Has seleccionado registros de varias empresas:</p>'
+        . '<p><strong>' . htmlspecialchars(implode(' · ', $empresasSel), ENT_QUOTES) . '</strong></p>'
+        . '<p>Vuelve al listado y marca solo las de una empresa.</p>'
+        . '<button onclick="history.back()" style="margin-top:12px;padding:8px 18px;cursor:pointer">← Volver</button></div>');
+}
+$empId = null;
+if (count($empresasSel) === 1) {
+    try { $row = db()->fetchOne("SELECT id FROM empresas WHERE razon_social = ? LIMIT 1", [$empresasSel[0]]); $empId = $row['id'] ?? null; }
+    catch (Throwable $e) {}
+}
+$hdr = cabeceraEmpresa($empId ? (int)$empId : null);
+$g = fn($k) => $hdr[$k] ?? '';
 
 $logo = '';
-if (!empty($cfg['emp_logo']) && is_file(__DIR__ . '/../uploads/' . $cfg['emp_logo'])) {
-    $p = __DIR__ . '/../uploads/' . $cfg['emp_logo'];
+if (!empty($hdr['emp_logo']) && is_file(__DIR__ . '/../uploads/' . $hdr['emp_logo'])) {
+    $p = __DIR__ . '/../uploads/' . $hdr['emp_logo'];
     $ext = strtolower(pathinfo($p, PATHINFO_EXTENSION));
     $mime = ['jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png', 'webp' => 'image/webp'][$ext] ?? 'image/png';
     $logo = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($p));
