@@ -672,6 +672,7 @@ function bpNuevaEvaluacion() {
   document.getElementById('bpFrmBtnEliminar').style.display = 'none';
   document.getElementById('bpFormularioModalTitulo').textContent = 'Nueva Evaluación';
   const temaN = document.getElementById('bpFrmTema'); if (temaN) temaN.value = '';
+  const catN = document.getElementById('bpFrmCategoria'); if (catN) catN.value = '';
   bpCargarEmpresasCabecera('');
   bpPreviewIcono();
   abrirModal('modalBpFormulario');
@@ -706,6 +707,7 @@ function bpEditarFormulario(formularioId) {
   document.getElementById('bpFrmBtnEliminar').style.display = reservados.includes(formularioId) ? 'none' : '';
   document.getElementById('bpFormularioModalTitulo').textContent = 'Editar Evaluación';
   const temaE = document.getElementById('bpFrmTema'); if (temaE) temaE.value = f.tema || '';
+  const catE = document.getElementById('bpFrmCategoria'); if (catE) catE.value = f.categoria_rm050 || '';
   bpCargarEmpresasCabecera(f.empresa_cabecera_id || '');
   bpPreviewIcono();
   abrirModal('modalBpFormulario');
@@ -733,6 +735,7 @@ async function bpGuardarFormulario() {
   fd.append('orden',         document.getElementById('bpFrmOrden').value);
   fd.append('empresa_cabecera_id', document.getElementById('bpFrmEmpresaCabecera').value || '');
   fd.append('tema',          document.getElementById('bpFrmTema')?.value || '');
+  fd.append('categoria_rm050', document.getElementById('bpFrmCategoria')?.value || '');
   fd.append('es_edicion',    document.getElementById('bpFrmEsEdicion').value);
 
   try {

@@ -188,6 +188,11 @@ function setupEvalFormularios(): void {
         $exTM = db()->fetchOne("SELECT 1 FROM information_schema.columns
               WHERE table_schema = DATABASE() AND table_name = 'eval_formularios' AND column_name = 'tema'");
         if (!$exTM) db()->query("ALTER TABLE eval_formularios ADD COLUMN tema TEXT NULL", []);
+
+        // Categoría del registro R.M. 050 (Marcar X): induccion|capacitacion|entrenamiento|simulacro|otros.
+        $exCat = db()->fetchOne("SELECT 1 FROM information_schema.columns
+              WHERE table_schema = DATABASE() AND table_name = 'eval_formularios' AND column_name = 'categoria_rm050'");
+        if (!$exCat) db()->query("ALTER TABLE eval_formularios ADD COLUMN categoria_rm050 VARCHAR(20) NULL", []);
     } catch (Exception $e) {
         error_log('[setupEvalFormularios] ' . $e->getMessage());
     }

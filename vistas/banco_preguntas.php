@@ -198,6 +198,19 @@
         <small class="muted" style="font-size:11px">Aparece fijo en el campo "Tema" del registro PDF de esta evaluación.</small>
       </div>
 
+      <div class="form-group" style="margin-top:12px">
+        <label class="form-label">Categoría en el registro (Marcar X) <span class="muted" style="font-weight:400;font-size:11px">· opcional</span></label>
+        <select class="form-control" id="bpFrmCategoria">
+          <option value="">— Ninguna —</option>
+          <option value="induccion">Inducción</option>
+          <option value="capacitacion">Capacitación</option>
+          <option value="entrenamiento">Entrenamiento</option>
+          <option value="simulacro">Simulacro-Emergencia</option>
+          <option value="otros">Otros</option>
+        </select>
+        <small class="muted" style="font-size:11px">Marca automáticamente la casilla "(X)" de esta categoría en el registro PDF (ej. inducciones → Inducción).</small>
+      </div>
+
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:20px">
         <button class="btn btn-outline btn-sm" style="color:var(--rojo);border-color:var(--rojo)"
                 id="bpFrmBtnEliminar" style="display:none" onclick="bpEliminarFormulario()">

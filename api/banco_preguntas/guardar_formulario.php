@@ -19,6 +19,8 @@ $color        = trim($_POST['color']  ?? '#1565C0');
 $orden        = (int)($_POST['orden'] ?? 0);
 $empCabecera  = (int)($_POST['empresa_cabecera_id'] ?? 0);   // 0 = automático por trabajador
 $tema         = trim($_POST['tema'] ?? '');                   // tema fijo del registro (multilínea)
+$catRm050     = trim($_POST['categoria_rm050'] ?? '');        // Marcar (X) del registro
+if (!in_array($catRm050, ['induccion', 'capacitacion', 'entrenamiento', 'simulacro', 'otros'], true)) $catRm050 = '';
 $esEdicion    = !empty($_POST['es_edicion']);
 
 if (!$formularioId || strlen($formularioId) < 2) {
@@ -37,8 +39,8 @@ try {
         if (!$existe) jsonResponse(false, 'Formulario no encontrado.', null, 404);
 
         db()->query(
-            "UPDATE eval_formularios SET titulo=?, icono=?, color=?, orden=?, empresa_cabecera_id=?, tema=? WHERE formulario_id=?",
-            [$titulo, $icono, $color, $orden, $empCabecera ?: null, $tema ?: null, $formularioId]
+            "UPDATE eval_formularios SET titulo=?, icono=?, color=?, orden=?, empresa_cabecera_id=?, tema=?, categoria_rm050=? WHERE formulario_id=?",
+            [$titulo, $icono, $color, $orden, $empCabecera ?: null, $tema ?: null, $catRm050 ?: null, $formularioId]
         );
         jsonResponse(true, 'Formulario actualizado.', ['formulario_id' => $formularioId]);
     } else {
@@ -46,8 +48,8 @@ try {
         if ($existe) jsonResponse(false, 'Ya existe un formulario con ese ID.', null, 409);
 
         db()->query(
-            "INSERT INTO eval_formularios (formulario_id, titulo, icono, color, orden, empresa_cabecera_id, tema) VALUES (?,?,?,?,?,?,?)",
-            [$formularioId, $titulo, $icono, $color, $orden, $empCabecera ?: null, $tema ?: null]
+            "INSERT INTO eval_formularios (formulario_id, titulo, icono, color, orden, empresa_cabecera_id, tema, categoria_rm050) VALUES (?,?,?,?,?,?,?,?)",
+            [$formularioId, $titulo, $icono, $color, $orden, $empCabecera ?: null, $tema ?: null, $catRm050 ?: null]
         );
         jsonResponse(true, 'Formulario creado.', ['formulario_id' => $formularioId]);
     }

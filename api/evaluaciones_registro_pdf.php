@@ -116,11 +116,18 @@ if ($dnis) {
 $fechasSel = array_values(array_filter(array_map(fn($r) => (string)$r['fecha'], $rows)));
 $fechaComun = $fechasSel ? $fmt(max($fechasSel)) : '';
 
-// ¿Todas las filas son de tipo INDUCCIÓN? → se marca (X) automáticamente.
-$esInduccion = count($rows) > 0;
+// Marcar (X): categoría del registro. Por formulario (categoria_rm050); si no está
+// definida, se auto-detecta inducción por el nombre. Todas las filas deben coincidir.
+$formCat = [];
+try { foreach (db()->fetchAll("SELECT formulario_id, categoria_rm050 FROM eval_formularios WHERE categoria_rm050 IS NOT NULL AND categoria_rm050 <> ''") as $f) $formCat[$f['formulario_id']] = $f['categoria_rm050']; }
+catch (Throwable $e) {}
+$catsSel = [];
 foreach ($rows as $r) {
-    if (!preg_match('/induc/i', $r['tipo'] . ' ' . $tipoLbl($r['tipo']))) { $esInduccion = false; break; }
+    $c = $formCat[$r['tipo']] ?? (preg_match('/induc/i', $r['tipo'] . ' ' . $tipoLbl($r['tipo'])) ? 'induccion' : '');
+    if ($c !== '') $catsSel[$c] = 1;
 }
+$marcaCat = (count($catsSel) === 1) ? array_key_first($catsSel) : '';
+$mk = fn($cat) => ($marcaCat === $cat) ? 'X' : '&nbsp;';
 
 $minRows = 12;
 $fill = max(0, $minRows - count($rows));
@@ -223,11 +230,11 @@ $fill = max(0, $minRows - count($rows));
         <td class="lbl" style="width:20%">Otros</td>
       </tr>
       <tr>
-        <td class="mk" contenteditable="true"><?= $esInduccion ? 'X' : '&nbsp;' ?></td>
-        <td class="mk" contenteditable="true">&nbsp;</td>
-        <td class="mk" contenteditable="true">&nbsp;</td>
-        <td class="mk" contenteditable="true">&nbsp;</td>
-        <td class="mk" contenteditable="true">&nbsp;</td>
+        <td class="mk" contenteditable="true"><?= $mk('induccion') ?></td>
+        <td class="mk" contenteditable="true"><?= $mk('capacitacion') ?></td>
+        <td class="mk" contenteditable="true"><?= $mk('entrenamiento') ?></td>
+        <td class="mk" contenteditable="true"><?= $mk('simulacro') ?></td>
+        <td class="mk" contenteditable="true"><?= $mk('otros') ?></td>
       </tr>
     </table>
 
