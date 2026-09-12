@@ -759,6 +759,18 @@ function limpiarFirmaAprobador() {
 }
 
 // ── Listado ───────────────────────────────────────────────────
+// Abre el registro de asistencia (PDF) con los filtros actuales del listado.
+function evalRegistroPdf() {
+  const p = new URLSearchParams({
+    tipo:   document.getElementById('filtroEvalTipo')?.value   || '',
+    estado: document.getElementById('filtroEvalEstado')?.value || '',
+    desde:  document.getElementById('filtroEvalDesde')?.value  || '',
+    hasta:  document.getElementById('filtroEvalHasta')?.value  || '',
+    q:      document.getElementById('filtroEvalQ')?.value      || '',
+  });
+  window.open('api/evaluaciones_registro_pdf.php?' + p.toString(), '_blank');
+}
+
 async function cargarListadoEval(page = 1) {
   evalPageActual = page;
   const params = new URLSearchParams({

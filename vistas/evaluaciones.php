@@ -68,6 +68,7 @@
               <input type="text" class="form-control" id="filtroEvalQ" placeholder="Nombre, DNI, empresa...">
             </div>
             <button class="btn btn-primary" onclick="cargarListadoEval()"><i class="fas fa-search"></i> Buscar</button>
+            <button class="btn btn-outline" onclick="evalRegistroPdf()" title="Registro de asistencia (PDF) con los filtros actuales"><i class="fas fa-print"></i> Registro PDF</button>
           </div>
         </div>
       </div>
