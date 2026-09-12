@@ -759,16 +759,17 @@ function limpiarFirmaAprobador() {
 }
 
 // ── Listado ───────────────────────────────────────────────────
-// Abre el registro de asistencia (PDF) con los filtros actuales del listado.
+// Marca/desmarca todas las casillas del listado.
+function evalToggleAll(on) {
+  document.querySelectorAll('.eval-check').forEach(c => { c.checked = on; });
+}
+
+// Abre el registro de asistencia (PDF, formato R.M. 050) con las evaluaciones
+// seleccionadas. Si no hay ninguna marcada, avisa.
 function evalRegistroPdf() {
-  const p = new URLSearchParams({
-    tipo:   document.getElementById('filtroEvalTipo')?.value   || '',
-    estado: document.getElementById('filtroEvalEstado')?.value || '',
-    desde:  document.getElementById('filtroEvalDesde')?.value  || '',
-    hasta:  document.getElementById('filtroEvalHasta')?.value  || '',
-    q:      document.getElementById('filtroEvalQ')?.value      || '',
-  });
-  window.open('api/evaluaciones_registro_pdf.php?' + p.toString(), '_blank');
+  const ids = [...document.querySelectorAll('.eval-check:checked')].map(c => c.value);
+  if (!ids.length) { toast('Marca al menos una evaluación para imprimir el registro.', 'warning'); return; }
+  window.open('api/evaluaciones_registro_pdf.php?ids=' + encodeURIComponent(ids.join(',')), '_blank');
 }
 
 async function cargarListadoEval(page = 1) {
@@ -783,18 +784,18 @@ async function cargarListadoEval(page = 1) {
   });
 
   const tbody = document.getElementById('evalTablaBody');
-  if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:32px"><div class="spinner"></div></td></tr>';
+  if (tbody) tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:32px"><div class="spinner"></div></td></tr>';
 
   try {
     const resp = await fetch('api/listar_evaluaciones.php?' + params);
     const data = await resp.json();
     if (!data.success) {
-      if (tbody) tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--rojo)"><i class="fas fa-triangle-exclamation"></i> ${data.message || 'Error al cargar.'}</td></tr>`;
+      if (tbody) tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--rojo)"><i class="fas fa-triangle-exclamation"></i> ${data.message || 'Error al cargar.'}</td></tr>`;
       return;
     }
     renderTablaEval(data.data);
   } catch (err) {
-    if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--gris-400)">Error de conexión con el servidor.</td></tr>';
+    if (tbody) tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--gris-400)">Error de conexión con el servidor.</td></tr>';
     console.error('[evaluaciones]', err);
   }
 }
@@ -816,7 +817,7 @@ function renderTablaEval({ rows, total, page, limit, totalPages }) {
   if (!tbody) return;
 
   if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--gris-400)">Sin evaluaciones registradas</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--gris-400)">Sin evaluaciones registradas</td></tr>';
     document.getElementById('evalPaginacion').innerHTML = '';
     return;
   }
@@ -835,6 +836,7 @@ function renderTablaEval({ rows, total, page, limit, totalPages }) {
       : '';
 
     return `<tr>
+      <td style="text-align:center"><input type="checkbox" class="eval-check" value="${r.id}" style="width:15px;height:15px;accent-color:var(--primary)"></td>
       <td style="font-size:13px">${r.fecha}</td>
       <td>${tipoBadge}</td>
       <td style="font-size:13px;font-weight:600">${r.nombre}${origenBadge}</td>

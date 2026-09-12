@@ -9,11 +9,16 @@
         </h2>
         <p style="color:var(--gris-400);font-size:13px;margin-top:2px">Registro y revisión de evaluaciones de capacitación</p>
       </div>
-      <?php if ($user['rol'] === 'administrador'): ?>
-      <button class="btn btn-outline btn-sm" onclick="abrirGestionEmpresas()">
-        <i class="fas fa-building"></i> Empresas
-      </button>
-      <?php endif; ?>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-outline btn-sm" onclick="evalRegistroPdf()" title="Registro de asistencia (PDF) con los filtros del listado">
+          <i class="fas fa-print"></i> Registro PDF
+        </button>
+        <?php if ($user['rol'] === 'administrador'): ?>
+        <button class="btn btn-outline btn-sm" onclick="abrirGestionEmpresas()">
+          <i class="fas fa-building"></i> Empresas
+        </button>
+        <?php endif; ?>
+      </div>
     </div>
 
     <!-- Tabs -->
@@ -68,7 +73,6 @@
               <input type="text" class="form-control" id="filtroEvalQ" placeholder="Nombre, DNI, empresa...">
             </div>
             <button class="btn btn-primary" onclick="cargarListadoEval()"><i class="fas fa-search"></i> Buscar</button>
-            <button class="btn btn-outline" onclick="evalRegistroPdf()" title="Registro de asistencia (PDF) con los filtros actuales"><i class="fas fa-print"></i> Registro PDF</button>
           </div>
         </div>
       </div>
@@ -79,6 +83,7 @@
           <table class="table" style="min-width:820px">
             <thead>
               <tr>
+                <th style="width:34px;text-align:center"><input type="checkbox" id="evalCheckAll" onclick="evalToggleAll(this.checked)" title="Seleccionar todos" style="width:15px;height:15px;accent-color:var(--primary)"></th>
                 <th>Fecha</th>
                 <th>Tipo</th>
                 <th>Nombre</th>
@@ -90,7 +95,7 @@
               </tr>
             </thead>
             <tbody id="evalTablaBody">
-              <tr><td colspan="8" style="text-align:center;padding:32px;color:var(--gris-400)">Cargando...</td></tr>
+              <tr><td colspan="9" style="text-align:center;padding:32px;color:var(--gris-400)">Cargando...</td></tr>
             </tbody>
           </table>
         </div>
