@@ -739,12 +739,14 @@ async function guardarEvaluacion() {
       toast(`✔ Evaluación guardada · ${pct}% (${data.data.puntaje}/${data.data.puntaje_max} pts)`, color, 6000);
       const nuevoId = data.data.id;
       cancelarEvaluacion();
-      // El sistema genera automáticamente el registro de asistencia firmado (R.M. 050).
+      // El sistema genera automáticamente el registro de asistencia firmado (R.M. 050):
+      // lo muestra en el visor y, en segundo plano, lo guarda como PDF adjunto.
       if (requiereFirma && nuevoId) {
         const url = 'api/evaluaciones_registro_pdf.php?ids=' + encodeURIComponent(nuevoId);
         const fr = document.getElementById('evalPdfFrame'); if (fr) fr.src = url;
         const ab = document.getElementById('evalPdfAbrir'); if (ab) ab.href = url;
         abrirModal('modalEvalRegistroPdf');
+        evalCapturarRegistroPdf(nuevoId);   // guarda el archivo PDF adjunto
       }
     } else {
       toast(data.message || 'Error al guardar.', 'error');
@@ -873,6 +875,64 @@ function evalImprimirRegistro() {
   catch (e) { window.open(f.src, '_blank'); }
 }
 
+function _evalUp() { return (typeof UPLOAD_URL !== 'undefined' ? UPLOAD_URL : 'uploads/'); }
+
+// Genera el Registro de Asistencia (R.M. 050) de una evaluación como PDF real en
+// el navegador (html2canvas + jsPDF) y lo sube para adjuntarlo a la evaluación.
+// Devuelve true si se guardó. opts.silent = no muestra toasts.
+async function evalCapturarRegistroPdf(id, opts) {
+  opts = opts || {};
+  if (typeof html2canvas === 'undefined' || !(window.jspdf && window.jspdf.jsPDF)) {
+    if (!opts.silent) toast('No se pudo generar el PDF (librería no disponible).', 'error');
+    return false;
+  }
+  return new Promise((resolve) => {
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:820px;height:1400px;border:0;background:#fff';
+    iframe.src = 'api/evaluaciones_registro_pdf.php?ids=' + encodeURIComponent(id);
+    let done = false;
+    const finish = (ok) => { if (done) return; done = true; try { document.body.removeChild(iframe); } catch (e) {} resolve(ok); };
+    iframe.onload = async () => {
+      try {
+        const doc = iframe.contentDocument || iframe.contentWindow.document;
+        const target = doc.querySelector('.sheet') || doc.body;
+        await new Promise(r => setTimeout(r, 450)); // deja renderizar fuentes/firmas
+        const canvas = await html2canvas(target, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pw = pdf.internal.pageSize.getWidth();
+        const ph = pdf.internal.pageSize.getHeight();
+        const imgH = canvas.height * pw / canvas.width;
+        const img = canvas.toDataURL('image/jpeg', 0.92);
+        if (imgH <= ph) {
+          pdf.addImage(img, 'JPEG', 0, 0, pw, imgH);
+        } else {
+          let y = 0;
+          while (y < imgH) { pdf.addImage(img, 'JPEG', 0, -y, pw, imgH); y += ph; if (y < imgH) pdf.addPage(); }
+        }
+        const dataUri = pdf.output('datauristring');
+        const fd = new FormData();
+        fd.append('csrf_token', CSRF_TOKEN);
+        fd.append('id', id);
+        fd.append('pdf', dataUri);
+        const r = await fetch('api/eval_registro_pdf_guardar.php', { method: 'POST', body: fd });
+        const d = await r.json();
+        if (d.success) { if (!opts.silent) toast('Registro de asistencia (PDF) guardado.', 'success'); finish(true); }
+        else { if (!opts.silent) toast(d.message || 'No se pudo guardar el PDF.', 'error'); finish(false); }
+      } catch (e) { if (!opts.silent) toast('No se pudo generar el PDF.', 'error'); finish(false); }
+    };
+    document.body.appendChild(iframe);
+    setTimeout(() => finish(false), 25000); // salvavidas
+  });
+}
+
+// Botón del listado: genera y adjunta el registro PDF, luego refresca.
+async function evalGenerarRegistro(id) {
+  toast('Generando registro PDF…', 'info');
+  const ok = await evalCapturarRegistroPdf(id);
+  if (ok) cargarListadoEval(evalPageActual);
+}
+
 async function cargarListadoEval(page = 1) {
   evalPageActual = page;
   const params = new URLSearchParams({
@@ -954,6 +1014,9 @@ function renderTablaEval({ rows, total, page, limit, totalPages }) {
         <button class="btn btn-outline btn-sm" onclick="verEvaluacion(${r.id})" title="Ver detalle">
           <i class="fas fa-eye"></i>
         </button>
+        ${r.registro_pdf
+          ? `<a class="btn btn-outline btn-sm" href="${_evalUp()}${r.registro_pdf}" target="_blank" rel="noopener" title="Registro de asistencia (PDF adjunto)"><i class="fas fa-file-pdf" style="color:var(--rojo)"></i></a>`
+          : ((USER_ROL === 'administrador' || USER_ROL === 'supervisor') ? `<button class="btn btn-outline btn-sm" onclick="evalGenerarRegistro(${r.id})" title="Generar y adjuntar registro PDF"><i class="fas fa-file-arrow-down"></i></button>` : '')}
         ${(r.estado === 'pendiente_revision' && (USER_ROL === 'administrador' || USER_ROL === 'supervisor')) ? `<button class="btn btn-success btn-sm" onclick="aprobarEvalRapido(${r.id},\`${r.nombre}\`)" title="Aprobar"><i class="fas fa-check"></i></button>` : ''}
         ${USER_ROL === 'administrador' ? `<button class="btn btn-danger btn-sm" onclick="eliminarEvaluacion(${r.id},\`${r.nombre}\`)" title="Eliminar"><i class="fas fa-trash"></i></button>` : ''}
       </td>

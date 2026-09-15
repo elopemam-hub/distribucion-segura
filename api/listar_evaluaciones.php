@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . '/../includes/auth.php';
 requireLogin();
+// Asegura columnas nuevas (p. ej. registro_pdf) antes de consultarlas.
+if (function_exists('setupEvalFormularios')) setupEvalFormularios();
 header('Content-Type: application/json; charset=utf-8');
 
 $tipo   = trim($_GET['tipo']   ?? '');
@@ -38,7 +40,7 @@ $rows = db()->fetchAll(
     "SELECT e.id, e.tipo, e.fecha, e.empresa, e.nombre, e.dni, e.puesto,
             e.tipo_unidad, e.conductor_tipo,
             e.puntaje, e.puntaje_maximo, e.porcentaje, e.estado,
-            e.origen, e.created_at,
+            e.origen, e.created_at, e.registro_pdf,
             u.nombre AS evaluador_nombre,
             a.nombre AS aprobador_nombre,
             e.aprobado_en

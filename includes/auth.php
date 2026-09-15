@@ -220,6 +220,16 @@ function setupEvalFormularios(): void {
         $exCat = db()->fetchOne("SELECT 1 FROM information_schema.columns
               WHERE table_schema = DATABASE() AND table_name = 'eval_formularios' AND column_name = 'categoria_rm050'");
         if (!$exCat) db()->query("ALTER TABLE eval_formularios ADD COLUMN categoria_rm050 VARCHAR(20) NULL", []);
+
+        // Archivo PDF del registro de asistencia firmado, adjunto a la evaluación
+        // (se genera automáticamente al guardar Examen Defensiva). Guarda si la tabla existe.
+        $exEvalTbl = db()->fetchOne("SELECT 1 FROM information_schema.tables
+              WHERE table_schema = DATABASE() AND table_name = 'evaluaciones'");
+        if ($exEvalTbl) {
+            $exRegPdf = db()->fetchOne("SELECT 1 FROM information_schema.columns
+                  WHERE table_schema = DATABASE() AND table_name = 'evaluaciones' AND column_name = 'registro_pdf'");
+            if (!$exRegPdf) db()->query("ALTER TABLE evaluaciones ADD COLUMN registro_pdf VARCHAR(255) NULL", []);
+        }
     } catch (Exception $e) {
         error_log('[setupEvalFormularios] ' . $e->getMessage());
     }
