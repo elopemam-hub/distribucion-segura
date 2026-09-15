@@ -311,9 +311,10 @@ async function seleccionarTipoEval(tipo) {
   document.getElementById('eval-observaciones').value = '';
 
   // Firma del evaluado: obligatoria en ciertos tipos (p. ej. Examen Defensiva).
-  const firmaCard = document.getElementById('eval-firma-card');
+  // Se crea dinámicamente si la vista no la trae (evita depender de cache/opcache).
+  const requiere = EVAL_FIRMA_OBLIGATORIA.includes(tipo);
+  const firmaCard = _ensureFirmaCard();
   if (firmaCard) {
-    const requiere = EVAL_FIRMA_OBLIGATORIA.includes(tipo);
     firmaCard.style.display = requiere ? '' : 'none';
     if (requiere) setTimeout(initFirmaEvaluado, 60);
   }
@@ -787,6 +788,33 @@ function limpiarFirmaAprobador() {
   evalAprobFirmaCtx.fillStyle = '#FFFFFF';
   evalAprobFirmaCtx.fillRect(0, 0, canvas.width, canvas.height);
   evalAprobFirmaHasContent = false;
+}
+
+// Devuelve la tarjeta de firma del evaluado; la crea si la vista no la incluye
+// (robusto ante HTML cacheado / opcache en producción).
+function _ensureFirmaCard() {
+  let card = document.getElementById('eval-firma-card');
+  if (card) return card;
+  const cont = document.getElementById('eval-form-container');
+  if (!cont) return null;
+  card = document.createElement('div');
+  card.className = 'card';
+  card.id = 'eval-firma-card';
+  card.style.marginBottom = '18px';
+  card.innerHTML =
+    '<div class="card-header"><h3><i class="fas fa-signature"></i> Firma del Evaluado <span style="color:var(--rojo)">*</span></h3></div>' +
+    '<div class="card-body">' +
+      '<p style="font-size:11px;color:var(--gris-400);margin-bottom:8px">El evaluado debe firmar en el recuadro antes de enviar. Con esta firma el sistema genera automáticamente el registro de asistencia firmado.</p>' +
+      '<div class="firma-canvas-wrap" style="height:140px;border:1px dashed var(--gris-500);border-radius:6px;background:#fff;overflow:hidden">' +
+        '<canvas id="evalFirmaEvaluadoCanvas" width="760" height="140" style="max-width:100%;height:100%;touch-action:none;cursor:crosshair"></canvas>' +
+      '</div>' +
+      '<div class="firma-actions" style="margin-top:6px"><button type="button" class="btn btn-secondary btn-sm" onclick="limpiarFirmaEvaluado()"><i class="fas fa-eraser"></i> Limpiar</button></div>' +
+    '</div>';
+  const btn = document.getElementById('btnGuardarEval');
+  const botonesRow = btn ? btn.closest('div') : null;
+  if (botonesRow && botonesRow.parentNode === cont) cont.insertBefore(card, botonesRow);
+  else cont.appendChild(card);
+  return card;
 }
 
 // ── Firma del evaluado (en el formulario de llenado) ──────────
