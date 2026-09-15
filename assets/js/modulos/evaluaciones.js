@@ -902,14 +902,12 @@ async function evalCapturarRegistroPdf(id, opts) {
         const pdf = new jsPDF('p', 'mm', 'a4');
         const pw = pdf.internal.pageSize.getWidth();
         const ph = pdf.internal.pageSize.getHeight();
-        const imgH = canvas.height * pw / canvas.width;
         const img = canvas.toDataURL('image/jpeg', 0.92);
-        if (imgH <= ph) {
-          pdf.addImage(img, 'JPEG', 0, 0, pw, imgH);
-        } else {
-          let y = 0;
-          while (y < imgH) { pdf.addImage(img, 'JPEG', 0, -y, pw, imgH); y += ph; if (y < imgH) pdf.addPage(); }
-        }
+        // Ajustar TODO el registro a UNA sola hoja A4 (escala para que quepa a lo ancho y alto).
+        const ratio = Math.min(pw / canvas.width, ph / canvas.height);
+        const w = canvas.width * ratio;
+        const h = canvas.height * ratio;
+        pdf.addImage(img, 'JPEG', (pw - w) / 2, 0, w, h);
         const dataUri = pdf.output('datauristring');
         const fd = new FormData();
         fd.append('csrf_token', CSRF_TOKEN);

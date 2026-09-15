@@ -160,17 +160,17 @@ $fill = max(0, $minRows - count($rows));
 
   /* Tamaño de letra UNIFORME (10px) en todo el formato. */
   table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-  td, th { border: 1px solid #000; padding: 3px 5px; vertical-align: middle; word-wrap: break-word; font-size: 10px; }
+  td, th { border: 1px solid #000; padding: 2px 4px; vertical-align: middle; word-wrap: break-word; font-size: 10px; }
   .band { background: #d9d9d9; font-weight: 700; text-transform: uppercase; text-align: center; }
   .lbl { background: #f2f2f2; text-align: center; font-weight: 700; }
   .val { color: #1f4e79; text-align: center; font-weight: 600; }
   .titulo { text-align: center; font-weight: 700; text-transform: uppercase; line-height: 1.2; }
   .logo { text-align: center; } .logo img { max-height: 46px; max-width: 100%; }
-  .mk { text-align: center; font-weight: 700; height: 22px; }
+  .mk { text-align: center; font-weight: 700; height: 18px; }
   .hl { background: #ffff00; }
   .tema { text-align: left; font-weight: 600; line-height: 1.35; }
   .asis th { background: #f2f2f2; text-transform: uppercase; text-align: center; }
-  .asis td { height: 42px; vertical-align: top; padding-top: 4px; }
+  .asis td { height: 26px; vertical-align: top; padding-top: 3px; }
   .cnum { width: 3%; text-align: center; } .cdni { width: 8%; text-align: center; }
   .cap1 { width: 15%; } .cap2 { width: 15%; } .cnom { width: 16%; }
   .ccargo { width: 11%; text-transform: uppercase; } .carea { width: 7%; text-align: center; }
@@ -178,7 +178,14 @@ $fill = max(0, $minRows - count($rows));
   .asis td, .asis th { line-height: 1.15; }
   .foot { }
   [contenteditable]:empty { background: #fffef2; }
-  @media print { body { background: #fff; } .toolbar { display: none; } .sheet { width: auto; padding: 0; } [contenteditable] { background: transparent !important; } }
+  @media print {
+    body { background: #fff; }
+    .toolbar { display: none; }
+    .sheet { width: auto; padding: 0; }
+    [contenteditable] { background: transparent !important; }
+    /* Evita que el registro se parta en una segunda hoja. */
+    .sheet, table, tr, td, th { page-break-inside: avoid; break-inside: avoid; }
+  }
 </style>
 </head>
 <body>
