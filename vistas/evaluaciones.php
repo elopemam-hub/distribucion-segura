@@ -13,6 +13,11 @@
         <button class="btn btn-outline btn-sm" onclick="evalRegistroPdf()" title="Registro de asistencia (PDF) con los filtros del listado">
           <i class="fas fa-print"></i> Registro PDF
         </button>
+        <?php if (in_array($user['rol'], ['administrador', 'supervisor'], true)): ?>
+        <button class="btn btn-outline btn-sm" onclick="evalRegenerarSeleccionados()" title="Regenerar el PDF adjunto de las evaluaciones marcadas, al formato actual">
+          <i class="fas fa-rotate"></i> Actualizar PDF (sel.)
+        </button>
+        <?php endif; ?>
         <?php if ($user['rol'] === 'administrador'): ?>
         <button class="btn btn-outline btn-sm" onclick="abrirGestionEmpresas()">
           <i class="fas fa-building"></i> Empresas

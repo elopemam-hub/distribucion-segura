@@ -924,11 +924,24 @@ async function evalCapturarRegistroPdf(id, opts) {
   });
 }
 
-// Botón del listado: genera y adjunta el registro PDF, luego refresca.
-async function evalGenerarRegistro(id) {
-  toast('Generando registro PDF…', 'info');
+// Botón del listado: genera/actualiza y adjunta el registro PDF, luego refresca.
+async function evalGenerarRegistro(id, regenerar) {
+  if (regenerar && !confirm('¿Regenerar el PDF con el formato actual? Se reemplaza el adjunto anterior.')) return;
+  toast(regenerar ? 'Actualizando registro PDF…' : 'Generando registro PDF…', 'info');
   const ok = await evalCapturarRegistroPdf(id);
   if (ok) cargarListadoEval(evalPageActual);
+}
+
+// Regenera el registro PDF de todas las evaluaciones seleccionadas (secuencial).
+async function evalRegenerarSeleccionados() {
+  const ids = [...document.querySelectorAll('.eval-check:checked')].map(c => c.value);
+  if (!ids.length) { toast('Marca al menos una evaluación para actualizar su PDF.', 'warning'); return; }
+  if (!confirm('¿Actualizar el registro PDF de ' + ids.length + ' evaluación(es) al formato actual? Reemplaza los adjuntos existentes.')) return;
+  toast('Actualizando ' + ids.length + ' registro(s)… no cierres la página.', 'info', 6000);
+  let ok = 0;
+  for (const id of ids) { const r = await evalCapturarRegistroPdf(id, { silent: true }); if (r) ok++; }
+  toast(ok + ' de ' + ids.length + ' registro(s) actualizados.', ok === ids.length ? 'success' : 'warning', 6000);
+  cargarListadoEval(evalPageActual);
 }
 
 // Abre un registro PDF (adjunto) en el MISMO visor embebido (no en otra pestaña).
@@ -1021,6 +1034,7 @@ function renderTablaEval({ rows, total, page, limit, totalPages }) {
         </button>
         ${r.registro_pdf
           ? `<button class="btn btn-outline btn-sm" onclick="evalVerRegistroPdf('${_evalUp()}${r.registro_pdf}')" title="Registro de asistencia (PDF adjunto)"><i class="fas fa-file-pdf" style="color:var(--rojo)"></i></button>`
+            + ((USER_ROL === 'administrador' || USER_ROL === 'supervisor') ? `<button class="btn btn-outline btn-sm" onclick="evalGenerarRegistro(${r.id}, true)" title="Regenerar PDF al formato actual"><i class="fas fa-rotate"></i></button>` : '')
           : ((USER_ROL === 'administrador' || USER_ROL === 'supervisor') ? `<button class="btn btn-outline btn-sm" onclick="evalGenerarRegistro(${r.id})" title="Generar y adjuntar registro PDF"><i class="fas fa-file-arrow-down"></i></button>` : '')}
         ${(r.estado === 'pendiente_revision' && (USER_ROL === 'administrador' || USER_ROL === 'supervisor')) ? `<button class="btn btn-success btn-sm" onclick="aprobarEvalRapido(${r.id},\`${r.nombre}\`)" title="Aprobar"><i class="fas fa-check"></i></button>` : ''}
         ${USER_ROL === 'administrador' ? `<button class="btn btn-danger btn-sm" onclick="eliminarEvaluacion(${r.id},\`${r.nombre}\`)" title="Eliminar"><i class="fas fa-trash"></i></button>` : ''}
