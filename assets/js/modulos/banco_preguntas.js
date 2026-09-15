@@ -672,6 +672,7 @@ function bpNuevaEvaluacion() {
   document.getElementById('bpFrmBtnEliminar').style.display = 'none';
   document.getElementById('bpFormularioModalTitulo').textContent = 'Nueva Evaluación';
   const temaN = document.getElementById('bpFrmTema'); if (temaN) temaN.value = '';
+  const capN = document.getElementById('bpFrmCapacitador'); if (capN) capN.value = '';
   const catN = document.getElementById('bpFrmCategoria'); if (catN) catN.value = '';
   bpCargarEmpresasCabecera('');
   bpPreviewIcono();
@@ -707,6 +708,7 @@ function bpEditarFormulario(formularioId) {
   document.getElementById('bpFrmBtnEliminar').style.display = reservados.includes(formularioId) ? 'none' : '';
   document.getElementById('bpFormularioModalTitulo').textContent = 'Editar Evaluación';
   const temaE = document.getElementById('bpFrmTema'); if (temaE) temaE.value = f.tema || '';
+  const capE = document.getElementById('bpFrmCapacitador'); if (capE) capE.value = f.capacitador || '';
   const catE = document.getElementById('bpFrmCategoria'); if (catE) catE.value = f.categoria_rm050 || '';
   bpCargarEmpresasCabecera(f.empresa_cabecera_id || '');
   bpPreviewIcono();
@@ -735,6 +737,7 @@ async function bpGuardarFormulario() {
   fd.append('orden',         document.getElementById('bpFrmOrden').value);
   fd.append('empresa_cabecera_id', document.getElementById('bpFrmEmpresaCabecera').value || '');
   fd.append('tema',          document.getElementById('bpFrmTema')?.value || '');
+  fd.append('capacitador',   document.getElementById('bpFrmCapacitador')?.value || '');
   fd.append('categoria_rm050', document.getElementById('bpFrmCategoria')?.value || '');
   fd.append('es_edicion',    document.getElementById('bpFrmEsEdicion').value);
 

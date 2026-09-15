@@ -199,6 +199,12 @@
       </div>
 
       <div class="form-group" style="margin-top:12px">
+        <label class="form-label">Nombre del Capacitador <span class="muted" style="font-weight:400;font-size:11px">· opcional (p. ej. Supervisor de Flota)</span></label>
+        <input type="text" class="form-control" id="bpFrmCapacitador" maxlength="150" placeholder="Ej: JUAN PÉREZ — Supervisor de Flota">
+        <small class="muted" style="font-size:11px">Aparece en "Nombre del Capacitador" del registro PDF. Si se deja vacío, usa el responsable de la empresa (EPP → Configuración).</small>
+      </div>
+
+      <div class="form-group" style="margin-top:12px">
         <label class="form-label">Categoría en el registro (Marcar X) <span class="muted" style="font-weight:400;font-size:11px">· opcional</span></label>
         <select class="form-control" id="bpFrmCategoria">
           <option value="">— Ninguna —</option>

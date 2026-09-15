@@ -102,6 +102,15 @@ $temasSel = [];
 foreach ($rows as $r) { $temasSel[!empty($formTema[$r['tipo']]) ? $formTema[$r['tipo']] : $tipoLbl($r['tipo'])] = 1; }
 $temaDefault = $temasSel ? implode("\n", array_keys($temasSel)) : '';
 
+// Capacitador por formulario (p. ej. Examen Defensiva → Supervisor de Flota).
+// Si todas las filas comparten el mismo, se usa; si no, respaldo al responsable de empresa.
+$formCapac = [];
+try { foreach (db()->fetchAll("SELECT formulario_id, capacitador FROM eval_formularios WHERE capacitador IS NOT NULL AND capacitador <> ''") as $f) $formCapac[$f['formulario_id']] = $f['capacitador']; }
+catch (Throwable $e) {}
+$capsSel = [];
+foreach ($rows as $r) { if (!empty($formCapac[$r['tipo']])) $capsSel[$formCapac[$r['tipo']]] = 1; }
+$capacitadorReg = (count($capsSel) === 1) ? array_key_first($capsSel) : '';
+
 // Cargo de cada asistente: del registro de Personal (por DNI); respaldo a puesto.
 $cargoByDni = [];
 $dnis = array_values(array_unique(array_filter(array_map(fn($r) => trim((string)$r['dni']), $rows))));
@@ -250,7 +259,7 @@ $fill = max(0, $minRows - count($rows));
       </tr>
       <tr>
         <td class="lbl">Nombre del Capacitador:</td>
-        <td class="val" colspan="3" contenteditable="true"><?= $h($g('emp_responsable')) ?: '&nbsp;' ?></td>
+        <td class="val" colspan="3" contenteditable="true"><?= $h($capacitadorReg ?: $g('emp_responsable')) ?: '&nbsp;' ?></td>
         <td class="lbl">Firma:</td>
         <td></td>
       </tr>

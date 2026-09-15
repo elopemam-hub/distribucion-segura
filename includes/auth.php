@@ -221,6 +221,12 @@ function setupEvalFormularios(): void {
               WHERE table_schema = DATABASE() AND table_name = 'eval_formularios' AND column_name = 'categoria_rm050'");
         if (!$exCat) db()->query("ALTER TABLE eval_formularios ADD COLUMN categoria_rm050 VARCHAR(20) NULL", []);
 
+        // Nombre del capacitador por formulario (p. ej. Examen Defensiva → Supervisor de
+        // Flota). Si está definido, el registro R.M. 050 lo usa en "Nombre del Capacitador".
+        $exCapac = db()->fetchOne("SELECT 1 FROM information_schema.columns
+              WHERE table_schema = DATABASE() AND table_name = 'eval_formularios' AND column_name = 'capacitador'");
+        if (!$exCapac) db()->query("ALTER TABLE eval_formularios ADD COLUMN capacitador VARCHAR(150) NULL", []);
+
         // Archivo PDF del registro de asistencia firmado, adjunto a la evaluación
         // (se genera automáticamente al guardar Examen Defensiva). Guarda si la tabla existe.
         $exEvalTbl = db()->fetchOne("SELECT 1 FROM information_schema.tables
