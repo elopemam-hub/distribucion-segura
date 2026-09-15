@@ -448,10 +448,41 @@ function _capEscuelaEditable() {
 }
 function _capEscChk(x, campo) {
   const on = +x[campo] === 1;
-  const editable = _capEscuelaEditable();
+  const locked = +x.aprobado === 1;                       // aprobado bloquea las etapas
+  const editable = _capEscuelaEditable() && !locked;
   return '<input type="checkbox" ' + (on ? 'checked' : '') + (editable ? '' : ' disabled') +
     ' onchange="capEscuelaMarca(' + x.id + ",'" + campo + "',this.checked)\"" +
-    ' style="width:17px;height:17px;accent-color:var(--verde);cursor:' + (editable ? 'pointer' : 'default') + '">';
+    ' title="' + (locked ? 'Bloqueado: conductor aprobado' : '') + '"' +
+    ' style="width:17px;height:17px;accent-color:var(--verde);cursor:' + (editable ? 'pointer' : 'not-allowed') + '">';
+}
+
+// Columna de aprobación: al marcarla se bloquean las etapas; se puede desmarcar
+// (admin/supervisor) para volver a editar.
+function _capEscAprob(x) {
+  const on = +x.aprobado === 1;
+  const editable = _capEscuelaEditable();
+  const chk = '<input type="checkbox" ' + (on ? 'checked' : '') + (editable ? '' : ' disabled') +
+    ' onchange="capEscuelaAprobar(' + x.id + ',this.checked)"' +
+    ' style="width:18px;height:18px;accent-color:var(--azul);cursor:' + (editable ? 'pointer' : 'default') + '">';
+  const badge = on ? '<div style="font-size:10px;color:var(--verde);margin-top:2px"><i class="fas fa-lock"></i> Aprobado</div>' : '';
+  return chk + badge;
+}
+
+async function capEscuelaAprobar(personalId, on) {
+  const fd = new FormData();
+  fd.append('action', 'escuela_aprobar');
+  fd.append('csrf_token', CSRF_TOKEN);
+  fd.append('personal_id', personalId);
+  fd.append('valor', on ? 1 : 0);
+  try {
+    const r = await fetch('api/capacitaciones.php', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (!d.success) { toast(d.message || 'No se pudo guardar', 'warning'); cargarEscuela(); return; }
+    toast(d.message || 'Actualizado', 'success');
+    const row = _capEscuelaData.find(z => +z.id === +personalId);
+    if (row) row.aprobado = on ? 1 : 0;
+    renderEscuela();
+  } catch (e) { toast('Error de conexión', 'error'); cargarEscuela(); }
 }
 
 async function capEscuelaMarca(personalId, campo, on) {
@@ -500,11 +531,13 @@ function renderEscuela() {
   const vencidos = items.filter(x => x.dias_vencer_brevete != null && +x.dias_vencer_brevete < 0).length;
   const completos = items.filter(x => +x.teorico === 1 && +x.practico === 1 && +x.examen === 1).length;
   const pctComp = total ? Math.round(completos / total * 100) : 0;
+  const aprobados = items.filter(x => +x.aprobado === 1).length;
 
   const kpis = document.getElementById('capKpis');
   if (kpis) kpis.innerHTML =
     _kpi('azul', 'fa-id-card', 'Conductores', total, 'activos') +
     _kpi(pctComp >= 80 ? 'verde' : 'amarillo', 'fa-graduation-cap', 'Escuela completa', completos + ' (' + pctComp + '%)', 'teórico + práctico + examen') +
+    _kpi('verde', 'fa-user-check', 'Aprobados', aprobados, 'con aprobación final') +
     _kpi('verde', 'fa-circle-check', 'Brevete vigente', vig, 'más de 30 días') +
     _kpi('amarillo', 'fa-clock', 'Por vencer', porVencer, 'en 30 días o menos') +
     _kpi('naranja', 'fa-triangle-exclamation', 'Vencidos', vencidos, 'requieren renovación');
@@ -526,6 +559,7 @@ function renderEscuela() {
     '<th style="text-align:center" title="Curso teórico">Teórico</th>' +
     '<th style="text-align:center" title="Manejo práctico">Práctico</th>' +
     '<th style="text-align:center" title="Examen de manejo">Examen</th>' +
+    '<th style="text-align:center" title="Aprobación final (bloquea las etapas)">Aprobación</th>' +
     '<th>Teléfono</th><th style="text-align:center">Estado</th>';
 
   const body = rows.map((x, i) => {
@@ -548,12 +582,13 @@ function renderEscuela() {
       '<td style="text-align:center">' + _capEscChk(x, 'teorico') + '</td>' +
       '<td style="text-align:center">' + _capEscChk(x, 'practico') + '</td>' +
       '<td style="text-align:center">' + _capEscChk(x, 'examen') + '</td>' +
+      '<td style="text-align:center">' + _capEscAprob(x) + '</td>' +
       '<td class="muted">' + escapeHtml(x.telefono || '—') + '</td>' +
       '<td style="text-align:center">' + estado + '</td>' +
     '</tr>';
   }).join('');
 
-  wrap.innerHTML = '<table class="data-table" style="min-width:1080px"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table>';
+  wrap.innerHTML = '<table class="data-table" style="min-width:1180px"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table>';
   if (pag) pag.innerHTML = _capPagBar(total, _capEscuelaPag, ESCUELA_CAP_PAGE, 'irEscuelaPagina');
 }
 

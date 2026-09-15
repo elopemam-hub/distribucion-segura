@@ -24,7 +24,7 @@ const ESCUELA_CAMPOS = ['teorico', 'practico', 'examen'];
 
 $action = $_GET['action'] ?? $_POST['action'] ?? 'list';
 
-$mutaciones = ['save', 'delete', 'estado', 'adjunto_add', 'adjunto_del', 'asistente_add', 'asistente_masivo', 'asistente_firma', 'asistente_del', 'escuela_marca'];
+$mutaciones = ['save', 'delete', 'estado', 'adjunto_add', 'adjunto_del', 'asistente_add', 'asistente_masivo', 'asistente_firma', 'asistente_del', 'escuela_marca', 'escuela_aprobar'];
 if (in_array($action, $mutaciones, true)) {
     requireCsrf();
     $user = getCurrentUser();
@@ -58,6 +58,7 @@ try {
         case 'asistente_del':  asistenteDel();  break;
         case 'escuela_list':   escuelaList();   break;
         case 'escuela_marca':  escuelaMarca();  break;
+        case 'escuela_aprobar':escuelaAprobar();break;
         default: jsonResponse(false, 'Acción no válida.', null, 400);
     }
 } catch (Throwable $e) {
@@ -371,7 +372,9 @@ function escuelaList() {
                 DATEDIFF(p.vencimiento_brevete, CURDATE()) AS dias_vencer_brevete,
                 COALESCE(ec.teorico, 0)  AS teorico,
                 COALESCE(ec.practico, 0) AS practico,
-                COALESCE(ec.examen, 0)   AS examen
+                COALESCE(ec.examen, 0)   AS examen,
+                COALESCE(ec.aprobado, 0) AS aprobado,
+                ec.aprobado_en
            FROM personal p
            LEFT JOIN empresas e     ON e.id = p.empresa_id
            LEFT JOIN cap_escuela ec ON ec.personal_id = p.id
@@ -394,6 +397,12 @@ function escuelaMarca() {
     if (!$p) jsonResponse(false, 'Conductor no encontrado.', null, 404);
     if (!empresaEsPermitida($p['empresa_id'] ?? 0)) jsonResponse(false, 'Sin acceso a este conductor.', null, 403);
 
+    // Si ya está aprobado, las etapas quedan bloqueadas (debe desaprobarse primero).
+    $ec = db()->fetchOne("SELECT aprobado FROM cap_escuela WHERE personal_id = ?", [$pid]);
+    if ($ec && (int)$ec['aprobado'] === 1) {
+        jsonResponse(false, 'El conductor está aprobado. Quita la aprobación para editar las etapas.', null, 409);
+    }
+
     // $campo está en lista blanca (ESCUELA_CAMPOS): interpolación segura.
     db()->query(
         "INSERT INTO cap_escuela (personal_id, `$campo`) VALUES (?, ?)
@@ -401,6 +410,35 @@ function escuelaMarca() {
         [$pid, $valor]
     );
     jsonResponse(true, 'Actualizado.');
+}
+
+function escuelaAprobar() {
+    $pid   = (int)($_POST['personal_id'] ?? 0);
+    $valor = ((int)($_POST['valor'] ?? 0) === 1) ? 1 : 0;
+    if ($pid <= 0) jsonResponse(false, 'Datos inválidos.', null, 422);
+
+    $p = db()->fetchOne("SELECT id, empresa_id FROM personal WHERE id = ? AND activo = 1 AND cargo = 'conductor'", [$pid]);
+    if (!$p) jsonResponse(false, 'Conductor no encontrado.', null, 404);
+    if (!empresaEsPermitida($p['empresa_id'] ?? 0)) jsonResponse(false, 'Sin acceso a este conductor.', null, 403);
+
+    // Para aprobar, las tres etapas deben estar completas.
+    if ($valor === 1) {
+        $ec = db()->fetchOne("SELECT teorico, practico, examen FROM cap_escuela WHERE personal_id = ?", [$pid]);
+        if (!$ec || (int)$ec['teorico'] !== 1 || (int)$ec['practico'] !== 1 || (int)$ec['examen'] !== 1) {
+            jsonResponse(false, 'Marca teórico, práctico y examen antes de aprobar.', null, 409);
+        }
+    }
+
+    $user = getCurrentUser();
+    $uid  = $user['id'] ?? null;
+    $en   = $valor === 1 ? date('Y-m-d H:i:s') : null;
+    $porV = $valor === 1 ? $uid : null;
+    db()->query(
+        "INSERT INTO cap_escuela (personal_id, aprobado, aprobado_en, aprobado_por) VALUES (?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE aprobado = VALUES(aprobado), aprobado_en = VALUES(aprobado_en), aprobado_por = VALUES(aprobado_por)",
+        [$pid, $valor, $en, $porV]
+    );
+    jsonResponse(true, $valor === 1 ? 'Conductor aprobado.' : 'Aprobación retirada.');
 }
 
 // ------------------------------------------------------------

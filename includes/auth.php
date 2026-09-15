@@ -786,14 +786,28 @@ function setupCapacitaciones(): void {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", []);
 
         // Escuela de conductores: avance de cada conductor por etapa
-        // (teórico / práctico / examen). Una fila por trabajador (personal_id).
+        // (teórico / práctico / examen) + aprobación final. Una fila por trabajador.
         db()->query("CREATE TABLE IF NOT EXISTS cap_escuela (
             personal_id     INT PRIMARY KEY,
             teorico         TINYINT(1) NOT NULL DEFAULT 0,
             practico        TINYINT(1) NOT NULL DEFAULT 0,
             examen          TINYINT(1) NOT NULL DEFAULT 0,
+            aprobado        TINYINT(1) NOT NULL DEFAULT 0,
+            aprobado_en     DATETIME NULL,
+            aprobado_por    INT NULL,
             actualizado_en  DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", []);
+
+        // Columnas de aprobación para instalaciones donde la tabla ya existía.
+        foreach ([
+            'aprobado'     => 'TINYINT(1) NOT NULL DEFAULT 0',
+            'aprobado_en'  => 'DATETIME NULL',
+            'aprobado_por' => 'INT NULL',
+        ] as $col => $ddl) {
+            $ex = db()->fetchOne("SELECT 1 FROM information_schema.columns
+                  WHERE table_schema = DATABASE() AND table_name = 'cap_escuela' AND column_name = ?", [$col]);
+            if (!$ex) db()->query("ALTER TABLE cap_escuela ADD COLUMN `$col` $ddl", []);
+        }
     } catch (Exception $e) {
         error_log('[setupCapacitaciones] ' . $e->getMessage());
     }
