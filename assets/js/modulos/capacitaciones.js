@@ -442,9 +442,10 @@ async function cargarEscuela() {
   renderEscuela();
 }
 
-// Marcar/desmarcar etapa de la escuela es solo para admin/supervisor.
+// Marcar etapas y aprobar es exclusivo del administrador; los demás roles la ven
+// en solo lectura.
 function _capEscuelaEditable() {
-  return typeof USER_ROL !== 'undefined' && (USER_ROL === 'administrador' || USER_ROL === 'supervisor');
+  return typeof USER_ROL !== 'undefined' && USER_ROL === 'administrador';
 }
 function _capEscChk(x, campo) {
   const on = +x[campo] === 1;

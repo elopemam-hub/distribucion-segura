@@ -35,6 +35,11 @@ if (in_array($action, $mutaciones, true)) {
     if (in_array($action, ['delete', 'adjunto_del', 'asistente_del'], true) && $user['rol'] !== 'administrador') {
         jsonResponse(false, 'Solo un administrador puede eliminar.', null, 403);
     }
+    // Escuela de conductores: marcar etapas y aprobar es exclusivo del administrador
+    // (los demás roles la ven en solo lectura).
+    if (in_array($action, ['escuela_marca', 'escuela_aprobar'], true) && $user['rol'] !== 'administrador') {
+        jsonResponse(false, 'Solo un administrador puede modificar la escuela de conductores.', null, 403);
+    }
 }
 
 // Ya validamos auth/CSRF: libera el lock de sesión para no serializar las
