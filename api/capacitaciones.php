@@ -18,6 +18,9 @@ const CAP_ESTADOS  = ['programado', 'en_curso', 'ejecutado', 'reprogramado', 'ca
 // Debe declararse ANTES del switch (los const de nivel superior no se hoistean
 // y adjuntoAdd() la usa desde el dispatch).
 const CAP_ADJ_TIPOS = ['material', 'foto', 'asistencia'];
+// Igual que CAP_ADJ_TIPOS: escuelaMarca() la usa desde el dispatch, así que debe
+// estar declarada antes del switch (los const de nivel superior no se hoistean).
+const ESCUELA_CAMPOS = ['teorico', 'practico', 'examen'];
 
 $action = $_GET['action'] ?? $_POST['action'] ?? 'list';
 
@@ -356,9 +359,8 @@ function _guardarAdjuntoCap(array $file, string $tipo): array {
 
 // ============================================================
 // ESCUELA DE CONDUCTORES: listado + avance por etapa (teórico/práctico/examen)
+// (ESCUELA_CAMPOS se declara arriba, antes del switch.)
 // ============================================================
-const ESCUELA_CAMPOS = ['teorico', 'practico', 'examen'];
-
 function escuelaList() {
     // Solo conductores ACTIVOS; respeta la restricción por empresa del usuario.
     [$empRestr, $empRestrP] = empresaWhere('p.empresa_id');
