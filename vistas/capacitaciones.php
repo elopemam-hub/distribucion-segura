@@ -18,6 +18,7 @@
       <button class="tab-btn cap-tab-btn" id="cap-btn-semana" onclick="switchCapTab('semana')"><i class="fas fa-helmet-safety"></i> Semana de seguridad</button>
       <button class="tab-btn cap-tab-btn" id="cap-btn-alerta" onclick="switchCapTab('alerta')"><i class="fas fa-triangle-exclamation"></i> Safety Alert</button>
       <button class="tab-btn cap-tab-btn" id="cap-btn-campana" onclick="switchCapTab('campana')"><i class="fas fa-bullhorn"></i> Campañas</button>
+      <button class="tab-btn cap-tab-btn" id="cap-btn-escuela" onclick="switchCapTab('escuela')"><i class="fas fa-id-card"></i> Escuela de conductores</button>
       <button class="tab-btn cap-tab-btn" id="cap-btn-resumen" onclick="switchCapTab('resumen')"><i class="fas fa-table-list"></i> Resumen</button>
     </div>
 
@@ -31,7 +32,7 @@
     <div class="card" style="margin-bottom:16px">
       <div class="card-body" style="padding:14px 20px">
         <div class="filter-bar">
-          <div class="form-group"><label class="form-label">Año</label>
+          <div class="form-group" id="capAnioWrap"><label class="form-label">Año</label>
             <select class="form-control" id="capFiltroAnio" onchange="cargarCapacitaciones()"><option value="">Todos</option></select></div>
           <div class="form-group" id="capEstadoWrap"><label class="form-label">Estado</label>
             <select class="form-control" id="capFiltroEstado" onchange="cargarCapacitaciones()">

@@ -16,6 +16,11 @@ let _capResumenData = { items: [], anio: 0 };
 let _capResumenPag = 1;
 const RESUMEN_CAP_PAGE = 20;
 function irResumenPagina(n) { _capResumenPag = n; renderResumen(); }
+// Escuela de conductores (listado de personal con cargo conductor).
+let _capEscuelaData = [];
+let _capEscuelaPag = 1;
+const ESCUELA_CAP_PAGE = 20;
+function irEscuelaPagina(n) { _capEscuelaPag = n; renderEscuela(); }
 
 // Barra de paginación (mismas clases que el resto del sistema).
 function _capPagBar(total, pagina, porPag, fnName) {
@@ -84,13 +89,16 @@ function switchCapTab(tipo) {
   document.getElementById('cap-btn-' + tipo)?.classList.add('active');
 
   const esResumen = tipo === 'resumen';
+  const esEscuela = tipo === 'escuela';
   const show = (id, on) => { const el = document.getElementById(id); if (el) el.style.display = on ? '' : 'none'; };
-  // Controles que NO aplican al resumen (es una matriz, no registros).
-  show('capBtnNuevo', !esResumen);
-  show('capEstadoWrap', !esResumen);
+  // Controles que NO aplican al resumen (es una matriz, no registros) ni a la escuela (lista de conductores).
+  show('capBtnNuevo', !esResumen && !esEscuela);
+  show('capEstadoWrap', !esResumen && !esEscuela);
   show('capCargoWrap', esResumen);
-  show('capVistaToggle', !esResumen && tipo === 'cronograma');
+  show('capAnioWrap', !esEscuela);   // los conductores no se filtran por año
+  show('capVistaToggle', !esResumen && !esEscuela && tipo === 'cronograma');
 
+  if (esEscuela) { cargarEscuela(); return; }
   if (esResumen) { cargarResumen(); return; }
 
   const lbl = document.getElementById('capNuevoLabel');
@@ -121,6 +129,7 @@ function capBuscarDebounced() {
   // En resumen la búsqueda es cliente-side (no re-consulta).
   _capBuscarTimer = setTimeout(() => {
     if (_capTipo === 'resumen') { _capResumenPag = 1; renderResumen(); }
+    else if (_capTipo === 'escuela') { _capEscuelaPag = 1; renderEscuela(); }
     else cargarCapacitaciones();
   }, 300);
 }
@@ -415,6 +424,100 @@ function renderResumen() {
 
 // Abre el visor del Registro PDF directamente para una actividad del resumen.
 function capVerPdf(id) { _capEvId = id; abrirRegistroPdf(); }
+
+// ============================================================
+// ESCUELA DE CONDUCTORES
+// Listado de todo el personal con cargo "conductor" y estado de su brevete.
+// Reutiliza la API de Personal (no requiere tabla nueva).
+// ============================================================
+async function cargarEscuela() {
+  _capEscuelaPag = 1;
+  const wrap = document.getElementById('capTablaWrap');
+  if (wrap) wrap.innerHTML = '<p class="muted" style="text-align:center;padding:28px">Cargando conductores…</p>';
+  try {
+    const r = await fetch('api/personal.php?action=list&cargo=conductor&limit=500');
+    const d = await r.json();
+    _capEscuelaData = (d && d.success && d.data && d.data.personal) ? d.data.personal : [];
+  } catch (e) { _capEscuelaData = []; }
+  renderEscuela();
+}
+
+// Badge del brevete según días para vencer (dias_vencer_brevete lo calcula la API).
+function _capBrevete(x) {
+  if (!x.vencimiento_brevete) return '<span class="badge badge-secondary">Sin registro</span>';
+  const dias = x.dias_vencer_brevete != null ? parseInt(x.dias_vencer_brevete, 10) : null;
+  const fecha = _capFecha(x.vencimiento_brevete);
+  if (dias == null) return '<span class="muted">' + fecha + '</span>';
+  if (dias < 0)  return '<span class="badge badge-danger">Vencido</span> <span class="muted" style="font-size:11px">' + fecha + '</span>';
+  if (dias <= 30) return '<span class="badge badge-warning">Vence en ' + dias + 'd</span> <span class="muted" style="font-size:11px">' + fecha + '</span>';
+  return '<span class="badge badge-success">Vigente</span> <span class="muted" style="font-size:11px">' + fecha + '</span>';
+}
+
+function renderEscuela() {
+  const wrap = document.getElementById('capTablaWrap');
+  const pag = document.getElementById('capPagWrap');
+  const al = document.getElementById('capAlertas'); if (al) al.innerHTML = '';
+  if (!wrap) return;
+
+  const q = (document.getElementById('capFiltroQ')?.value || '').trim().toLowerCase();
+  let items = _capEscuelaData;
+  if (q) items = items.filter(x => (x.nombre || '').toLowerCase().includes(q) || String(x.dni || '').includes(q));
+
+  // KPIs por estado del brevete.
+  const total = items.length;
+  const activos = items.filter(x => +x.activo === 1).length;
+  const vig = items.filter(x => x.dias_vencer_brevete != null && +x.dias_vencer_brevete > 30).length;
+  const porVencer = items.filter(x => x.dias_vencer_brevete != null && +x.dias_vencer_brevete >= 0 && +x.dias_vencer_brevete <= 30).length;
+  const vencidos = items.filter(x => x.dias_vencer_brevete != null && +x.dias_vencer_brevete < 0).length;
+
+  const kpis = document.getElementById('capKpis');
+  if (kpis) kpis.innerHTML =
+    _kpi('azul', 'fa-id-card', 'Conductores', total, activos + ' activos') +
+    _kpi('verde', 'fa-circle-check', 'Brevete vigente', vig, 'más de 30 días') +
+    _kpi('amarillo', 'fa-clock', 'Por vencer', porVencer, 'en 30 días o menos') +
+    _kpi('naranja', 'fa-triangle-exclamation', 'Vencidos', vencidos, 'requieren renovación');
+
+  if (!total) {
+    wrap.innerHTML = '<p class="muted" style="text-align:center;padding:28px">' +
+      (q ? 'Sin conductores que coincidan con la búsqueda.' : 'No hay personal con cargo “conductor”. Regístralos en el módulo Personal.') + '</p>';
+    if (pag) pag.innerHTML = '';
+    return;
+  }
+
+  const totalPags = Math.max(1, Math.ceil(total / ESCUELA_CAP_PAGE));
+  if (_capEscuelaPag > totalPags) _capEscuelaPag = totalPags;
+  if (_capEscuelaPag < 1) _capEscuelaPag = 1;
+  const rows = items.slice((_capEscuelaPag - 1) * ESCUELA_CAP_PAGE, _capEscuelaPag * ESCUELA_CAP_PAGE);
+
+  const head = '<th style="width:5%">N°</th><th>Conductor</th><th>DNI</th><th>Empresa</th>' +
+    '<th>N° Licencia</th><th style="text-align:center">Cat.</th><th>Brevete</th><th>Teléfono</th>' +
+    '<th style="text-align:center">Estado</th>';
+
+  const body = rows.map((x, i) => {
+    const n = (_capEscuelaPag - 1) * ESCUELA_CAP_PAGE + i + 1;
+    const foto = x.foto
+      ? '<img src="' + _UP() + x.foto + '" style="width:30px;height:30px;border-radius:50%;object-fit:cover;border:1px solid var(--gris-600)">'
+      : '<span style="width:30px;height:30px;border-radius:50%;background:var(--gris-700);display:inline-flex;align-items:center;justify-content:center;color:var(--gris-400)"><i class="fas fa-user" style="font-size:12px"></i></span>';
+    const estado = +x.activo === 1
+      ? '<span class="badge badge-success">Activo</span>'
+      : '<span class="badge badge-secondary">Inactivo</span>';
+    return '<tr>' +
+      '<td class="muted" style="text-align:center">' + n + '</td>' +
+      '<td><div style="display:flex;align-items:center;gap:10px">' + foto +
+        '<span style="font-weight:600;color:var(--gris-100)">' + escapeHtml(x.nombre || '') + '</span></div></td>' +
+      '<td class="muted">' + escapeHtml(x.dni || '—') + '</td>' +
+      '<td class="muted">' + escapeHtml(x.empresa_nombre || x.empresa || '—') + '</td>' +
+      '<td class="muted">' + escapeHtml(x.num_licencia || '—') + '</td>' +
+      '<td style="text-align:center">' + (x.categoria_licencia ? '<span class="badge badge-info">' + escapeHtml(x.categoria_licencia) + '</span>' : '<span class="muted">—</span>') + '</td>' +
+      '<td>' + _capBrevete(x) + '</td>' +
+      '<td class="muted">' + escapeHtml(x.telefono || '—') + '</td>' +
+      '<td style="text-align:center">' + estado + '</td>' +
+    '</tr>';
+  }).join('');
+
+  wrap.innerHTML = '<table class="data-table" style="min-width:900px"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table>';
+  if (pag) pag.innerHTML = _capPagBar(total, _capEscuelaPag, ESCUELA_CAP_PAGE, 'irEscuelaPagina');
+}
 
 function _capFila(x) {
   const t = e => escapeHtml(x[e] || '') || '<span class="muted">—</span>';
