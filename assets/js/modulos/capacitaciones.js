@@ -435,7 +435,7 @@ async function cargarEscuela() {
   const wrap = document.getElementById('capTablaWrap');
   if (wrap) wrap.innerHTML = '<p class="muted" style="text-align:center;padding:28px">Cargando conductores…</p>';
   try {
-    const r = await fetch('api/personal.php?action=list&cargo=conductor&limit=500');
+    const r = await fetch('api/personal.php?action=list&cargo=conductor&activo=1&limit=500');
     const d = await r.json();
     _capEscuelaData = (d && d.success && d.data && d.data.personal) ? d.data.personal : [];
   } catch (e) { _capEscuelaData = []; }
