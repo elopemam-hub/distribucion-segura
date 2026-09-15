@@ -826,6 +826,66 @@ function setupCapacitaciones(): void {
 }
 
 // ============================================================
+// AUTO-PROVISIÓN: SUB-MÓDULO MANEJO A LA DEFENSIVA (Capacitaciones)
+// Programa de manejo defensivo para toda la flota de conductores, con
+// recertificación periódica (vigencia configurable). Registro individual por
+// conductor; temario configurable; nota enlazada al examen_defensiva. Idempotente.
+// ============================================================
+function setupManejoDefensivo(): void {
+    try {
+        // Configuración (fila única): periodicidad de recertificación en meses.
+        db()->query("CREATE TABLE IF NOT EXISTS def_config (
+            id                 TINYINT PRIMARY KEY,
+            periodicidad_meses INT NOT NULL DEFAULT 12
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", []);
+        db()->query("INSERT IGNORE INTO def_config (id, periodicidad_meses) VALUES (1, 12)", []);
+
+        // Temario configurable del programa (dinámico).
+        db()->query("CREATE TABLE IF NOT EXISTS def_temas (
+            id        INT AUTO_INCREMENT PRIMARY KEY,
+            nombre    VARCHAR(160) NOT NULL,
+            orden     INT NOT NULL DEFAULT 0,
+            activo    TINYINT(1) NOT NULL DEFAULT 1,
+            creado_en DATETIME DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", []);
+
+        // Siembra de temas base solo si está vacía.
+        $n = (int)(db()->fetchOne("SELECT COUNT(*) c FROM def_temas")['c'] ?? 0);
+        if ($n === 0) {
+            $base = [
+                'Principios de la conducción defensiva',
+                'Distancia de seguridad y control de velocidad',
+                'Fatiga, sueño y descanso del conductor',
+                'Uso del cinturón de seguridad y EPP',
+                'Conducción en condiciones climáticas y de vía adversas',
+                'Manejo de emergencias y frenado seguro',
+                'Alcohol, drogas y distracciones al volante',
+                'Inspección pre-uso del vehículo',
+            ];
+            $o = 1;
+            foreach ($base as $t) { db()->query("INSERT INTO def_temas (nombre, orden) VALUES (?, ?)", [$t, $o++]); }
+        }
+
+        // Registros individuales (histórico por conductor).
+        db()->query("CREATE TABLE IF NOT EXISTS def_registros (
+            id            INT AUTO_INCREMENT PRIMARY KEY,
+            personal_id   INT NOT NULL,
+            fecha         DATE NOT NULL,
+            vencimiento   DATE NULL,
+            facilitador   VARCHAR(150) NULL,
+            temas         TEXT NULL,
+            observaciones TEXT NULL,
+            certificado   VARCHAR(255) NULL,
+            creado_por    INT NULL,
+            creado_en     DATETIME DEFAULT CURRENT_TIMESTAMP,
+            KEY idx_defreg (personal_id, fecha)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", []);
+    } catch (Exception $e) {
+        error_log('[setupManejoDefensivo] ' . $e->getMessage());
+    }
+}
+
+// ============================================================
 // AUTO-PROVISIÓN: MÓDULO CHECKLIST (inspección mensual de componentes de unidad)
 // Componentes del camión (extintores, botiquín, EPP, etc.) inspeccionados por
 // unidad (placa) cada mes. Normas SST: Ley 29783, NTP 350.043 (extintores),

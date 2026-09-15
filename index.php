@@ -381,6 +381,7 @@ $csrf = csrfToken();
 <?php endif; ?>
 <?php if (tieneAccesoModulo('capacitaciones')): ?>
 <script src="assets/js/modulos/capacitaciones.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/capacitaciones.js') ?>"></script>
+<script src="assets/js/modulos/manejo_defensivo.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/manejo_defensivo.js') ?>"></script>
 <?php endif; ?>
 <?php if (tieneAccesoModulo('geocercas')): ?>
 <script src="assets/js/modulos/geocercas.js?v=<?= filemtime(__DIR__.'/assets/js/modulos/geocercas.js') ?>"></script>

@@ -19,6 +19,7 @@
       <button class="tab-btn cap-tab-btn" id="cap-btn-alerta" onclick="switchCapTab('alerta')"><i class="fas fa-triangle-exclamation"></i> Safety Alert</button>
       <button class="tab-btn cap-tab-btn" id="cap-btn-campana" onclick="switchCapTab('campana')"><i class="fas fa-bullhorn"></i> Campañas</button>
       <button class="tab-btn cap-tab-btn" id="cap-btn-escuela" onclick="switchCapTab('escuela')"><i class="fas fa-id-card"></i> Escuela de conductores</button>
+      <button class="tab-btn cap-tab-btn" id="cap-btn-defensivo" onclick="switchCapTab('defensivo')"><i class="fas fa-shield-halved"></i> Manejo a la Defensiva</button>
       <button class="tab-btn cap-tab-btn" id="cap-btn-resumen" onclick="switchCapTab('resumen')"><i class="fas fa-table-list"></i> Resumen</button>
     </div>
 
@@ -59,6 +60,7 @@
           </div>
           <button class="btn btn-primary" id="capBtnNuevo" onclick="nuevaCapacitacion()"><i class="fas fa-plus"></i> <span id="capNuevoLabel">Nuevo</span></button>
           <button class="btn btn-outline" id="capBtnEscEvidencia" style="display:none" onclick="abrirEscEvidencia()"><i class="fas fa-paperclip"></i> Evidencia de la escuela</button>
+          <button class="btn btn-outline" id="capBtnDefConfig" style="display:none" onclick="abrirDefConfig()"><i class="fas fa-gear"></i> Configurar</button>
         </div>
       </div>
     </div>
@@ -356,6 +358,89 @@
       </div>
       <div class="modal-footer" style="display:flex;justify-content:flex-end;padding:14px 20px;border-top:1px solid var(--gris-700)">
         <button class="btn btn-secondary" onclick="cerrarModal('modalEscEvidencia')">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: MANEJO DEFENSIVO — REGISTRO INDIVIDUAL ===== -->
+  <div class="modal-overlay" id="modalDefRegistro">
+    <div class="modal-box" style="max-width:600px;width:96%">
+      <div class="modal-header">
+        <h3><i class="fas fa-shield-halved" style="color:var(--primary)"></i> Registrar manejo defensivo · <span id="defRegNombre"></span></h3>
+        <button class="modal-close" onclick="cerrarModal('modalDefRegistro')"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="defRegPersonalId">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div class="form-group"><label class="form-label">Fecha de capacitación <span style="color:var(--rojo)">*</span></label>
+            <input type="date" class="form-control" id="defRegFecha"></div>
+          <div class="form-group"><label class="form-label">Vence <span class="muted" style="font-weight:400">(auto)</span></label>
+            <input type="text" class="form-control" id="defRegVence" disabled style="opacity:.8"></div>
+        </div>
+        <div class="form-group"><label class="form-label">Facilitador</label>
+          <input type="text" class="form-control" id="defRegFacilitador" maxlength="150"></div>
+        <div class="form-group"><label class="form-label">Temas tratados</label>
+          <div id="defRegTemas" style="display:flex;flex-direction:column;gap:6px;max-height:180px;overflow:auto;border:1px solid var(--gris-700);border-radius:6px;padding:10px"></div>
+        </div>
+        <div class="form-group"><label class="form-label">Observaciones</label>
+          <textarea class="form-control" id="defRegObs" rows="2" style="resize:vertical"></textarea></div>
+        <div class="form-group"><label class="form-label">Certificado / constancia <span class="muted" style="font-weight:400">(PDF o imagen, opcional)</span></label>
+          <input type="file" class="form-control" id="defRegCert" accept=".pdf,image/*"></div>
+      </div>
+      <div class="modal-footer" style="display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--gris-700)">
+        <button class="btn btn-secondary" onclick="cerrarModal('modalDefRegistro')">Cancelar</button>
+        <button class="btn btn-primary" id="defRegBtn" onclick="guardarDefRegistro()"><i class="fas fa-save"></i> Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: MANEJO DEFENSIVO — HISTORIAL ===== -->
+  <div class="modal-overlay" id="modalDefHistorial">
+    <div class="modal-box" style="max-width:760px;width:97%">
+      <div class="modal-header">
+        <h3><i class="fas fa-clock-rotate-left" style="color:var(--primary)"></i> Historial · <span id="defHistNombre"></span></h3>
+        <button class="modal-close" onclick="cerrarModal('modalDefHistorial')"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="tbl-scroll" id="defHistWrap"><p class="muted" style="text-align:center;padding:24px">Cargando…</p></div>
+      </div>
+      <div class="modal-footer" style="display:flex;justify-content:flex-end;padding:14px 20px;border-top:1px solid var(--gris-700)">
+        <button class="btn btn-secondary" onclick="cerrarModal('modalDefHistorial')">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: MANEJO DEFENSIVO — CONFIGURACIÓN + TEMARIO (admin) ===== -->
+  <div class="modal-overlay" id="modalDefConfig">
+    <div class="modal-box" style="max-width:640px;width:96%">
+      <div class="modal-header">
+        <h3><i class="fas fa-gear" style="color:var(--primary)"></i> Configuración · Manejo a la Defensiva</h3>
+        <button class="modal-close" onclick="cerrarModal('modalDefConfig')"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="card" style="margin-bottom:14px"><div class="card-body" style="padding:14px 16px">
+          <strong style="font-size:13px;color:var(--gris-100)"><i class="fas fa-calendar-check" style="color:var(--primary)"></i> Vigencia / recertificación</strong>
+          <div style="display:flex;align-items:flex-end;gap:10px;margin-top:8px;flex-wrap:wrap">
+            <div class="form-group" style="margin:0"><label class="form-label">Periodicidad (meses)</label>
+              <input type="number" class="form-control" id="defCfgPeriodo" min="0" max="120" style="max-width:130px"></div>
+            <button class="btn btn-primary btn-sm" onclick="guardarDefConfig()"><i class="fas fa-save"></i> Guardar</button>
+            <span class="muted" style="font-size:11px">0 = sin vencimiento.</span>
+          </div>
+        </div></div>
+
+        <div class="card"><div class="card-body" style="padding:14px 16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
+            <strong style="font-size:13px;color:var(--gris-100)"><i class="fas fa-list-check" style="color:var(--primary)"></i> Temario del programa</strong>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+            <input type="text" class="form-control" id="defTemaNuevo" placeholder="Nuevo tema…" style="flex:1;min-width:180px" maxlength="160">
+            <button class="btn btn-primary btn-sm" onclick="agregarDefTema()"><i class="fas fa-plus"></i> Agregar</button>
+          </div>
+          <div id="defTemaLista"><p class="muted" style="text-align:center;padding:14px">Cargando…</p></div>
+        </div></div>
+      </div>
+      <div class="modal-footer" style="display:flex;justify-content:flex-end;padding:14px 20px;border-top:1px solid var(--gris-700)">
+        <button class="btn btn-secondary" onclick="cerrarModal('modalDefConfig')">Cerrar</button>
       </div>
     </div>
   </div>

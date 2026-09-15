@@ -90,16 +90,20 @@ function switchCapTab(tipo) {
 
   const esResumen = tipo === 'resumen';
   const esEscuela = tipo === 'escuela';
+  const esDefensivo = tipo === 'defensivo';
+  const esPadron = esEscuela || esDefensivo;   // pestañas basadas en el padrón de conductores
   const show = (id, on) => { const el = document.getElementById(id); if (el) el.style.display = on ? '' : 'none'; };
-  // Controles que NO aplican al resumen (es una matriz, no registros) ni a la escuela (lista de conductores).
-  show('capBtnNuevo', !esResumen && !esEscuela);
-  show('capEstadoWrap', !esResumen && !esEscuela);
+  // Controles que NO aplican al resumen ni a las pestañas de conductores (escuela/defensivo).
+  show('capBtnNuevo', !esResumen && !esPadron);
+  show('capEstadoWrap', !esResumen && !esPadron);
   show('capCargoWrap', esResumen);
-  show('capAnioWrap', !esEscuela);   // los conductores no se filtran por año
+  show('capAnioWrap', !esPadron);   // los conductores no se filtran por año
   show('capBtnEscEvidencia', esEscuela);
-  show('capVistaToggle', !esResumen && !esEscuela && tipo === 'cronograma');
+  show('capBtnDefConfig', esDefensivo && typeof USER_ROL !== 'undefined' && USER_ROL === 'administrador');
+  show('capVistaToggle', !esResumen && !esPadron && tipo === 'cronograma');
 
   if (esEscuela) { cargarEscuela(); return; }
+  if (esDefensivo) { cargarDefensivo(); return; }
   if (esResumen) { cargarResumen(); return; }
 
   const lbl = document.getElementById('capNuevoLabel');
@@ -131,6 +135,7 @@ function capBuscarDebounced() {
   _capBuscarTimer = setTimeout(() => {
     if (_capTipo === 'resumen') { _capResumenPag = 1; renderResumen(); }
     else if (_capTipo === 'escuela') { _capEscuelaPag = 1; renderEscuela(); }
+    else if (_capTipo === 'defensivo') { _defPag = 1; renderDefensivo(); }
     else cargarCapacitaciones();
   }, 300);
 }
