@@ -450,10 +450,15 @@ function _capEscChk(x, campo) {
   const on = +x[campo] === 1;
   const locked = +x.aprobado === 1;                       // aprobado bloquea las etapas
   const editable = _capEscuelaEditable() && !locked;
-  return '<input type="checkbox" ' + (on ? 'checked' : '') + (editable ? '' : ' disabled') +
+  // No editable (aprobado o solo lectura): indicador con color, no un checkbox apagado.
+  if (!editable) {
+    return on
+      ? '<i class="fas fa-circle-check" title="' + (locked ? 'Completado (bloqueado por aprobación)' : 'Completado') + '" style="color:var(--verde);font-size:18px"></i>'
+      : '<span class="muted" title="Pendiente" style="font-size:16px">—</span>';
+  }
+  return '<input type="checkbox" ' + (on ? 'checked' : '') +
     ' onchange="capEscuelaMarca(' + x.id + ",'" + campo + "',this.checked)\"" +
-    ' title="' + (locked ? 'Bloqueado: conductor aprobado' : '') + '"' +
-    ' style="width:17px;height:17px;accent-color:var(--verde);cursor:' + (editable ? 'pointer' : 'not-allowed') + '">';
+    ' style="width:18px;height:18px;accent-color:var(--verde);cursor:pointer">';
 }
 
 // Columna de aprobación: al marcarla se bloquean las etapas; se puede desmarcar
@@ -461,10 +466,15 @@ function _capEscChk(x, campo) {
 function _capEscAprob(x) {
   const on = +x.aprobado === 1;
   const editable = _capEscuelaEditable();
-  const chk = '<input type="checkbox" ' + (on ? 'checked' : '') + (editable ? '' : ' disabled') +
+  if (!editable) {
+    return on
+      ? '<span class="badge badge-success"><i class="fas fa-circle-check"></i> Aprobado</span>'
+      : '<span class="muted" style="font-size:11px">Pendiente</span>';
+  }
+  const chk = '<input type="checkbox" ' + (on ? 'checked' : '') +
     ' onchange="capEscuelaAprobar(' + x.id + ',this.checked)"' +
-    ' style="width:18px;height:18px;accent-color:var(--azul);cursor:' + (editable ? 'pointer' : 'default') + '">';
-  const badge = on ? '<div style="font-size:10px;color:var(--verde);margin-top:2px"><i class="fas fa-lock"></i> Aprobado</div>' : '';
+    ' style="width:19px;height:19px;accent-color:var(--verde);cursor:pointer">';
+  const badge = on ? '<div style="font-size:10px;color:var(--verde);margin-top:3px;font-weight:700"><i class="fas fa-lock"></i> Aprobado</div>' : '';
   return chk + badge;
 }
 
