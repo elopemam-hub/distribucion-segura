@@ -58,6 +58,7 @@
             </div>
           </div>
           <button class="btn btn-primary" id="capBtnNuevo" onclick="nuevaCapacitacion()"><i class="fas fa-plus"></i> <span id="capNuevoLabel">Nuevo</span></button>
+          <button class="btn btn-outline" id="capBtnEscEvidencia" style="display:none" onclick="abrirEscEvidencia()"><i class="fas fa-paperclip"></i> Evidencia de la escuela</button>
         </div>
       </div>
     </div>
@@ -312,6 +313,49 @@
       <div class="modal-footer" style="display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--gris-700)">
         <button class="btn btn-secondary" onclick="cerrarModal('modalCapMasivo')">Cancelar</button>
         <button class="btn btn-primary" id="capMasBtn" onclick="capAgregarMasivo()"><i class="fas fa-user-check"></i> Agregar seleccionados</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: EVIDENCIA DE LA ESCUELA (compartida por año) ===== -->
+  <div class="modal-overlay" id="modalEscEvidencia">
+    <div class="modal-box" style="max-width:820px;width:97%">
+      <div class="modal-header">
+        <h3><i class="fas fa-paperclip" style="color:var(--primary)"></i> Evidencia de la escuela de conductores</h3>
+        <button class="modal-close" onclick="cerrarModal('modalEscEvidencia')"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group" style="max-width:220px">
+          <label class="form-label">Año / promoción</label>
+          <select class="form-control" id="escEvAnio" onchange="cargarEscEvidencia()"></select>
+        </div>
+
+        <!-- 1. Evidencia fotográfica -->
+        <div class="card" style="margin-bottom:14px"><div class="card-body" style="padding:14px 16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
+            <strong style="font-size:13px;color:var(--gris-100)"><i class="fas fa-camera" style="color:var(--primary)"></i> Evidencia fotográfica</strong>
+            <div id="escUpFotoWrap" style="display:flex;gap:6px;align-items:center">
+              <input type="file" id="escFileFoto" accept="image/*" multiple style="max-width:230px;font-size:12px">
+              <button class="btn btn-primary btn-sm" onclick="escSubirAdjunto('foto')"><i class="fas fa-upload"></i> Subir</button>
+            </div>
+          </div>
+          <div id="escEvFotos" style="display:flex;flex-wrap:wrap;gap:8px"><span class="muted" style="font-size:12px">—</span></div>
+        </div></div>
+
+        <!-- 2. Listas de asistencia firmadas manualmente -->
+        <div class="card"><div class="card-body" style="padding:14px 16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
+            <strong style="font-size:13px;color:var(--gris-100)"><i class="fas fa-file-signature" style="color:var(--primary)"></i> Listas de asistencia firmadas <span class="muted" style="font-weight:400">(escaneadas)</span></strong>
+            <div id="escUpAsisWrap" style="display:flex;gap:6px;align-items:center">
+              <input type="file" id="escFileAsistencia" accept=".pdf,image/*" multiple style="max-width:230px;font-size:12px">
+              <button class="btn btn-primary btn-sm" onclick="escSubirAdjunto('asistencia')"><i class="fas fa-upload"></i> Subir</button>
+            </div>
+          </div>
+          <div id="escEvAsistencia" class="muted" style="font-size:12px">—</div>
+        </div></div>
+      </div>
+      <div class="modal-footer" style="display:flex;justify-content:flex-end;padding:14px 20px;border-top:1px solid var(--gris-700)">
+        <button class="btn btn-secondary" onclick="cerrarModal('modalEscEvidencia')">Cerrar</button>
       </div>
     </div>
   </div>

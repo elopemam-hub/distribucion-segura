@@ -18,13 +18,14 @@ const CAP_ESTADOS  = ['programado', 'en_curso', 'ejecutado', 'reprogramado', 'ca
 // Debe declararse ANTES del switch (los const de nivel superior no se hoistean
 // y adjuntoAdd() la usa desde el dispatch).
 const CAP_ADJ_TIPOS = ['material', 'foto', 'asistencia'];
-// Igual que CAP_ADJ_TIPOS: escuelaMarca() la usa desde el dispatch, así que debe
-// estar declarada antes del switch (los const de nivel superior no se hoistean).
+// Igual que CAP_ADJ_TIPOS: escuelaMarca()/escAdjuntoAdd() las usan desde el dispatch,
+// así que deben declararse antes del switch (los const de nivel superior no se hoistean).
 const ESCUELA_CAMPOS = ['teorico', 'practico', 'examen'];
+const ESC_ADJ_TIPOS  = ['foto', 'asistencia'];
 
 $action = $_GET['action'] ?? $_POST['action'] ?? 'list';
 
-$mutaciones = ['save', 'delete', 'estado', 'adjunto_add', 'adjunto_del', 'asistente_add', 'asistente_masivo', 'asistente_firma', 'asistente_del', 'escuela_marca', 'escuela_aprobar'];
+$mutaciones = ['save', 'delete', 'estado', 'adjunto_add', 'adjunto_del', 'asistente_add', 'asistente_masivo', 'asistente_firma', 'asistente_del', 'escuela_marca', 'escuela_aprobar', 'esc_adjunto_add', 'esc_adjunto_del'];
 if (in_array($action, $mutaciones, true)) {
     requireCsrf();
     $user = getCurrentUser();
@@ -37,7 +38,7 @@ if (in_array($action, $mutaciones, true)) {
     }
     // Escuela de conductores: marcar etapas y aprobar es exclusivo del administrador
     // (los demás roles la ven en solo lectura).
-    if (in_array($action, ['escuela_marca', 'escuela_aprobar'], true) && $user['rol'] !== 'administrador') {
+    if (in_array($action, ['escuela_marca', 'escuela_aprobar', 'esc_adjunto_add', 'esc_adjunto_del'], true) && $user['rol'] !== 'administrador') {
         jsonResponse(false, 'Solo un administrador puede modificar la escuela de conductores.', null, 403);
     }
 }
@@ -64,6 +65,9 @@ try {
         case 'escuela_list':   escuelaList();   break;
         case 'escuela_marca':  escuelaMarca();  break;
         case 'escuela_aprobar':escuelaAprobar();break;
+        case 'esc_evidencia':  escEvidencia();  break;
+        case 'esc_adjunto_add':escAdjuntoAdd(); break;
+        case 'esc_adjunto_del':escAdjuntoDel(); break;
         default: jsonResponse(false, 'Acción no válida.', null, 400);
     }
 } catch (Throwable $e) {
@@ -337,7 +341,7 @@ function asistenteDel() {
 // foto: solo imagen. Valida por extensión (robusto para PDF/Office, cuyo MIME a
 // veces se detecta mal) + verificación de imagen real para fotos. Límite 20MB.
 // Devuelve [ruta|null, nombreOriginal|null, motivo] (motivo: ok|grande|tipo|error).
-function _guardarAdjuntoCap(array $file, string $tipo): array {
+function _guardarAdjuntoCap(array $file, string $tipo, string $carpeta = 'capacitaciones'): array {
     $CAP_MAX = 20 * 1024 * 1024;   // 20MB (hojas escaneadas pesan)
     $err = $file['error'] ?? UPLOAD_ERR_NO_FILE;
     if ($err === UPLOAD_ERR_INI_SIZE || $err === UPLOAD_ERR_FORM_SIZE) return [null, null, 'grande'];
@@ -352,13 +356,15 @@ function _guardarAdjuntoCap(array $file, string $tipo): array {
     if (!in_array($ext, $permit, true)) return [null, null, 'tipo'];
     if (in_array($ext, $imgExt, true) && @getimagesize($file['tmp_name']) === false) return [null, null, 'tipo'];
 
-    $dir = __DIR__ . '/../uploads/capacitaciones/';
+    $carpeta = preg_replace('/[^a-z0-9_]/', '', $carpeta) ?: 'capacitaciones';
+    $dir = __DIR__ . '/../uploads/' . $carpeta . '/';
     if (!is_dir($dir)) mkdir($dir, 0755, true);
     $extNorm = $ext === 'jpeg' ? 'jpg' : $ext;
-    $filename = 'cap_' . $tipo . '_' . bin2hex(random_bytes(6)) . '.' . $extNorm;
+    $prefijo = $carpeta === 'escuela' ? 'esc_' : 'cap_';
+    $filename = $prefijo . $tipo . '_' . bin2hex(random_bytes(6)) . '.' . $extNorm;
     if (move_uploaded_file($file['tmp_name'], $dir . $filename)) {
         @chmod($dir . $filename, 0644);
-        return ['capacitaciones/' . $filename, substr(basename($file['name']), 0, 200), 'ok'];
+        return [$carpeta . '/' . $filename, substr(basename($file['name']), 0, 200), 'ok'];
     }
     return [null, null, 'error'];
 }
@@ -444,6 +450,52 @@ function escuelaAprobar() {
         [$pid, $valor, $en, $porV]
     );
     jsonResponse(true, $valor === 1 ? 'Conductor aprobado.' : 'Aprobación retirada.');
+}
+
+// ── Evidencia compartida de la escuela (por año/promoción) ──
+// (ESC_ADJ_TIPOS se declara arriba, antes del switch.)
+function _escAnio(): int {
+    $a = (int)($_GET['anio'] ?? $_POST['anio'] ?? 0);
+    return ($a >= 2000 && $a <= 2100) ? $a : (int)date('Y');
+}
+
+function escEvidencia() {
+    $anio = _escAnio();
+    $rows = db()->fetchAll(
+        "SELECT id, tipo, archivo, nombre_original, creado_en FROM esc_adjuntos WHERE anio = ? ORDER BY id ASC", [$anio]);
+    // Años con evidencia (para el selector).
+    $anios = array_map('intval', array_column(
+        db()->fetchAll("SELECT DISTINCT anio FROM esc_adjuntos ORDER BY anio DESC"), 'anio'));
+    jsonResponse(true, '', ['anio' => $anio, 'adjuntos' => $rows, 'anios' => $anios]);
+}
+
+function escAdjuntoAdd() {
+    $anio = _escAnio();
+    $tipo = trim($_POST['tipo'] ?? 'foto');
+    if (!in_array($tipo, ESC_ADJ_TIPOS, true)) jsonResponse(false, 'Tipo inválido.', null, 422);
+    if (empty($_FILES['archivo']['tmp_name']) && ($_FILES['archivo']['error'] ?? 0) === UPLOAD_ERR_OK) {
+        jsonResponse(false, 'No se recibió archivo.', null, 422);
+    }
+    [$ruta, $orig, $motivo] = _guardarAdjuntoCap($_FILES['archivo'], $tipo, 'escuela');
+    if (!$ruta) {
+        $msg = $motivo === 'grande' ? 'El archivo es muy grande (máx 20 MB; revisa también el límite del servidor).'
+             : ($motivo === 'tipo' ? 'Tipo no permitido. Usa PDF o imagen (JPG/PNG/WEBP).'
+             : 'No se pudo subir el archivo. Verifica el tamaño y vuelve a intentar.');
+        jsonResponse(false, $msg, null, 422);
+    }
+    db()->query("INSERT INTO esc_adjuntos (anio, tipo, archivo, nombre_original) VALUES (?, ?, ?, ?)",
+        [$anio, $tipo, $ruta, $orig]);
+    jsonResponse(true, 'Archivo subido.', ['id' => db()->lastInsertId()]);
+}
+
+function escAdjuntoDel() {
+    $id = (int)($_POST['id'] ?? 0);
+    if ($id <= 0) jsonResponse(false, 'ID inválido.', null, 400);
+    $r = db()->fetchOne("SELECT archivo FROM esc_adjuntos WHERE id = ?", [$id]);
+    if (!$r) jsonResponse(false, 'No encontrado.', null, 404);
+    if (!empty($r['archivo']) && is_file(__DIR__ . '/../uploads/' . $r['archivo'])) @unlink(__DIR__ . '/../uploads/' . $r['archivo']);
+    db()->query("DELETE FROM esc_adjuntos WHERE id = ?", [$id]);
+    jsonResponse(true, 'Archivo eliminado.');
 }
 
 // ------------------------------------------------------------

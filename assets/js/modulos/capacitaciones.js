@@ -96,6 +96,7 @@ function switchCapTab(tipo) {
   show('capEstadoWrap', !esResumen && !esEscuela);
   show('capCargoWrap', esResumen);
   show('capAnioWrap', !esEscuela);   // los conductores no se filtran por año
+  show('capBtnEscEvidencia', esEscuela);
   show('capVistaToggle', !esResumen && !esEscuela && tipo === 'cronograma');
 
   if (esEscuela) { cargarEscuela(); return; }
@@ -494,6 +495,120 @@ async function capEscuelaAprobar(personalId, on) {
     if (row) row.aprobado = on ? 1 : 0;
     renderEscuela();
   } catch (e) { toast('Error de conexión', 'error'); cargarEscuela(); }
+}
+
+// ── Evidencia compartida de la escuela (fotos + listas firmadas, por año) ──
+let _escEvData = { anio: 0, adjuntos: [] };
+
+function _escLlenarAnios(anios) {
+  const sel = document.getElementById('escEvAnio');
+  if (!sel) return;
+  const actual = new Date().getFullYear();
+  const set = new Set((anios || []).map(Number));
+  for (let a = actual + 1; a >= actual - 5; a--) set.add(a);   // rango razonable
+  const prev = sel.value;
+  sel.innerHTML = Array.from(set).sort((a, b) => b - a).map(a => `<option value="${a}">${a}</option>`).join('');
+  sel.value = prev || String(_escEvData.anio || actual);
+}
+
+async function abrirEscEvidencia() {
+  _escEvData = { anio: new Date().getFullYear(), adjuntos: [] };
+  _escLlenarAnios([]);
+  // Muestra/oculta controles de subida según permiso (solo administrador).
+  const editable = _capEscuelaEditable();
+  ['escUpFotoWrap', 'escUpAsisWrap'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = editable ? 'flex' : 'none'; });
+  abrirModal('modalEscEvidencia');
+  await cargarEscEvidencia();
+}
+
+async function cargarEscEvidencia() {
+  const anio = document.getElementById('escEvAnio')?.value || new Date().getFullYear();
+  try {
+    const r = await fetch('api/capacitaciones.php?action=esc_evidencia&anio=' + encodeURIComponent(anio));
+    const d = await r.json();
+    _escEvData = (d && d.success) ? d.data : { anio: anio, adjuntos: [] };
+    _escLlenarAnios(_escEvData.anios || []);
+  } catch (e) { _escEvData = { anio: anio, adjuntos: [] }; }
+  renderEscEvidencia();
+}
+
+function renderEscEvidencia() {
+  const admin = _capEscuelaEditable();
+  const fotos = (_escEvData.adjuntos || []).filter(a => a.tipo === 'foto');
+  const hojas = (_escEvData.adjuntos || []).filter(a => a.tipo === 'asistencia');
+
+  // Galería de fotos.
+  const gal = document.getElementById('escEvFotos');
+  if (gal) {
+    gal.innerHTML = fotos.length ? fotos.map(a => {
+      const url = _UP() + a.archivo;
+      const del = admin
+        ? '<button onclick="escEliminarAdjunto(' + a.id + ')" title="Quitar" style="position:absolute;top:-6px;right:-6px;background:var(--rojo);color:#fff;border:0;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer">&times;</button>'
+        : '';
+      const nom = (a.nombre_original || a.archivo).replace(/"/g, '');
+      const desc = '<a href="' + encodeURI(url) + '" download="' + escapeHtml(nom) + '" title="Descargar" ' +
+        'style="position:absolute;bottom:3px;right:3px;background:rgba(0,0,0,.62);color:#fff;border-radius:4px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;text-decoration:none"><i class="fas fa-download"></i></a>';
+      return '<div style="position:relative">' +
+        '<img src="' + url + '" onclick="verDocumento(\'' + encodeURI(url) + '\')" style="width:84px;height:84px;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid var(--gris-600)">' + desc + del +
+      '</div>';
+    }).join('') : '<span class="muted" style="font-size:12px">Sin fotos.</span>';
+  }
+
+  // Listas firmadas (documentos).
+  const cont = document.getElementById('escEvAsistencia');
+  if (cont) {
+    cont.innerHTML = hojas.length ? hojas.map(a => {
+      const url = _UP() + a.archivo;
+      const ver = (_capEsImagen(a.archivo) || /\.pdf$/i.test(a.archivo))
+        ? 'onclick="verDocumento(\'' + encodeURI(url) + '\');return false;" href="#"'
+        : 'href="' + url + '" target="_blank" rel="noopener"';
+      const del = admin
+        ? '<button class="btn btn-outline btn-sm" onclick="escEliminarAdjunto(' + a.id + ')" title="Quitar"><i class="fas fa-trash" style="color:var(--rojo)"></i></button>'
+        : '';
+      return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--gris-700)">' +
+        '<i class="fas ' + _capIcono(a.archivo) + '" style="color:var(--primary)"></i>' +
+        '<a ' + ver + ' style="color:var(--gris-100);flex:1;text-decoration:none">' + escapeHtml(a.nombre_original || a.archivo) + '</a>' + del +
+      '</div>';
+    }).join('') : '<span class="muted" style="font-size:12px">Sin listas firmadas.</span>';
+  }
+}
+
+async function escSubirAdjunto(tipo) {
+  const map = { foto: 'escFileFoto', asistencia: 'escFileAsistencia' };
+  const input = document.getElementById(map[tipo]);
+  const files = input ? Array.from(input.files || []) : [];
+  if (!files.length) { toast('Elige un archivo primero', 'warning'); return; }
+  const anio = document.getElementById('escEvAnio')?.value || new Date().getFullYear();
+  const subirUno = async (file) => {
+    const fd = new FormData();
+    fd.append('action', 'esc_adjunto_add'); fd.append('csrf_token', CSRF_TOKEN);
+    fd.append('anio', anio); fd.append('tipo', tipo); fd.append('archivo', file);
+    try {
+      const r = await fetch('api/capacitaciones.php', { method: 'POST', body: fd });
+      const d = await r.json();
+      return d.success ? { ok: true } : { ok: false, msg: (file.name || '') + ': ' + (d.message || 'error') };
+    } catch (e) { return { ok: false, msg: (file.name || '') + ': conexión' }; }
+  };
+  const res = await Promise.all(files.map(subirUno));
+  const ok = res.filter(r => r.ok).length;
+  const fallos = res.filter(r => !r.ok).map(r => r.msg);
+  if (input) input.value = '';
+  if (ok) toast(ok + (ok === 1 ? ' archivo subido' : ' archivos subidos'), 'success');
+  if (fallos.length) toast('No se subieron: ' + fallos.join(' · '), 'error', 6000);
+  cargarEscEvidencia();
+}
+
+async function escEliminarAdjunto(id) {
+  if (!confirm('¿Quitar este archivo?')) return;
+  const fd = new FormData();
+  fd.append('action', 'esc_adjunto_del'); fd.append('csrf_token', CSRF_TOKEN); fd.append('id', id);
+  try {
+    const r = await fetch('api/capacitaciones.php', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (!d.success) { toast(d.message || 'Error', 'error'); return; }
+    toast('Eliminado', 'success');
+    cargarEscEvidencia();
+  } catch (e) { toast('Error de conexión', 'error'); }
 }
 
 async function capEscuelaMarca(personalId, campo, on) {

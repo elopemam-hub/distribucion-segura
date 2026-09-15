@@ -808,6 +808,18 @@ function setupCapacitaciones(): void {
                   WHERE table_schema = DATABASE() AND table_name = 'cap_escuela' AND column_name = ?", [$col]);
             if (!$ex) db()->query("ALTER TABLE cap_escuela ADD COLUMN `$col` $ddl", []);
         }
+
+        // Evidencia de la escuela de conductores, COMPARTIDA por año/promoción:
+        // fotos de la actividad y listas de asistencia firmadas a mano (escaneadas).
+        db()->query("CREATE TABLE IF NOT EXISTS esc_adjuntos (
+            id              INT AUTO_INCREMENT PRIMARY KEY,
+            anio            INT NOT NULL,
+            tipo            ENUM('foto','asistencia') NOT NULL DEFAULT 'foto',
+            archivo         VARCHAR(255) NOT NULL,
+            nombre_original VARCHAR(200) NULL,
+            creado_en       DATETIME DEFAULT CURRENT_TIMESTAMP,
+            KEY idx_escadj (anio, tipo)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", []);
     } catch (Exception $e) {
         error_log('[setupCapacitaciones] ' . $e->getMessage());
     }
