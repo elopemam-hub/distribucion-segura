@@ -44,6 +44,9 @@ const EVP_CAMPOS_DEFAULT = [
   { id: 'nombre',  label: 'Nombre y Apellido', tipo: 'text', required: true },
 ];
 
+// Formularios donde la firma del evaluado es OBLIGATORIA antes de enviar.
+const EVP_FIRMA_OBLIGATORIA = ['examen_defensiva'];
+
 const PUB = {
   id: window.EVAL_PUBLICO_ID || '',
   meta: null,
@@ -109,6 +112,20 @@ function evpRenderForm() {
 
     <div id="evp-secciones">${PUB.secciones.map(evpRenderSeccion).join('')}</div>
 
+    ${EVP_FIRMA_OBLIGATORIA.includes(PUB.id) ? `
+    <div class="card" style="margin-bottom:18px" id="evp-firma-card">
+      <div class="card-header"><h3><i class="fas fa-signature"></i> Firma <span style="color:var(--rojo,#e74c3c)">*</span></h3></div>
+      <div class="card-body">
+        <p style="font-size:12px;color:var(--gris-400,#9aa);margin-bottom:8px">Firma en el recuadro con tu dedo antes de enviar. Es obligatorio.</p>
+        <div style="height:170px;border:1px dashed var(--gris-500,#888);border-radius:8px;background:#fff;overflow:hidden">
+          <canvas id="evp-firma-canvas" width="600" height="170" style="width:100%;height:100%;touch-action:none;cursor:crosshair;display:block"></canvas>
+        </div>
+        <div style="margin-top:8px">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="evpLimpiarFirma()"><i class="fas fa-eraser"></i> Limpiar</button>
+        </div>
+      </div>
+    </div>` : ''}
+
     <div class="evp-submit-bar">
       <button type="button" class="btn btn-primary" id="evp-btn-enviar" onclick="evpEnviar()">
         <i class="fas fa-paper-plane"></i> Enviar Evaluación
@@ -116,6 +133,43 @@ function evpRenderForm() {
     </div>`;
 
   root.innerHTML = html;
+  if (EVP_FIRMA_OBLIGATORIA.includes(PUB.id)) setTimeout(evpInitFirma, 60);
+}
+
+// ── Firma del evaluado (formulario público, con soporte táctil) ──
+let evpFirmaCtx = null, evpFirmaDibujando = false, evpFirmaTieneContenido = false;
+function evpInitFirma() {
+  const canvas = document.getElementById('evp-firma-canvas');
+  if (!canvas) return;
+  // Ajusta el buffer del canvas al tamaño real en pantalla (nítido en móvil).
+  const rect = canvas.getBoundingClientRect();
+  if (rect.width) { canvas.width = Math.round(rect.width); canvas.height = Math.round(rect.height); }
+  evpFirmaCtx = canvas.getContext('2d');
+  evpFirmaCtx.fillStyle = '#FFFFFF';
+  evpFirmaCtx.fillRect(0, 0, canvas.width, canvas.height);
+  evpFirmaCtx.strokeStyle = '#1565C0';
+  evpFirmaCtx.lineWidth = 2.5;
+  evpFirmaCtx.lineCap = 'round';
+  evpFirmaTieneContenido = false;
+  const pos = (e) => {
+    const r = canvas.getBoundingClientRect();
+    const src = e.touches ? e.touches[0] : e;
+    return { x: (src.clientX - r.left) * (canvas.width / r.width), y: (src.clientY - r.top) * (canvas.height / r.height) };
+  };
+  canvas.onmousedown  = e => { evpFirmaDibujando = true; const p = pos(e); evpFirmaCtx.beginPath(); evpFirmaCtx.moveTo(p.x, p.y); };
+  canvas.onmouseup    = () => evpFirmaDibujando = false;
+  canvas.onmouseleave = () => evpFirmaDibujando = false;
+  canvas.onmousemove  = e => { if (!evpFirmaDibujando) return; const p = pos(e); evpFirmaCtx.lineTo(p.x, p.y); evpFirmaCtx.stroke(); evpFirmaTieneContenido = true; };
+  canvas.ontouchstart = e => { e.preventDefault(); evpFirmaDibujando = true; const p = pos(e); evpFirmaCtx.beginPath(); evpFirmaCtx.moveTo(p.x, p.y); };
+  canvas.ontouchend   = e => { e.preventDefault(); evpFirmaDibujando = false; };
+  canvas.ontouchmove  = e => { e.preventDefault(); if (!evpFirmaDibujando) return; const p = pos(e); evpFirmaCtx.lineTo(p.x, p.y); evpFirmaCtx.stroke(); evpFirmaTieneContenido = true; };
+}
+function evpLimpiarFirma() {
+  const canvas = document.getElementById('evp-firma-canvas');
+  if (!evpFirmaCtx || !canvas) return;
+  evpFirmaCtx.fillStyle = '#FFFFFF';
+  evpFirmaCtx.fillRect(0, 0, canvas.width, canvas.height);
+  evpFirmaTieneContenido = false;
 }
 
 function evpRenderCampos(campos) {
@@ -324,6 +378,14 @@ async function evpEnviar() {
   }
   if (incompleto) { evpToast('Completa todas las preguntas / criterios antes de enviar.', 'error'); return; }
 
+  // Firma obligatoria (p. ej. Examen Defensiva).
+  const requiereFirma = EVP_FIRMA_OBLIGATORIA.includes(PUB.id);
+  if (requiereFirma && !evpFirmaTieneContenido) {
+    evpToast('Debes firmar en el recuadro antes de enviar.', 'error');
+    document.getElementById('evp-firma-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+
   const btn = document.getElementById('evp-btn-enviar');
   btn.disabled = true;
   btn.innerHTML = '<div class="spinner"></div> Enviando…';
@@ -339,6 +401,10 @@ async function evpEnviar() {
   fd.append('estado_unidad',  campos.estado_unidad || '');
   fd.append('conductor_tipo', campos.conductor_tipo || '');
   fd.append('respuestas',     JSON.stringify(respuestas));
+  if (requiereFirma && evpFirmaTieneContenido) {
+    const c = document.getElementById('evp-firma-canvas');
+    if (c) fd.append('firma_evaluado', c.toDataURL('image/png'));
+  }
 
   try {
     const r = await fetch('api/eval_publico/guardar.php', { method: 'POST', body: fd });

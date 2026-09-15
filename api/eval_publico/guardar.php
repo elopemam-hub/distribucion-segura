@@ -30,6 +30,9 @@ $conductor_tipo= $cut($_POST['conductor_tipo'] ?? '', 100);
 $observaciones = $cut($_POST['observaciones'] ?? '', 2000);
 $respuestasRaw = $_POST['respuestas'] ?? '{}';
 $respuestas    = json_decode($respuestasRaw, true);
+// Firma dibujada (data URL PNG). Solo se acepta si es una imagen embebida válida.
+$firma         = $_POST['firma_evaluado'] ?? '';
+$firma         = (strpos($firma, 'data:image/') === 0 && strlen($firma) > 100) ? $firma : null;
 
 // ── Validaciones ─────────────────────────────────────────────
 $errores = [];
@@ -61,7 +64,7 @@ try {
             json_encode($respuestas, JSON_UNESCAPED_UNICODE),
             $score['puntaje'], $score['puntaje_maximo'], $score['porcentaje'],
             $observaciones ?: null,
-            null,        // sin firma en el flujo público
+            $firma,      // firma del evaluado (obligatoria en formularios como Examen Defensiva)
             null,        // evaluador_id: respondiente sin cuenta
             'publico',
         ]
