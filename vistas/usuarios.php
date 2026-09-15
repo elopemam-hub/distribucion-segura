@@ -1,4 +1,3 @@
-  <!-- ===== PAGE: USUARIOS ===== -->
   <div class="page-content" id="page-usuarios" style="display:none">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px">
       <div>
@@ -11,14 +10,19 @@
         <i class="fas fa-user-plus"></i> Nuevo Usuario
       </button>
     </div>
+
     <div class="card">
       <div class="card-body" style="padding:0">
         <div class="table-wrap">
           <table class="data-table">
             <thead>
               <tr>
-                <th>Nombre</th><th>Usuario</th><th>Rol</th>
-                <th>Estado</th><th>Creado</th><th>Acciones</th>
+                <th>Nombre</th>
+                <th>Usuario</th>
+                <th>Rol</th>
+                <th>Estado</th>
+                <th>Creado</th>
+                <th>Acciones</th>
               </tr>
             </thead>
             <tbody id="tablaUsuariosBody">
