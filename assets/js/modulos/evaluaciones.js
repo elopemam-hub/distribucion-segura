@@ -933,6 +933,13 @@ async function evalGenerarRegistro(id) {
   if (ok) cargarListadoEval(evalPageActual);
 }
 
+// Abre un registro PDF (adjunto) en el MISMO visor embebido (no en otra pestaña).
+function evalVerRegistroPdf(url) {
+  const fr = document.getElementById('evalPdfFrame'); if (fr) fr.src = url;
+  const ab = document.getElementById('evalPdfAbrir'); if (ab) ab.href = url;
+  abrirModal('modalEvalRegistroPdf');
+}
+
 async function cargarListadoEval(page = 1) {
   evalPageActual = page;
   const params = new URLSearchParams({
@@ -1015,7 +1022,7 @@ function renderTablaEval({ rows, total, page, limit, totalPages }) {
           <i class="fas fa-eye"></i>
         </button>
         ${r.registro_pdf
-          ? `<a class="btn btn-outline btn-sm" href="${_evalUp()}${r.registro_pdf}" target="_blank" rel="noopener" title="Registro de asistencia (PDF adjunto)"><i class="fas fa-file-pdf" style="color:var(--rojo)"></i></a>`
+          ? `<button class="btn btn-outline btn-sm" onclick="evalVerRegistroPdf('${_evalUp()}${r.registro_pdf}')" title="Registro de asistencia (PDF adjunto)"><i class="fas fa-file-pdf" style="color:var(--rojo)"></i></button>`
           : ((USER_ROL === 'administrador' || USER_ROL === 'supervisor') ? `<button class="btn btn-outline btn-sm" onclick="evalGenerarRegistro(${r.id})" title="Generar y adjuntar registro PDF"><i class="fas fa-file-arrow-down"></i></button>` : '')}
         ${(r.estado === 'pendiente_revision' && (USER_ROL === 'administrador' || USER_ROL === 'supervisor')) ? `<button class="btn btn-success btn-sm" onclick="aprobarEvalRapido(${r.id},\`${r.nombre}\`)" title="Aprobar"><i class="fas fa-check"></i></button>` : ''}
         ${USER_ROL === 'administrador' ? `<button class="btn btn-danger btn-sm" onclick="eliminarEvaluacion(${r.id},\`${r.nombre}\`)" title="Eliminar"><i class="fas fa-trash"></i></button>` : ''}

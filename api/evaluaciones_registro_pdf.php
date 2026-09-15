@@ -123,7 +123,8 @@ try { foreach (db()->fetchAll("SELECT formulario_id, categoria_rm050 FROM eval_f
 catch (Throwable $e) {}
 $catsSel = [];
 foreach ($rows as $r) {
-    $c = $formCat[$r['tipo']] ?? (preg_match('/induc/i', $r['tipo'] . ' ' . $tipoLbl($r['tipo'])) ? 'induccion' : '');
+    // Prioridad: categoría fija del formulario → inducción por nombre → 'capacitacion' por defecto.
+    $c = $formCat[$r['tipo']] ?? (preg_match('/induc/i', $r['tipo'] . ' ' . $tipoLbl($r['tipo'])) ? 'induccion' : 'capacitacion');
     if ($c !== '') $catsSel[$c] = 1;
 }
 $marcaCat = (count($catsSel) === 1) ? array_key_first($catsSel) : '';
