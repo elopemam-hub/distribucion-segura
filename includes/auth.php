@@ -784,6 +784,16 @@ function setupCapacitaciones(): void {
             creado_en       DATETIME DEFAULT CURRENT_TIMESTAMP,
             KEY idx_capasis (capacitacion_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", []);
+
+        // Escuela de conductores: avance de cada conductor por etapa
+        // (teórico / práctico / examen). Una fila por trabajador (personal_id).
+        db()->query("CREATE TABLE IF NOT EXISTS cap_escuela (
+            personal_id     INT PRIMARY KEY,
+            teorico         TINYINT(1) NOT NULL DEFAULT 0,
+            practico        TINYINT(1) NOT NULL DEFAULT 0,
+            examen          TINYINT(1) NOT NULL DEFAULT 0,
+            actualizado_en  DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", []);
     } catch (Exception $e) {
         error_log('[setupCapacitaciones] ' . $e->getMessage());
     }

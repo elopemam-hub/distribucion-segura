@@ -435,11 +435,41 @@ async function cargarEscuela() {
   const wrap = document.getElementById('capTablaWrap');
   if (wrap) wrap.innerHTML = '<p class="muted" style="text-align:center;padding:28px">Cargando conductores…</p>';
   try {
-    const r = await fetch('api/personal.php?action=list&cargo=conductor&activo=1&limit=500');
+    const r = await fetch('api/capacitaciones.php?action=escuela_list');
     const d = await r.json();
-    _capEscuelaData = (d && d.success && d.data && d.data.personal) ? d.data.personal : [];
+    _capEscuelaData = (d && d.success && d.data && d.data.items) ? d.data.items : [];
   } catch (e) { _capEscuelaData = []; }
   renderEscuela();
+}
+
+// Marcar/desmarcar etapa de la escuela es solo para admin/supervisor.
+function _capEscuelaEditable() {
+  return typeof USER_ROL !== 'undefined' && (USER_ROL === 'administrador' || USER_ROL === 'supervisor');
+}
+function _capEscChk(x, campo) {
+  const on = +x[campo] === 1;
+  const editable = _capEscuelaEditable();
+  return '<input type="checkbox" ' + (on ? 'checked' : '') + (editable ? '' : ' disabled') +
+    ' onchange="capEscuelaMarca(' + x.id + ",'" + campo + "',this.checked)\"" +
+    ' style="width:17px;height:17px;accent-color:var(--verde);cursor:' + (editable ? 'pointer' : 'default') + '">';
+}
+
+async function capEscuelaMarca(personalId, campo, on) {
+  const fd = new FormData();
+  fd.append('action', 'escuela_marca');
+  fd.append('csrf_token', CSRF_TOKEN);
+  fd.append('personal_id', personalId);
+  fd.append('campo', campo);
+  fd.append('valor', on ? 1 : 0);
+  try {
+    const r = await fetch('api/capacitaciones.php', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (!d.success) { toast(d.message || 'No se pudo guardar', 'error'); cargarEscuela(); return; }
+    // Actualiza el dato en memoria y refresca KPIs (sin recargar del servidor).
+    const row = _capEscuelaData.find(z => +z.id === +personalId);
+    if (row) row[campo] = on ? 1 : 0;
+    renderEscuela();
+  } catch (e) { toast('Error de conexión', 'error'); cargarEscuela(); }
 }
 
 // Badge del brevete según días para vencer (dias_vencer_brevete lo calcula la API).
@@ -463,16 +493,18 @@ function renderEscuela() {
   let items = _capEscuelaData;
   if (q) items = items.filter(x => (x.nombre || '').toLowerCase().includes(q) || String(x.dni || '').includes(q));
 
-  // KPIs por estado del brevete.
+  // KPIs por estado del brevete y avance de la escuela.
   const total = items.length;
-  const activos = items.filter(x => +x.activo === 1).length;
   const vig = items.filter(x => x.dias_vencer_brevete != null && +x.dias_vencer_brevete > 30).length;
   const porVencer = items.filter(x => x.dias_vencer_brevete != null && +x.dias_vencer_brevete >= 0 && +x.dias_vencer_brevete <= 30).length;
   const vencidos = items.filter(x => x.dias_vencer_brevete != null && +x.dias_vencer_brevete < 0).length;
+  const completos = items.filter(x => +x.teorico === 1 && +x.practico === 1 && +x.examen === 1).length;
+  const pctComp = total ? Math.round(completos / total * 100) : 0;
 
   const kpis = document.getElementById('capKpis');
   if (kpis) kpis.innerHTML =
-    _kpi('azul', 'fa-id-card', 'Conductores', total, activos + ' activos') +
+    _kpi('azul', 'fa-id-card', 'Conductores', total, 'activos') +
+    _kpi(pctComp >= 80 ? 'verde' : 'amarillo', 'fa-graduation-cap', 'Escuela completa', completos + ' (' + pctComp + '%)', 'teórico + práctico + examen') +
     _kpi('verde', 'fa-circle-check', 'Brevete vigente', vig, 'más de 30 días') +
     _kpi('amarillo', 'fa-clock', 'Por vencer', porVencer, 'en 30 días o menos') +
     _kpi('naranja', 'fa-triangle-exclamation', 'Vencidos', vencidos, 'requieren renovación');
@@ -490,8 +522,11 @@ function renderEscuela() {
   const rows = items.slice((_capEscuelaPag - 1) * ESCUELA_CAP_PAGE, _capEscuelaPag * ESCUELA_CAP_PAGE);
 
   const head = '<th style="width:5%">N°</th><th>Conductor</th><th>DNI</th><th>Empresa</th>' +
-    '<th>N° Licencia</th><th style="text-align:center">Cat.</th><th>Brevete</th><th>Teléfono</th>' +
-    '<th style="text-align:center">Estado</th>';
+    '<th>N° Licencia</th><th style="text-align:center">Cat.</th><th>Brevete</th>' +
+    '<th style="text-align:center" title="Curso teórico">Teórico</th>' +
+    '<th style="text-align:center" title="Manejo práctico">Práctico</th>' +
+    '<th style="text-align:center" title="Examen de manejo">Examen</th>' +
+    '<th>Teléfono</th><th style="text-align:center">Estado</th>';
 
   const body = rows.map((x, i) => {
     const n = (_capEscuelaPag - 1) * ESCUELA_CAP_PAGE + i + 1;
@@ -510,12 +545,15 @@ function renderEscuela() {
       '<td class="muted">' + escapeHtml(x.num_licencia || '—') + '</td>' +
       '<td style="text-align:center">' + (x.categoria_licencia ? '<span class="badge badge-info">' + escapeHtml(x.categoria_licencia) + '</span>' : '<span class="muted">—</span>') + '</td>' +
       '<td>' + _capBrevete(x) + '</td>' +
+      '<td style="text-align:center">' + _capEscChk(x, 'teorico') + '</td>' +
+      '<td style="text-align:center">' + _capEscChk(x, 'practico') + '</td>' +
+      '<td style="text-align:center">' + _capEscChk(x, 'examen') + '</td>' +
       '<td class="muted">' + escapeHtml(x.telefono || '—') + '</td>' +
       '<td style="text-align:center">' + estado + '</td>' +
     '</tr>';
   }).join('');
 
-  wrap.innerHTML = '<table class="data-table" style="min-width:900px"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table>';
+  wrap.innerHTML = '<table class="data-table" style="min-width:1080px"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table>';
   if (pag) pag.innerHTML = _capPagBar(total, _capEscuelaPag, ESCUELA_CAP_PAGE, 'irEscuelaPagina');
 }
 

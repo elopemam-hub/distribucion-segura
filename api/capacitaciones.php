@@ -21,7 +21,7 @@ const CAP_ADJ_TIPOS = ['material', 'foto', 'asistencia'];
 
 $action = $_GET['action'] ?? $_POST['action'] ?? 'list';
 
-$mutaciones = ['save', 'delete', 'estado', 'adjunto_add', 'adjunto_del', 'asistente_add', 'asistente_masivo', 'asistente_firma', 'asistente_del'];
+$mutaciones = ['save', 'delete', 'estado', 'adjunto_add', 'adjunto_del', 'asistente_add', 'asistente_masivo', 'asistente_firma', 'asistente_del', 'escuela_marca'];
 if (in_array($action, $mutaciones, true)) {
     requireCsrf();
     $user = getCurrentUser();
@@ -53,6 +53,8 @@ try {
         case 'asistente_masivo': asistenteMasivo(); break;
         case 'asistente_firma':asistenteFirma();break;
         case 'asistente_del':  asistenteDel();  break;
+        case 'escuela_list':   escuelaList();   break;
+        case 'escuela_marca':  escuelaMarca();  break;
         default: jsonResponse(false, 'Acción no válida.', null, 400);
     }
 } catch (Throwable $e) {
@@ -350,6 +352,53 @@ function _guardarAdjuntoCap(array $file, string $tipo): array {
         return ['capacitaciones/' . $filename, substr(basename($file['name']), 0, 200), 'ok'];
     }
     return [null, null, 'error'];
+}
+
+// ============================================================
+// ESCUELA DE CONDUCTORES: listado + avance por etapa (teórico/práctico/examen)
+// ============================================================
+const ESCUELA_CAMPOS = ['teorico', 'practico', 'examen'];
+
+function escuelaList() {
+    // Solo conductores ACTIVOS; respeta la restricción por empresa del usuario.
+    [$empRestr, $empRestrP] = empresaWhere('p.empresa_id');
+    $rows = db()->fetchAll(
+        "SELECT p.id, p.nombre, p.dni, p.cargo, p.telefono, p.foto, p.activo,
+                p.num_licencia, p.categoria_licencia, p.vencimiento_brevete,
+                p.empresa, e.razon_social AS empresa_nombre,
+                DATEDIFF(p.vencimiento_brevete, CURDATE()) AS dias_vencer_brevete,
+                COALESCE(ec.teorico, 0)  AS teorico,
+                COALESCE(ec.practico, 0) AS practico,
+                COALESCE(ec.examen, 0)   AS examen
+           FROM personal p
+           LEFT JOIN empresas e     ON e.id = p.empresa_id
+           LEFT JOIN cap_escuela ec ON ec.personal_id = p.id
+          WHERE p.cargo = 'conductor' AND p.activo = 1 $empRestr
+          ORDER BY p.nombre ASC",
+        $empRestrP
+    );
+    jsonResponse(true, '', ['items' => $rows]);
+}
+
+function escuelaMarca() {
+    $pid   = (int)($_POST['personal_id'] ?? 0);
+    $campo = trim($_POST['campo'] ?? '');
+    $valor = ((int)($_POST['valor'] ?? 0) === 1) ? 1 : 0;
+    if ($pid <= 0 || !in_array($campo, ESCUELA_CAMPOS, true)) {
+        jsonResponse(false, 'Datos inválidos.', null, 422);
+    }
+    // El conductor debe existir, estar activo y ser accesible por empresa.
+    $p = db()->fetchOne("SELECT id, empresa_id FROM personal WHERE id = ? AND activo = 1 AND cargo = 'conductor'", [$pid]);
+    if (!$p) jsonResponse(false, 'Conductor no encontrado.', null, 404);
+    if (!empresaEsPermitida($p['empresa_id'] ?? 0)) jsonResponse(false, 'Sin acceso a este conductor.', null, 403);
+
+    // $campo está en lista blanca (ESCUELA_CAMPOS): interpolación segura.
+    db()->query(
+        "INSERT INTO cap_escuela (personal_id, `$campo`) VALUES (?, ?)
+         ON DUPLICATE KEY UPDATE `$campo` = VALUES(`$campo`)",
+        [$pid, $valor]
+    );
+    jsonResponse(true, 'Actualizado.');
 }
 
 // ------------------------------------------------------------
