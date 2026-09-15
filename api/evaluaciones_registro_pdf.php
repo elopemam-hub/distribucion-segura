@@ -19,7 +19,7 @@ try {
     if ($ids) {
         $in = implode(',', $ids);
         $rows = db()->fetchAll(
-            "SELECT tipo, fecha, empresa, nombre, dni, puesto
+            "SELECT tipo, fecha, empresa, nombre, dni, puesto, firma_evaluado
                FROM evaluaciones WHERE id IN ($in) ORDER BY nombre ASC");
     } else {
         $where = ['1=1']; $params = [];
@@ -30,7 +30,7 @@ try {
         if ($desde !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $desde)) { $where[] = 'fecha >= ?'; $params[] = $desde; }
         if ($hasta !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $hasta)) { $where[] = 'fecha <= ?'; $params[] = $hasta; }
         if ($q !== '') { $where[] = '(nombre LIKE ? OR dni LIKE ? OR empresa LIKE ?)'; $lk = "%$q%"; $params[] = $lk; $params[] = $lk; $params[] = $lk; }
-        $rows = db()->fetchAll("SELECT tipo, fecha, empresa, nombre, dni, puesto FROM evaluaciones WHERE " . implode(' AND ', $where) . " ORDER BY nombre ASC LIMIT 500", $params);
+        $rows = db()->fetchAll("SELECT tipo, fecha, empresa, nombre, dni, puesto, firma_evaluado FROM evaluaciones WHERE " . implode(' AND ', $where) . " ORDER BY nombre ASC LIMIT 500", $params);
     }
 } catch (Throwable $e) { $rows = []; }
 
@@ -279,7 +279,7 @@ $fill = max(0, $minRows - count($rows));
         <td class="cnom"><?= $h($nom) ?></td>
         <td class="ccargo" contenteditable="true"><?= $h($cargoByDni[$r['dni']] ?? $r['puesto']) ?: '&nbsp;' ?></td>
         <td class="carea"><?= $g('ct_area') !== '' ? $h($g('ct_area')) : '' ?></td>
-        <td class="cfirma"></td>
+        <td class="cfirma"><?php if (!empty($r['firma_evaluado']) && strpos($r['firma_evaluado'], 'data:image/') === 0): ?><img src="<?= $h($r['firma_evaluado']) ?>" style="max-height:34px;max-width:100%;display:block;margin:0 auto"><?php endif; ?></td>
         <td class="cobs"></td>
       </tr>
       <?php endforeach; ?>

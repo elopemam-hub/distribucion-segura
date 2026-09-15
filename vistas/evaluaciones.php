@@ -146,6 +146,20 @@
           </div>
         </div>
 
+        <!-- Firma del evaluado (obligatoria; se muestra según el tipo, p. ej. Examen Defensiva) -->
+        <div class="card" style="margin-bottom:18px" id="eval-firma-card">
+          <div class="card-header"><h3><i class="fas fa-signature"></i> Firma del Evaluado <span style="color:var(--rojo)">*</span></h3></div>
+          <div class="card-body">
+            <p style="font-size:11px;color:var(--gris-400);margin-bottom:8px">El evaluado debe firmar en el recuadro antes de enviar. Con esta firma el sistema genera automáticamente el registro de asistencia firmado.</p>
+            <div class="firma-canvas-wrap" style="height:140px">
+              <canvas id="evalFirmaEvaluadoCanvas" width="760" height="140" style="max-width:100%;height:100%;touch-action:none"></canvas>
+            </div>
+            <div class="firma-actions" style="margin-top:6px">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="limpiarFirmaEvaluado()"><i class="fas fa-eraser"></i> Limpiar</button>
+            </div>
+          </div>
+        </div>
+
         <!-- Botones -->
         <div style="display:flex;justify-content:flex-end;gap:12px;padding-bottom:40px">
           <button type="button" class="btn btn-secondary" onclick="cancelarEvaluacion()">

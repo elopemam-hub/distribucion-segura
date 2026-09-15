@@ -281,6 +281,9 @@ function getEvalCfg(tipo) {
 // ── Estado del módulo ────────────────────────────────────────
 let evalTipoActual = null;
 let evalAprobFirmaCtx = null, evalAprobFirmaDrawing = false, evalAprobFirmaHasContent = false;
+let evalEvalFirmaCtx = null, evalEvalFirmaDrawing = false, evalEvalFirmaHasContent = false;
+// Tipos donde la firma del evaluado es OBLIGATORIA antes de enviar.
+const EVAL_FIRMA_OBLIGATORIA = ['examen_defensiva'];
 let evalIdActual = null;
 let evalPageActual = 1;
 
@@ -306,6 +309,14 @@ async function seleccionarTipoEval(tipo) {
   document.getElementById('eval-form-titulo').textContent = cfg.titulo;
   renderCamposIdentificacion(cfg);
   document.getElementById('eval-observaciones').value = '';
+
+  // Firma del evaluado: obligatoria en ciertos tipos (p. ej. Examen Defensiva).
+  const firmaCard = document.getElementById('eval-firma-card');
+  if (firmaCard) {
+    const requiere = EVAL_FIRMA_OBLIGATORIA.includes(tipo);
+    firmaCard.style.display = requiere ? '' : 'none';
+    if (requiere) setTimeout(initFirmaEvaluado, 60);
+  }
 
   const secContainer = document.getElementById('eval-secciones');
   secContainer.innerHTML = '<div style="text-align:center;padding:40px"><div class="spinner"></div><p style="margin-top:12px;color:var(--gris-400);font-size:13px">Cargando preguntas...</p></div>';
@@ -688,6 +699,14 @@ async function guardarEvaluacion() {
   }
   if (incompleto) { toast('Completa todas las preguntas / criterios antes de guardar.', 'error'); return; }
 
+  // Firma del evaluado obligatoria en ciertos tipos (p. ej. Examen Defensiva).
+  const requiereFirma = EVAL_FIRMA_OBLIGATORIA.includes(evalTipoActual);
+  if (requiereFirma && !evalEvalFirmaHasContent) {
+    toast('El evaluado debe firmar antes de enviar.', 'error');
+    document.getElementById('eval-firma-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+
   const btn = document.getElementById('btnGuardarEval');
   btn.disabled = true;
   btn.innerHTML = '<div class="spinner"></div> Guardando...';
@@ -705,6 +724,10 @@ async function guardarEvaluacion() {
   fd.append('conductor_tipo',campos.conductor_tipo || '');
   fd.append('observaciones', document.getElementById('eval-observaciones').value);
   fd.append('respuestas',    JSON.stringify(respuestas));
+  if (requiereFirma && evalEvalFirmaHasContent) {
+    const c = document.getElementById('evalFirmaEvaluadoCanvas');
+    if (c) fd.append('firma_evaluado', c.toDataURL('image/png'));
+  }
 
   try {
     const resp = await fetch('api/guardar_evaluacion.php', { method: 'POST', body: fd });
@@ -713,7 +736,15 @@ async function guardarEvaluacion() {
       const pct = data.data.porcentaje;
       const color = pct >= 80 ? 'success' : pct >= 60 ? 'warning' : 'error';
       toast(`✔ Evaluación guardada · ${pct}% (${data.data.puntaje}/${data.data.puntaje_max} pts)`, color, 6000);
+      const nuevoId = data.data.id;
       cancelarEvaluacion();
+      // El sistema genera automáticamente el registro de asistencia firmado (R.M. 050).
+      if (requiereFirma && nuevoId) {
+        const url = 'api/evaluaciones_registro_pdf.php?ids=' + encodeURIComponent(nuevoId);
+        const fr = document.getElementById('evalPdfFrame'); if (fr) fr.src = url;
+        const ab = document.getElementById('evalPdfAbrir'); if (ab) ab.href = url;
+        abrirModal('modalEvalRegistroPdf');
+      }
     } else {
       toast(data.message || 'Error al guardar.', 'error');
     }
@@ -756,6 +787,39 @@ function limpiarFirmaAprobador() {
   evalAprobFirmaCtx.fillStyle = '#FFFFFF';
   evalAprobFirmaCtx.fillRect(0, 0, canvas.width, canvas.height);
   evalAprobFirmaHasContent = false;
+}
+
+// ── Firma del evaluado (en el formulario de llenado) ──────────
+function initFirmaEvaluado() {
+  const canvas = document.getElementById('evalFirmaEvaluadoCanvas');
+  if (!canvas) return;
+  evalEvalFirmaCtx = canvas.getContext('2d');
+  evalEvalFirmaCtx.fillStyle = '#FFFFFF';
+  evalEvalFirmaCtx.fillRect(0, 0, canvas.width, canvas.height);
+  evalEvalFirmaCtx.strokeStyle = '#1565C0';
+  evalEvalFirmaCtx.lineWidth = 2;
+  evalEvalFirmaCtx.lineCap = 'round';
+  evalEvalFirmaHasContent = false;
+
+  const pos = (e, r) => {
+    const src = e.touches ? e.touches[0] : e;
+    return { x: (src.clientX - r.left) * (canvas.width / r.width), y: (src.clientY - r.top) * (canvas.height / r.height) };
+  };
+  canvas.onmousedown  = e => { evalEvalFirmaDrawing = true; const r = canvas.getBoundingClientRect(), p = pos(e,r); evalEvalFirmaCtx.beginPath(); evalEvalFirmaCtx.moveTo(p.x,p.y); };
+  canvas.onmouseup    = () => evalEvalFirmaDrawing = false;
+  canvas.onmouseleave = () => evalEvalFirmaDrawing = false;
+  canvas.onmousemove  = e => { if (!evalEvalFirmaDrawing) return; const r = canvas.getBoundingClientRect(), p = pos(e,r); evalEvalFirmaCtx.lineTo(p.x,p.y); evalEvalFirmaCtx.stroke(); evalEvalFirmaHasContent = true; };
+  canvas.ontouchstart = e => { e.preventDefault(); evalEvalFirmaDrawing = true; const r = canvas.getBoundingClientRect(), p = pos(e,r); evalEvalFirmaCtx.beginPath(); evalEvalFirmaCtx.moveTo(p.x,p.y); };
+  canvas.ontouchend   = () => evalEvalFirmaDrawing = false;
+  canvas.ontouchmove  = e => { e.preventDefault(); if (!evalEvalFirmaDrawing) return; const r = canvas.getBoundingClientRect(), p = pos(e,r); evalEvalFirmaCtx.lineTo(p.x,p.y); evalEvalFirmaCtx.stroke(); evalEvalFirmaHasContent = true; };
+}
+
+function limpiarFirmaEvaluado() {
+  const canvas = document.getElementById('evalFirmaEvaluadoCanvas');
+  if (!evalEvalFirmaCtx || !canvas) return;
+  evalEvalFirmaCtx.fillStyle = '#FFFFFF';
+  evalEvalFirmaCtx.fillRect(0, 0, canvas.width, canvas.height);
+  evalEvalFirmaHasContent = false;
 }
 
 // ── Listado ───────────────────────────────────────────────────
