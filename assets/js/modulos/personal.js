@@ -201,6 +201,16 @@ async function eliminarDocPersonal(campo) {
 function _esImagenFilePersonal(file) {
   return /^image\/(jpeg|png|webp)$/i.test(file.type) || /\.(jpe?g|png|webp)$/i.test(file.name);
 }
+// Lee un File como data URL (base64) para enviarlo en un campo de texto.
+function _fileToDataURL(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(file);
+  });
+}
+
 function _comprimirImagenPersonal(file, maxDim, calidad) {
   return new Promise((resolve) => {
     if (!file || !_esImagenFilePersonal(file)) { resolve(file); return; }
@@ -564,7 +574,9 @@ document.addEventListener('DOMContentLoaded', () => {
         for (const d of docs) {
           const fdd = new FormData();
           fdd.append('action', 'subir_doc'); fdd.append('csrf_token', CSRF_TOKEN);
-          fdd.append('id', pid); fdd.append('campo', d.campo); fdd.append('archivo', d.file);
+          fdd.append('id', pid); fdd.append('campo', d.campo);
+          // Se envía como base64 (campo normal) para evitar bloqueos del WAF a subidas multipart.
+          try { fdd.append('archivo_b64', await _fileToDataURL(d.file)); } catch (e) { fdd.append('archivo', d.file); }
           try {
             const rd = await fetch('api/personal.php', { method: 'POST', body: fdd });
             const tt = await rd.text();

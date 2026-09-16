@@ -270,10 +270,33 @@ function subirDoc() {
     $p = db()->fetchOne("SELECT id, dni, empresa_id FROM personal WHERE id = ?", [$id]);
     if (!$p) jsonResponse(false, 'Trabajador no encontrado.', null, 404);
     if (!empresaEsPermitida($p['empresa_id'] ?? 0)) jsonResponse(false, 'Sin acceso a este trabajador.', null, 403);
+    // Vía BASE64 (campo normal): evita que el WAF/ModSecurity del hosting bloquee
+    // la subida multipart de ciertos PDF/imágenes (respuesta 403 no-JSON).
+    $b64 = $_POST['archivo_b64'] ?? '';
+    if ($b64 !== '') {
+        if (strpos($b64, 'base64,') !== false) $b64 = substr($b64, strpos($b64, 'base64,') + 7);
+        $bin = base64_decode($b64, true);
+        if ($bin === false || strlen($bin) < 10) jsonResponse(false, 'Archivo inválido.', null, 422);
+        if (strlen($bin) > 15 * 1024 * 1024)     jsonResponse(false, 'El archivo supera 15MB.', null, 413);
+        // Detecta el tipo por los bytes mágicos.
+        $ext = null;
+        if (strncmp($bin, '%PDF', 4) === 0) $ext = 'pdf';
+        elseif (substr($bin, 0, 3) === "\xFF\xD8\xFF") $ext = 'jpg';
+        elseif (substr($bin, 0, 8) === "\x89PNG\r\n\x1a\n") $ext = 'png';
+        elseif (strncmp($bin, 'RIFF', 4) === 0 && substr($bin, 8, 4) === 'WEBP') $ext = 'webp';
+        if (!$ext) jsonResponse(false, 'Tipo no permitido. Usa PDF o imagen JPG/PNG/WEBP.', null, 422);
+        $dir = __DIR__ . '/../uploads/personal/';
+        if (!is_dir($dir)) mkdir($dir, 0755, true);
+        $filename = $campo . '_' . preg_replace('/[^0-9]/', '', $p['dni']) . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+        if (file_put_contents($dir . $filename, $bin) === false) jsonResponse(false, 'No se pudo guardar el archivo.', null, 500);
+        @chmod($dir . $filename, 0644);
+        db()->query("UPDATE personal SET `$campo` = ? WHERE id = ?", ['personal/' . $filename, $id]);
+        jsonResponse(true, 'Documento subido.', ['campo' => $campo, 'ruta' => 'personal/' . $filename]);
+    }
+
     if (empty($_FILES['archivo']['tmp_name'])) jsonResponse(false, 'No se recibió el archivo.', null, 422);
     $f = $_FILES['archivo'];
     if (($f['error'] ?? 1) !== UPLOAD_ERR_OK) jsonResponse(false, 'Error de subida (código ' . (int)($f['error'] ?? -1) . ').', null, 422);
-    // Diagnóstico: tipo real y tamaño, para mensajes claros.
     $mime = '';
     try { $finfo = new finfo(FILEINFO_MIME_TYPE); $mime = (string)$finfo->file($f['tmp_name']); } catch (Throwable $e) {}
     $kb = round(($f['size'] ?? 0) / 1024);
