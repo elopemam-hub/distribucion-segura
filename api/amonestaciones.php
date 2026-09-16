@@ -29,6 +29,9 @@ if ($action === 'delete') {
     }
 }
 
+// Provisión: columnas para personal NO registrado en el módulo Personal (nombre libre).
+_amonSetupManual();
+
 try {
     switch ($action) {
         case 'list':   listar();  break;
@@ -45,6 +48,22 @@ try {
 }
 
 // ============================================================
+// Agrega columnas para registrar personal que NO está en el módulo Personal
+// (nombre/DNI/cargo escritos a mano). Idempotente.
+function _amonSetupManual() {
+    foreach ([
+        'personal_nombre_manual' => 'VARCHAR(160) NULL',
+        'personal_dni_manual'    => 'VARCHAR(20) NULL',
+        'personal_cargo_manual'  => 'VARCHAR(80) NULL',
+    ] as $col => $ddl) {
+        try {
+            $ex = db()->fetchOne("SELECT 1 FROM information_schema.columns
+                  WHERE table_schema = DATABASE() AND table_name = 'amonestaciones' AND column_name = ?", [$col]);
+            if (!$ex) db()->query("ALTER TABLE amonestaciones ADD COLUMN `$col` $ddl", []);
+        } catch (Throwable $e) { error_log('[amon setup] ' . $e->getMessage()); }
+    }
+}
+
 function listar() {
     $tipo   = trim($_GET['tipo']   ?? '');
     $estado = trim($_GET['estado'] ?? '');
@@ -76,9 +95,9 @@ function listar() {
 
     $rows = db()->fetchAll(
         "SELECT a.*,
-                p.nombre AS personal_nombre,
-                p.cargo  AS personal_cargo,
-                p.dni    AS personal_dni,
+                COALESCE(p.nombre, a.personal_nombre_manual) AS personal_nombre,
+                COALESCE(p.cargo,  a.personal_cargo_manual)  AS personal_cargo,
+                COALESCE(p.dni,    a.personal_dni_manual)    AS personal_dni,
                 u.nombre AS creado_por_nombre
          FROM amonestaciones a
          LEFT JOIN personal  p ON p.id = a.personal_id
@@ -104,7 +123,7 @@ function obtener() {
     if ($id <= 0) jsonResponse(false, 'ID inválido.', null, 400);
 
     $row = db()->fetchOne(
-        "SELECT a.*, p.nombre AS personal_nombre
+        "SELECT a.*, COALESCE(p.nombre, a.personal_nombre_manual) AS personal_nombre
          FROM amonestaciones a
          LEFT JOIN personal p ON p.id = a.personal_id
          WHERE a.id = ?",
@@ -146,10 +165,15 @@ function guardar() {
     $planAcciones     = trim($_POST['plan_acciones']      ?? '');
     $fechaCierre      = $_POST['fecha_cierre'] ?? null;
 
+    // Personal manual (cuando NO está en el módulo Personal): nombre libre + opcional DNI/cargo.
+    $nombreManual = trim($_POST['personal_nombre'] ?? '');
+    $dniManual    = trim($_POST['personal_dni_manual'] ?? '');
+    $cargoManual  = trim($_POST['personal_cargo_manual'] ?? '');
+
     if (!in_array($tipo, ['bancarizacion','n3','telemetria'], true))
         jsonResponse(false, 'Tipo inválido.', null, 422);
-    if ($personalId <= 0)
-        jsonResponse(false, 'Selecciona un personal.', null, 422);
+    if ($personalId <= 0 && $nombreManual === '')
+        jsonResponse(false, 'Selecciona un personal de la lista o escribe el nombre.', null, 422);
     if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha))
         jsonResponse(false, 'Fecha inválida.', null, 422);
     if ($descripcion === '' && $tipo === 'telemetria') $descripcion = '—';
@@ -168,7 +192,11 @@ function guardar() {
 
     $data = [
         'tipo'               => $tipo,
-        'personal_id'        => $personalId,
+        'personal_id'        => $personalId ?: null,
+        // Si está en la lista (personal_id), se usan sus datos; si no, se guarda el nombre libre.
+        'personal_nombre_manual' => $personalId > 0 ? null : ($nombreManual ?: null),
+        'personal_dni_manual'    => $personalId > 0 ? null : ($dniManual ?: null),
+        'personal_cargo_manual'  => $personalId > 0 ? null : ($cargoManual ?: null),
         'fecha'              => $fecha,
         'descripcion'        => $descripcion ?: '',
         'monto'              => ($monto !== null && $monto !== '') ? (float)$monto : null,

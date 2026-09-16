@@ -236,6 +236,7 @@ function abrirModalAmon(tipo) {
   document.getElementById('formAmon').reset();
   document.getElementById('amon_id').value=''; document.getElementById('amon_tipo').value=tipo;
   document.getElementById('amon_personal_id').value='';
+  _amonToggleManual(false);
   document.getElementById('amon_fecha').value=new Date().toISOString().slice(0,10);
   document.getElementById('modalAmonTitulo').textContent='Nueva — '+AMON_TITULOS[tipo];
   const prev=document.getElementById('amon_imagen_preview'); if(prev) prev.style.display='none';
@@ -271,8 +272,11 @@ async function editarAmon(id) {
   if (!d.success) { toast(d.message,'error'); return; }
   const a=d.data;
   document.getElementById('amon_id').value=a.id; document.getElementById('amon_tipo').value=a.tipo;
-  document.getElementById('amon_personal_id').value=a.personal_id;
+  document.getElementById('amon_personal_id').value=a.personal_id||'';
   document.getElementById('amon_personal_nombre').value=a.personal_nombre||'';
+  document.getElementById('amon_personal_dni_manual').value=a.personal_dni_manual||'';
+  document.getElementById('amon_personal_cargo_manual').value=a.personal_cargo_manual||'';
+  _amonToggleManual(!a.personal_id);   // sin personal enlazado → campos manuales visibles
   document.getElementById('amon_fecha').value=a.fecha||'';
   document.getElementById('amon_descripcion').value=a.descripcion||'';
   document.getElementById('amon_estado').value=a.estado||'pendiente';
@@ -327,16 +331,20 @@ async function eliminarAmon(id) {
   if(d.success){toast('Eliminada','success');cargarAmonestaciones();}else toast(d.message,'error');
 }
 
+// Muestra/oculta los campos manuales (DNI/cargo) según haya o no un personal elegido de la lista.
+function _amonToggleManual(mostrar){const b=document.getElementById('amonManualBox');if(b)b.style.display=mostrar?'grid':'none';}
 async function buscarPersonalAmon(q) {
   const ac=document.getElementById('amonPersonalAC'); document.getElementById('amon_personal_id').value='';
+  // Al no haber selección de la lista, se habilitan los campos manuales (personal no registrado).
+  _amonToggleManual(q.trim().length>0);
   if(q.length<2){cerrarAmonAC();return;}
   const r=await fetch(`api/personal.php?action=buscar&q=${encodeURIComponent(q)}`), d=await r.json();
   const items=d.data||[];
-  if(!items.length){ac.innerHTML='<div class="auto-item auto-empty">Sin resultados</div>';ac.style.display='block';return;}
+  if(!items.length){ac.innerHTML='<div class="auto-item auto-empty">Sin resultados · puedes registrarlo manualmente abajo</div>';ac.style.display='block';return;}
   ac.innerHTML=items.map(p=>`<div class="auto-item" onclick="seleccionarPersonalAmon(${p.id},'${escapeHtml(p.nombre)}')"><strong>${escapeHtml(p.nombre)}</strong><span style="font-size:11px;color:var(--gris-400);margin-left:8px">${p.cargo} · DNI ${p.dni}</span></div>`).join('');
   ac.style.display='block';
 }
-function seleccionarPersonalAmon(id,nombre){document.getElementById('amon_personal_id').value=id;document.getElementById('amon_personal_nombre').value=nombre;cerrarAmonAC();}
+function seleccionarPersonalAmon(id,nombre){document.getElementById('amon_personal_id').value=id;document.getElementById('amon_personal_nombre').value=nombre;cerrarAmonAC();_amonToggleManual(false);}
 function cerrarAmonAC(){const ac=document.getElementById('amonPersonalAC');if(ac){ac.innerHTML='';ac.style.display='none';}}
 
 // ============================================================
@@ -638,12 +646,17 @@ document.addEventListener('DOMContentLoaded', () => {
   if (fAmon) fAmon.addEventListener('submit', async e => {
     e.preventDefault();
     const tipo=document.getElementById('amon_tipo').value;
-    if (!document.getElementById('amon_personal_id').value){toast('Selecciona un personal del listado','error');return;}
+    const pid=document.getElementById('amon_personal_id').value;
+    const pnombre=document.getElementById('amon_personal_nombre').value.trim();
+    if (!pid && !pnombre){toast('Elige un personal de la lista o escribe el nombre','error');return;}
     const fd=new FormData();
     fd.append('action','save'); fd.append('csrf_token',CSRF_TOKEN);
     fd.append('id',document.getElementById('amon_id').value);
     fd.append('tipo',tipo);
-    fd.append('personal_id',document.getElementById('amon_personal_id').value);
+    fd.append('personal_id',pid||'0');
+    fd.append('personal_nombre',pnombre);   // nombre libre (si no está en la lista)
+    fd.append('personal_dni_manual',(document.getElementById('amon_personal_dni_manual')?.value||'').trim());
+    fd.append('personal_cargo_manual',(document.getElementById('amon_personal_cargo_manual')?.value||'').trim());
     fd.append('fecha',document.getElementById('amon_fecha').value);
     fd.append('descripcion',document.getElementById('amon_descripcion').value.trim());
     fd.append('estado',document.getElementById('amon_estado').value);

@@ -27,6 +27,11 @@
             <input type="text" class="form-control" id="amon_personal_nombre" placeholder="Buscar por nombre o DNI..." autocomplete="off"
                    oninput="buscarPersonalAmon(this.value)" required>
             <div class="autocomplete-box" id="amonPersonalAC"></div>
+            <small class="muted" style="font-size:11px;display:block;margin-top:4px">Elige de la lista; si <strong>no está registrado</strong> en Personal, escribe el nombre completo y completa (opcional) DNI y cargo abajo.</small>
+            <div id="amonManualBox" style="display:none;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">
+              <input type="text" class="form-control" id="amon_personal_dni_manual" placeholder="DNI (si no está en la lista)" maxlength="20">
+              <input type="text" class="form-control" id="amon_personal_cargo_manual" placeholder="Cargo (si no está en la lista)" maxlength="80">
+            </div>
           </div>
           <div class="form-group">
             <label class="form-label">Fecha *</label>
