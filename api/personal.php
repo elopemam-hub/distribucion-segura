@@ -23,7 +23,7 @@ setupUsuarioEmpresas();   // restricción de empresas por usuario (Fase 3)
 $action = $_GET['action'] ?? $_POST['action'] ?? 'list';
 
 // Acciones que modifican datos requieren CSRF
-$mutaciones = ['save', 'delete', 'importar_excel', 'eliminar_doc'];
+$mutaciones = ['save', 'delete', 'importar_excel', 'eliminar_doc', 'subir_doc'];
 if (in_array($action, $mutaciones, true)) {
     requireCsrf();
     // Solo admin/supervisor pueden mutar
@@ -46,6 +46,7 @@ try {
         case 'buscar':    buscar(); break;
         case 'importar_excel': importarExcel(); break;
         case 'eliminar_doc':   eliminarDoc(); break;
+        case 'subir_doc':      subirDoc(); break;
         default:
             jsonResponse(false, 'Acción no válida.', null, 400);
     }
@@ -257,6 +258,24 @@ function guardar() {
         );
         jsonResponse(true, 'Personal creado.', ['id' => db()->lastInsertId()]);
     }
+}
+
+// ------------------------------------------------------------
+// Sube UN documento adjunto (petición independiente por archivo, para no topar
+// con el post_max_size al enviar todos juntos). Actualiza la columna del doc.
+function subirDoc() {
+    $id    = (int)($_POST['id'] ?? 0);
+    $campo = trim($_POST['campo'] ?? '');
+    if ($id <= 0 || !in_array($campo, PERSONAL_DOC_COLS, true)) jsonResponse(false, 'Datos inválidos.', null, 422);
+    $p = db()->fetchOne("SELECT id, dni, empresa_id FROM personal WHERE id = ?", [$id]);
+    if (!$p) jsonResponse(false, 'Trabajador no encontrado.', null, 404);
+    if (!empresaEsPermitida($p['empresa_id'] ?? 0)) jsonResponse(false, 'Sin acceso a este trabajador.', null, 403);
+    if (empty($_FILES['archivo']['tmp_name'])) jsonResponse(false, 'No se recibió el archivo.', null, 422);
+    $ruta = guardarArchivo($_FILES['archivo'], $p['dni'], $campo);
+    if (!$ruta) jsonResponse(false, 'No se pudo subir el archivo (tipo no permitido o muy grande).', null, 422);
+    // $campo está en lista blanca (PERSONAL_DOC_COLS): interpolación segura.
+    db()->query("UPDATE personal SET `$campo` = ? WHERE id = ?", [$ruta, $id]);
+    jsonResponse(true, 'Documento subido.', ['campo' => $campo, 'ruta' => $ruta]);
 }
 
 // ------------------------------------------------------------

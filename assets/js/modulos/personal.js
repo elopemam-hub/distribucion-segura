@@ -524,39 +524,58 @@ document.addEventListener('DOMContentLoaded', () => {
     fd.append('observaciones',        document.getElementById('personal_observaciones').value.trim());
     fd.append('activo',               document.getElementById('personal_activo').value);
     fd.append('tipo_contrato',        document.getElementById('personal_tipo_contrato').value);
-    // Recolecta archivos (foto + documentos) y valida tamaños antes de enviar.
-    const MAX_ARCH = 5 * 1024 * 1024;      // 5MB por archivo
-    const MAX_TOTAL = 55 * 1024 * 1024;    // margen bajo el post_max_size del servidor
-    const adjuntos = [];
-    const foto=document.getElementById('personal_foto').files[0];
-    if (foto) adjuntos.push({ campo:'foto', file:foto, label:'Foto de perfil' });
-    PERSONAL_DOCS.forEach(c=>{
-      const f=document.getElementById('personal_'+c).files[0];
-      if (f) adjuntos.push({ campo:c, file:f, label:c });
-    });
-    // Comprime imágenes en el navegador (los PDF pasan igual) para evitar límites de tamaño.
-    for (const a of adjuntos) { a.file = await _comprimirImagenPersonal(a.file, 1600, 0.8); }
-    const grandes = adjuntos.filter(a => a.file.size > MAX_ARCH).map(a => a.file.name);
-    if (grandes.length) { toast('Estos archivos superan 5MB: ' + grandes.join(', ') + '. Redúcelos y reintenta.', 'error', 7000); return; }
-    const total = adjuntos.reduce((s,a)=>s+a.file.size,0);
-    if (total > MAX_TOTAL) { toast('El total de archivos es muy grande (' + (total/1048576).toFixed(1) + 'MB). Sube menos documentos por vez o comprímelos.', 'error', 7000); return; }
-    adjuntos.forEach(a => fd.append(a.campo, a.file));
+    // Recolecta archivos y valida tamaños (5MB por archivo). Se comprimen las
+    // imágenes; la FOTO va en el guardado y cada DOCUMENTO se sube por separado
+    // para no superar el límite del servidor al enviar todo junto.
+    const MAX_ARCH = 5 * 1024 * 1024;
+    let foto = document.getElementById('personal_foto').files[0] || null;
+    const docs = [];
+    PERSONAL_DOCS.forEach(c => { const df = document.getElementById('personal_' + c).files[0]; if (df) docs.push({ campo: c, file: df }); });
+
+    if (foto) foto = await _comprimirImagenPersonal(foto, 1600, 0.8);
+    for (const d of docs) { d.file = await _comprimirImagenPersonal(d.file, 1600, 0.85); }
+
+    const grandes = [foto ? { campo: 'foto', file: foto } : null, ...docs]
+      .filter(a => a && a.file.size > MAX_ARCH).map(a => a.file.name);
+    if (grandes.length) { toast('Estos archivos superan 5MB (comprime o usa uno más liviano): ' + grandes.join(', '), 'error', 7000); return; }
+
+    if (foto) fd.append('foto', foto);   // la foto va con el guardado (es pequeña)
 
     const btnG = document.getElementById('btnGuardarPersonal');
     const btnTxt = btnG ? btnG.innerHTML : '';
     if (btnG) { btnG.disabled = true; btnG.innerHTML = '<div class="spinner"></div> Guardando…'; }
     try {
-      const r=await fetch('api/personal.php',{method:'POST',body:fd});
-      let data=null;
+      // 1) Guarda datos + foto y obtiene el id.
+      const r = await fetch('api/personal.php', { method: 'POST', body: fd });
       const txt = await r.text();
-      try { data = JSON.parse(txt); } catch (e) { data = null; }
+      let data = null; try { data = JSON.parse(txt); } catch (e) {}
       if (!data) {
-        // Respuesta no-JSON: casi siempre límite de tamaño del servidor rechazando el POST.
-        if (r.status === 413 || !r.ok) toast('El servidor rechazó la subida (archivos muy grandes). Sube menos documentos por vez.', 'error', 7000);
-        else toast('Respuesta inesperada del servidor. Reintenta.', 'error', 6000);
-      } else if (data.success) { toast(data.message,'success'); cerrarModal('modalPersonal'); cargarPersonal(); }
-      else toast(data.message||'No se pudo guardar','error');
-    } catch { toast('Error de conexión','error'); }
+        toast((r.status === 413 || !r.ok) ? 'El servidor rechazó la subida. Reduce el tamaño de la foto.' : 'Respuesta inesperada del servidor.', 'error', 7000);
+        return;
+      }
+      if (!data.success) { toast(data.message || 'No se pudo guardar', 'error'); return; }
+      const pid = data.data && data.data.id;
+
+      // 2) Sube cada documento por separado (una petición por archivo).
+      let okDocs = 0; const falloDocs = [];
+      if (pid && docs.length) {
+        if (btnG) btnG.innerHTML = '<div class="spinner"></div> Subiendo documentos…';
+        for (const d of docs) {
+          const fdd = new FormData();
+          fdd.append('action', 'subir_doc'); fdd.append('csrf_token', CSRF_TOKEN);
+          fdd.append('id', pid); fdd.append('campo', d.campo); fdd.append('archivo', d.file);
+          try {
+            const rd = await fetch('api/personal.php', { method: 'POST', body: fdd });
+            const jd = await rd.json();
+            jd && jd.success ? okDocs++ : falloDocs.push(d.campo);
+          } catch (e) { falloDocs.push(d.campo); }
+        }
+      }
+
+      if (falloDocs.length) toast('Guardado, pero no se subieron: ' + falloDocs.join(', ') + '. Reintenta esos documentos.', 'warning', 7000);
+      else toast(data.message + (okDocs ? ' · ' + okDocs + ' documento(s) subido(s)' : ''), 'success');
+      cerrarModal('modalPersonal'); cargarPersonal();
+    } catch { toast('Error de conexión', 'error'); }
     finally { if (btnG) { btnG.disabled = false; btnG.innerHTML = btnTxt; } }
   });
 
