@@ -953,6 +953,7 @@ function evalVerRegistroPdf(url) {
 
 async function cargarListadoEval(page = 1) {
   evalPageActual = page;
+  if (!evalFormulariosCache.length) { try { await cargarFormulariosEval(); } catch (e) {} }
   const params = new URLSearchParams({
     tipo:   document.getElementById('filtroEvalTipo')?.value   || '',
     estado: document.getElementById('filtroEvalEstado')?.value || '',
@@ -973,10 +974,59 @@ async function cargarListadoEval(page = 1) {
       return;
     }
     renderTablaEval(data.data);
+    evalRenderPills(data.data.por_tipo || {}, data.data.total_todos || 0);
+    evalRenderKpis(data.data.stats || null);
   } catch (err) {
     if (tbody) tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--gris-400)">Error de conexión con el servidor.</td></tr>';
     console.error('[evaluaciones]', err);
   }
+}
+
+// Filtra el listado por tipo desde las píldoras.
+function evalFiltrarTipo(tipo) {
+  const sel = document.getElementById('filtroEvalTipo');
+  if (sel) sel.value = tipo;
+  cargarListadoEval(1);
+}
+
+// Píldoras por tipo (dinámicas desde el banco) con contador; resalta la activa.
+function evalRenderPills(porTipo, totalTodos) {
+  const cont = document.getElementById('evalTipoPills');
+  if (!cont) return;
+  const activo = document.getElementById('filtroEvalTipo')?.value || '';
+  const pill = (id, label, icon, color, count, on) => {
+    const base = 'display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:999px;cursor:pointer;font-size:13px;font-weight:600;border:1.5px solid;transition:all .15s;';
+    const style = on
+      ? base + `background:${color};border-color:${color};color:#fff`
+      : base + `background:transparent;border-color:var(--gris-600);color:var(--gris-200)`;
+    const badgeStyle = on
+      ? 'background:rgba(255,255,255,.25);color:#fff'
+      : `background:${color}22;color:${color}`;
+    return `<span onclick="evalFiltrarTipo('${id}')" style="${style}">` +
+      (icon ? `<i class="fas ${icon}"></i>` : '') + label +
+      `<span style="${badgeStyle};padding:1px 8px;border-radius:999px;font-size:11px;font-weight:700">${count}</span></span>`;
+  };
+  let html = pill('', 'Todos', 'fa-layer-group', 'var(--primary)', totalTodos, activo === '');
+  (evalFormulariosCache || []).forEach(f => {
+    html += pill(f.formulario_id, f.titulo, f.icono, f.color || '#1565C0', porTipo[f.formulario_id] || 0, activo === f.formulario_id);
+  });
+  cont.innerHTML = html;
+}
+
+// KPIs del tipo/filtro seleccionado.
+function evalRenderKpis(stats) {
+  const cont = document.getElementById('evalKpis');
+  if (!cont) return;
+  if (!stats) { cont.innerHTML = ''; return; }
+  const kpi = (color, icon, label, value, sub) =>
+    `<div class="kpi-card ${color}"><div class="kpi-label">${label}</div>` +
+    `<div class="kpi-value ${color}">${value}</div><div class="kpi-sub">${sub}</div>` +
+    `<i class="fas ${icon} kpi-icon"></i></div>`;
+  cont.innerHTML =
+    kpi('azul', 'fa-clipboard-list', 'Total', stats.total, 'evaluaciones') +
+    kpi(stats.pct_aprob >= 80 ? 'verde' : 'amarillo', 'fa-circle-check', 'Aprobados', stats.aprobados + ' (' + stats.pct_aprob + '%)', 'del total') +
+    kpi('amarillo', 'fa-clock', 'Pendientes', stats.pendientes, 'por revisar') +
+    kpi('naranja', 'fa-circle-xmark', 'Desaprobados', stats.desaprobados, 'no conformes');
 }
 
 const TIPO_LABELS = {

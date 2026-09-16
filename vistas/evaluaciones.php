@@ -50,7 +50,7 @@
       <div class="card" style="margin-bottom:18px">
         <div class="card-body" style="padding:16px 22px">
           <div class="filter-bar">
-            <div class="form-group">
+            <div class="form-group" style="display:none">
               <label class="form-label">Tipo</label>
               <select class="form-control" id="filtroEvalTipo">
                 <option value="">Todos</option>
@@ -81,6 +81,12 @@
           </div>
         </div>
       </div>
+
+      <!-- Píldoras por tipo -->
+      <div id="evalTipoPills" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px"></div>
+
+      <!-- KPIs del tipo seleccionado -->
+      <div class="kpi-grid" id="evalKpis" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr));margin-bottom:16px"></div>
 
       <!-- Tabla -->
       <div class="card">

@@ -16,19 +16,23 @@ $offset = ($page - 1) * $limit;
 
 try {
 
-$where  = ['1=1'];
-$params = [];
-
-if ($tipo   !== '') { $where[] = 'e.tipo = ?';   $params[] = $tipo; }
-if ($estado !== '') { $where[] = 'e.estado = ?'; $params[] = $estado; }
-if ($desde  !== '') { $where[] = 'e.fecha >= ?'; $params[] = $desde; }
-if ($hasta  !== '') { $where[] = 'e.fecha <= ?'; $params[] = $hasta; }
+// WHERE SIN el tipo (para contar por tipo con los demás filtros vigentes).
+$whereNT = ['1=1'];
+$paramsNT = [];
+if ($estado !== '') { $whereNT[] = 'e.estado = ?'; $paramsNT[] = $estado; }
+if ($desde  !== '') { $whereNT[] = 'e.fecha >= ?'; $paramsNT[] = $desde; }
+if ($hasta  !== '') { $whereNT[] = 'e.fecha <= ?'; $paramsNT[] = $hasta; }
 if ($q      !== '') {
-    $where[] = '(e.nombre LIKE ? OR e.dni LIKE ? OR e.empresa LIKE ?)';
+    $whereNT[] = '(e.nombre LIKE ? OR e.dni LIKE ? OR e.empresa LIKE ?)';
     $like = '%' . $q . '%';
-    $params[] = $like; $params[] = $like; $params[] = $like;
+    $paramsNT[] = $like; $paramsNT[] = $like; $paramsNT[] = $like;
 }
+$whereNTStr = implode(' AND ', $whereNT);
 
+// WHERE completo (incluye el tipo) para el listado y los KPIs del tipo elegido.
+$where  = $whereNT;
+$params = $paramsNT;
+if ($tipo !== '') { $where[] = 'e.tipo = ?'; $params[] = $tipo; }
 $whereStr = implode(' AND ', $where);
 
 $total = (int)db()->fetchOne(
@@ -62,13 +66,39 @@ $tipoLabels = [
 foreach ($rows as &$r) {
     $r['tipo_label'] = $tipoLabels[$r['tipo']] ?? $r['tipo'];
 }
+unset($r);
+
+// Conteo por tipo (respeta estado/fecha/búsqueda, ignora el tipo) → para las píldoras.
+$porTipo = [];
+foreach (db()->fetchAll("SELECT e.tipo, COUNT(*) c FROM evaluaciones e WHERE $whereNTStr GROUP BY e.tipo", $paramsNT) as $t) {
+    $porTipo[$t['tipo']] = (int)$t['c'];
+}
+$totalTodos = array_sum($porTipo);
+
+// KPIs del filtro actual (incluye el tipo si está elegido).
+$st = db()->fetchOne(
+    "SELECT COUNT(*) total,
+            SUM(e.estado='aprobado') aprobados,
+            SUM(e.estado='desaprobado') desaprobados,
+            SUM(e.estado='pendiente_revision') pendientes
+       FROM evaluaciones e WHERE $whereStr", $params);
+$stats = [
+    'total'        => (int)($st['total'] ?? 0),
+    'aprobados'    => (int)($st['aprobados'] ?? 0),
+    'desaprobados' => (int)($st['desaprobados'] ?? 0),
+    'pendientes'   => (int)($st['pendientes'] ?? 0),
+];
+$stats['pct_aprob'] = $stats['total'] ? round($stats['aprobados'] / $stats['total'] * 100) : 0;
 
 jsonResponse(true, '', [
-    'rows'       => $rows,
-    'total'      => $total,
-    'page'       => $page,
-    'limit'      => $limit,
-    'totalPages' => (int)ceil($total / $limit),
+    'rows'        => $rows,
+    'total'       => $total,
+    'page'        => $page,
+    'limit'       => $limit,
+    'totalPages'  => (int)ceil($total / $limit),
+    'por_tipo'    => $porTipo,
+    'total_todos' => $totalTodos,
+    'stats'       => $stats,
 ]);
 
 } catch (Exception $e) {
