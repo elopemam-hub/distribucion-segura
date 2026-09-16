@@ -36,14 +36,41 @@ async function cargarDefensivo() {
   renderDefensivo();
 }
 
-// Estado de vigencia del manejo defensivo.
+// Estado de vigencia del manejo defensivo: considera lo MÁS RECIENTE entre
+//  (a) la capacitación de manejo defensivo (def_registros) y
+//  (b) el Examen Defensiva APROBADO (Evaluaciones).
+// El vencimiento del examen = fecha del examen + periodicidad configurada.
+function _diasDesde(fechaISO) {
+  if (!fechaISO) return null;
+  const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+  return Math.round((new Date(fechaISO + 'T00:00:00') - hoy) / 86400000);
+}
 function _defEstado(x) {
-  if (!x.n_reg || !x.ult_fecha) return { k: 'sin', label: 'Sin registro', badge: 'badge-secondary' };
-  if (x.ult_venc == null || x.dias_venc == null) return { k: 'ok', label: 'Al día', badge: 'badge-success' };
-  const d = parseInt(x.dias_venc, 10);
-  if (d < 0) return { k: 'venc', label: 'Vencido', badge: 'badge-danger' };
-  if (d <= 30) return { k: 'porv', label: 'Por vencer (' + d + 'd)', badge: 'badge-warning' };
-  return { k: 'ok', label: 'Al día', badge: 'badge-success' };
+  const per = _defPeriodicidad || 12;
+  const cands = [];
+  // (a) Capacitación de manejo defensivo.
+  if (x.n_reg && x.ult_fecha) cands.push({ origen: 'capacitación', venc: x.ult_venc || null });
+  // (b) Examen Defensiva aprobado.
+  if (x.examen_fecha && x.examen_estado === 'aprobado') {
+    let ev = null;
+    if (per > 0) { const d = new Date(x.examen_fecha + 'T00:00:00'); d.setMonth(d.getMonth() + per); ev = d.toISOString().slice(0, 10); }
+    cands.push({ origen: 'examen defensiva', venc: ev });
+  }
+  if (!cands.length) return { k: 'sin', label: 'Sin registro', badge: 'badge-secondary', origen: '' };
+
+  // Elige la mejor vigencia (mayor días para vencer); sin vencimiento = al día.
+  let best = null;   // { dias, origen }
+  let sinVenc = null;
+  for (const c of cands) {
+    if (!c.venc) { sinVenc = c.origen; continue; }
+    const dias = _diasDesde(c.venc);
+    if (best === null || dias > best.dias) best = { dias: dias, origen: c.origen };
+  }
+  if (sinVenc && (best === null || best.dias < 0)) return { k: 'ok', label: 'Al día', badge: 'badge-success', origen: sinVenc };
+  const d = best.dias;
+  if (d < 0)  return { k: 'venc', label: 'Vencido', badge: 'badge-danger', origen: best.origen };
+  if (d <= 30) return { k: 'porv', label: 'Por vencer (' + d + 'd)', badge: 'badge-warning', origen: best.origen };
+  return { k: 'ok', label: 'Al día', badge: 'badge-success', origen: best.origen };
 }
 
 function renderDefensivo() {
@@ -123,7 +150,8 @@ function renderDefensivo() {
       '<td class="muted">' + escapeHtml(x.empresa_nombre || x.empresa || '—') + '</td>' +
       '<td class="muted">' + (x.ult_fecha ? _capFecha(x.ult_fecha) : '—') + '</td>' +
       '<td class="muted">' + (x.ult_venc ? _capFecha(x.ult_venc) : '—') + '</td>' +
-      '<td style="text-align:center"><span class="badge ' + e.badge + '">' + e.label + '</span></td>' +
+      '<td style="text-align:center"><span class="badge ' + e.badge + '"' + (e.origen ? ' title="Según ' + e.origen + '"' : '') + '>' + e.label + '</span>' +
+        (e.origen === 'examen defensiva' ? '<div class="muted" style="font-size:9px">vía examen</div>' : '') + '</td>' +
       examCell +
       '<td style="text-align:right;white-space:nowrap">' + acciones + '</td>' +
     '</tr>';
