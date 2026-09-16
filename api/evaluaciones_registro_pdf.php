@@ -149,9 +149,9 @@ $fill = max(0, $minRows - count($rows));
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Registro de evaluaciones</title>
 <style>
-  @page { size: A4 portrait; margin: 6mm; }
+  @page { size: 210mm 297mm portrait; margin: 8mm; }   /* A4 explícito */
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: Arial, 'Segoe UI', sans-serif; color: #000; font-size: 9px; background: #eceef1; }
+  body { font-family: Arial, 'Segoe UI', sans-serif; color: #000; font-size: 10px; background: #eceef1; }
   .sheet { background: #fff; width: 194mm; margin: 0 auto; padding: 3mm; }
   .toolbar { max-width: 194mm; margin: 10px auto; display: flex; gap: 8px; justify-content: flex-end; }
   .toolbar .hint { margin-right: auto; font-size: 12px; color: #555; }
@@ -160,7 +160,7 @@ $fill = max(0, $minRows - count($rows));
 
   /* Tamaño de letra UNIFORME (10px) en todo el formato. */
   table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-  td, th { border: 1px solid #000; padding: 1px 3px; vertical-align: middle; word-wrap: break-word; font-size: 9px; }
+  td, th { border: 1px solid #000; padding: 2px 4px; vertical-align: middle; word-wrap: break-word; font-size: 10px; }
   .band { background: #d9d9d9; font-weight: 700; text-transform: uppercase; text-align: center; }
   .lbl { background: #f2f2f2; text-align: center; font-weight: 700; }
   .val { color: #1f4e79; text-align: center; font-weight: 600; }
@@ -170,7 +170,7 @@ $fill = max(0, $minRows - count($rows));
   .hl { background: #ffff00; }
   .tema { text-align: left; font-weight: 600; line-height: 1.2; }
   .asis th { background: #f2f2f2; text-transform: uppercase; text-align: center; }
-  .asis td { height: 20px; vertical-align: top; padding-top: 2px; }
+  .asis td { height: 30px; vertical-align: top; padding-top: 3px; }
   .cnum { width: 3%; text-align: center; } .cdni { width: 8%; text-align: center; }
   .cap1 { width: 15%; } .cap2 { width: 15%; } .cnom { width: 16%; }
   .ccargo { width: 11%; text-transform: uppercase; } .carea { width: 7%; text-align: center; }
@@ -336,7 +336,7 @@ $fill = max(0, $minRows - count($rows));
       var sheet = document.querySelector('.sheet');
       if (!sheet) return;
       var mmPx = 96 / 25.4;
-      var pageH = (297 - 12) * mmPx;   // A4 alto - márgenes @page (6mm x2)
+      var pageH = (297 - 16) * mmPx;   // A4 alto - márgenes @page (8mm x2)
       function fit() {
         sheet.style.zoom = '1';
         var h = sheet.getBoundingClientRect().height;
