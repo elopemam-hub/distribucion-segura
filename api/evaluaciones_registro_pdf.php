@@ -170,7 +170,7 @@ $fill = max(0, $minRows - count($rows));
   .hl { background: #ffff00; }
   .tema { text-align: left; font-weight: 600; line-height: 1.2; }
   .asis th { background: #f2f2f2; text-transform: uppercase; text-align: center; }
-  .asis td { height: 30px; vertical-align: top; padding-top: 3px; }
+  .asis td { height: 42px; vertical-align: top; padding-top: 3px; }
   .cnum { width: 3%; text-align: center; } .cdni { width: 8%; text-align: center; }
   .cap1 { width: 15%; } .cap2 { width: 15%; } .cnom { width: 16%; }
   .ccargo { width: 11%; text-transform: uppercase; } .carea { width: 7%; text-align: center; }
