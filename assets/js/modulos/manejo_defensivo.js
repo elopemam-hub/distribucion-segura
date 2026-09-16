@@ -321,3 +321,102 @@ async function eliminarDefTema(id) {
   if (d && d.success) { toast('Tema eliminado', 'success'); cargarDefTemas(); }
   else toast((d && d.message) || 'Error', 'error');
 }
+
+// ── Registro / programación masiva ──
+let _defMasSel = new Set();
+
+function _defMasVence() {
+  const f = document.getElementById('defMasFecha')?.value;
+  const out = document.getElementById('defMasVence');
+  if (!out) return;
+  if (!f || !_defPeriodicidad || _defPeriodicidad <= 0) { out.value = _defPeriodicidad <= 0 ? 'Sin vencimiento' : '—'; return; }
+  const d = new Date(f + 'T00:00:00');
+  d.setMonth(d.getMonth() + _defPeriodicidad);
+  out.value = ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2) + '/' + d.getFullYear();
+}
+
+async function abrirDefMasivo() {
+  _defMasSel = new Set();
+  document.getElementById('defMasFecha').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('defMasFacilitador').value = '';
+  document.getElementById('defMasObs').value = '';
+  document.getElementById('defMasBuscar').value = '';
+  document.getElementById('defMasTodos').checked = false;
+  document.getElementById('defMasFecha').onchange = _defMasVence;
+  _defMasVence();
+  // Si no hay padrón cargado, lo trae.
+  if (!_defData.length) { try { await cargarDefensivo(); } catch (e) {} }
+  // Temas (checkboxes).
+  const cont = document.getElementById('defMasTemas');
+  cont.innerHTML = '<span class="muted" style="font-size:12px">Cargando temas…</span>';
+  abrirModal('modalDefMasivo');
+  renderDefMasLista();
+  try {
+    const r = await fetch('api/manejo_defensivo.php?action=tema_list');
+    const d = await r.json();
+    const temas = (d && d.success) ? (d.data.temas || []).filter(t => +t.activo === 1) : [];
+    cont.innerHTML = temas.length ? temas.map(t =>
+      '<label class="modulo-check" style="margin:0;display:flex;gap:8px;align-items:center">' +
+        '<input type="checkbox" class="def-mas-tema" value="' + t.id + '" style="width:15px;height:15px;accent-color:var(--primary)"> ' +
+        '<span>' + escapeHtml(t.nombre) + '</span></label>').join('')
+      : '<span class="muted" style="font-size:12px">Sin temas configurados.</span>';
+  } catch (e) { cont.innerHTML = '<span class="muted" style="font-size:12px">No se pudieron cargar los temas.</span>'; }
+}
+
+function _defMasVisibles() {
+  const q = (document.getElementById('defMasBuscar')?.value || '').trim().toLowerCase();
+  return _defData.filter(p => !q || (p.nombre || '').toLowerCase().includes(q) || String(p.dni || '').includes(q));
+}
+
+function renderDefMasLista() {
+  const cont = document.getElementById('defMasLista');
+  if (!cont) return;
+  const vis = _defMasVisibles();
+  if (!vis.length) { cont.innerHTML = '<p class="muted" style="text-align:center;padding:18px">Sin conductores.</p>'; _defMasCount(); return; }
+  cont.innerHTML = vis.map(p => {
+    const e = _defEstado(p);
+    return '<label style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--gris-700);cursor:pointer">' +
+      '<input type="checkbox" class="def-mas-chk" value="' + p.id + '" ' + (_defMasSel.has(+p.id) ? 'checked' : '') + ' onchange="defMasToggle(' + p.id + ',this.checked)" style="width:16px;height:16px;accent-color:var(--primary)">' +
+      '<span style="flex:1"><span style="font-weight:600;color:var(--gris-100)">' + escapeHtml(p.nombre) + '</span>' +
+      '<span class="muted" style="font-size:11px;margin-left:6px">' + escapeHtml(p.dni || '') + '</span></span>' +
+      '<span class="badge ' + e.badge + '" style="font-size:10px">' + e.label + '</span>' +
+    '</label>';
+  }).join('');
+  _defMasCount();
+}
+
+function defMasToggle(id, on) { if (on) _defMasSel.add(+id); else _defMasSel.delete(+id); _defMasCount(); }
+function defMasSelTodos(on) {
+  _defMasVisibles().forEach(p => { if (on) _defMasSel.add(+p.id); else _defMasSel.delete(+p.id); });
+  document.querySelectorAll('.def-mas-chk').forEach(c => { c.checked = on; });
+  _defMasCount();
+}
+function _defMasCount() { const el = document.getElementById('defMasCount'); if (el) el.textContent = _defMasSel.size; }
+
+async function guardarDefMasivo() {
+  const fecha = document.getElementById('defMasFecha').value;
+  if (!fecha) { toast('Indica la fecha de capacitación', 'warning'); return; }
+  if (!_defMasSel.size) { toast('Selecciona al menos un conductor', 'warning'); return; }
+  const temas = Array.from(document.querySelectorAll('.def-mas-tema:checked')).map(c => +c.value);
+
+  const fd = new FormData();
+  fd.append('action', 'save_masivo');
+  fd.append('csrf_token', CSRF_TOKEN);
+  fd.append('fecha', fecha);
+  fd.append('facilitador', document.getElementById('defMasFacilitador').value.trim());
+  fd.append('observaciones', document.getElementById('defMasObs').value.trim());
+  fd.append('temas', JSON.stringify(temas));
+  fd.append('personal_ids', JSON.stringify(Array.from(_defMasSel)));
+
+  const btn = document.getElementById('defMasBtn');
+  if (btn) btn.disabled = true;
+  try {
+    const r = await fetch('api/manejo_defensivo.php', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (!d.success) { toast(d.message || 'No se pudo registrar', 'error'); return; }
+    toast(d.message || 'Registrado', 'success');
+    cerrarModal('modalDefMasivo');
+    cargarDefensivo();
+  } catch (e) { toast('Error de conexión', 'error'); }
+  finally { if (btn) btn.disabled = false; }
+}

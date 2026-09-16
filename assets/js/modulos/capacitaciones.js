@@ -99,6 +99,8 @@ function switchCapTab(tipo) {
   show('capCargoWrap', esResumen);
   show('capAnioWrap', !esPadron);   // los conductores no se filtran por año
   show('capBtnEscEvidencia', esEscuela);
+  const defEdit = typeof USER_ROL !== 'undefined' && (USER_ROL === 'administrador' || USER_ROL === 'supervisor');
+  show('capBtnDefMasivo', esDefensivo && defEdit);
   show('capBtnDefConfig', esDefensivo && typeof USER_ROL !== 'undefined' && USER_ROL === 'administrador');
   show('capVistaToggle', !esResumen && !esPadron && tipo === 'cronograma');
 

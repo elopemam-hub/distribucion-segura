@@ -20,7 +20,7 @@ $action = $_GET['action'] ?? $_POST['action'] ?? 'list';
 
 // Mutaciones: CSRF + rol. Registrar/eliminar → admin+supervisor;
 // configuración y temario → solo administrador.
-$mutaciones      = ['save', 'delete_reg', 'config_save', 'tema_save', 'tema_del'];
+$mutaciones      = ['save', 'save_masivo', 'delete_reg', 'config_save', 'tema_save', 'tema_del'];
 $soloAdminActions = ['config_save', 'tema_save', 'tema_del', 'delete_reg'];
 if (in_array($action, $mutaciones, true)) {
     requireCsrf();
@@ -40,6 +40,7 @@ try {
         case 'list':        defList();       break;
         case 'historial':   defHistorial();  break;
         case 'save':        defSave();       break;
+        case 'save_masivo': defSaveMasivo(); break;
         case 'delete_reg':  defDeleteReg();  break;
         case 'config_get':  defConfigGet();  break;
         case 'config_save': defConfigSave(); break;
@@ -175,6 +176,50 @@ function defSave() {
         ]
     );
     jsonResponse(true, 'Registro guardado.', ['id' => db()->lastInsertId(), 'vencimiento' => $venc]);
+}
+
+// Registro masivo: una misma fecha/temas para varios conductores.
+function defSaveMasivo() {
+    $fecha = trim($_POST['fecha'] ?? '');
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha)) jsonResponse(false, 'Fecha inválida.', null, 422);
+
+    $ids = json_decode($_POST['personal_ids'] ?? '[]', true);
+    $ids = is_array($ids) ? array_values(array_unique(array_filter(array_map('intval', $ids), fn($v) => $v > 0))) : [];
+    if (!count($ids)) jsonResponse(false, 'Selecciona al menos un conductor.', null, 422);
+
+    // Vencimiento según periodicidad (igual que el individual).
+    $meses = defPeriodicidad();
+    $venc  = $meses > 0 ? date('Y-m-d', strtotime("$fecha +$meses months")) : null;
+
+    // Snapshot de temas (nombres) una sola vez.
+    $temasTxt = null;
+    $tids = json_decode($_POST['temas'] ?? '[]', true);
+    if (is_array($tids) && count($tids)) {
+        $tids = array_values(array_filter(array_map('intval', $tids), fn($v) => $v > 0));
+        if ($tids) {
+            $ph = implode(',', array_fill(0, count($tids), '?'));
+            $nombres = array_column(db()->fetchAll("SELECT nombre FROM def_temas WHERE id IN ($ph) ORDER BY orden ASC", $tids), 'nombre');
+            if ($nombres) $temasTxt = implode(' · ', $nombres);
+        }
+    }
+
+    $facilitador = trim($_POST['facilitador'] ?? '') ?: null;
+    $obs = trim($_POST['observaciones'] ?? '') ?: null;
+    $user = getCurrentUser();
+    $uid = $user['id'] ?? null;
+
+    $ok = 0;
+    foreach ($ids as $pid) {
+        // Solo conductores activos y accesibles por empresa.
+        $p = db()->fetchOne("SELECT id, empresa_id FROM personal WHERE id = ? AND activo = 1 AND cargo = 'conductor'", [$pid]);
+        if (!$p || !empresaEsPermitida($p['empresa_id'] ?? 0)) continue;
+        db()->query(
+            "INSERT INTO def_registros (personal_id, fecha, vencimiento, facilitador, temas, observaciones, creado_por)
+             VALUES (?, ?, ?, ?, ?, ?, ?)",
+            [$pid, $fecha, $venc, $facilitador, $temasTxt, $obs, $uid]);
+        $ok++;
+    }
+    jsonResponse(true, $ok . ' conductor(es) registrado(s).', ['registrados' => $ok]);
 }
 
 function defDeleteReg() {

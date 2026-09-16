@@ -60,6 +60,7 @@
           </div>
           <button class="btn btn-primary" id="capBtnNuevo" onclick="nuevaCapacitacion()"><i class="fas fa-plus"></i> <span id="capNuevoLabel">Nuevo</span></button>
           <button class="btn btn-outline" id="capBtnEscEvidencia" style="display:none" onclick="abrirEscEvidencia()"><i class="fas fa-paperclip"></i> Evidencia de la escuela</button>
+          <button class="btn btn-primary" id="capBtnDefMasivo" style="display:none" onclick="abrirDefMasivo()"><i class="fas fa-users"></i> Registrar masivo</button>
           <button class="btn btn-outline" id="capBtnDefConfig" style="display:none" onclick="abrirDefConfig()"><i class="fas fa-gear"></i> Configurar</button>
         </div>
       </div>
@@ -390,6 +391,49 @@
       <div class="modal-footer" style="display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--gris-700)">
         <button class="btn btn-secondary" onclick="cerrarModal('modalDefRegistro')">Cancelar</button>
         <button class="btn btn-primary" id="defRegBtn" onclick="guardarDefRegistro()"><i class="fas fa-save"></i> Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: MANEJO DEFENSIVO — REGISTRO MASIVO ===== -->
+  <div class="modal-overlay" id="modalDefMasivo">
+    <div class="modal-box" style="max-width:720px;width:97%">
+      <div class="modal-header">
+        <h3><i class="fas fa-users" style="color:var(--primary)"></i> Registrar manejo defensivo (masivo)</h3>
+        <button class="modal-close" onclick="cerrarModal('modalDefMasivo')"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div class="form-group"><label class="form-label">Fecha de capacitación <span style="color:var(--rojo)">*</span></label>
+            <input type="date" class="form-control" id="defMasFecha"></div>
+          <div class="form-group"><label class="form-label">Vence <span class="muted" style="font-weight:400">(auto)</span></label>
+            <input type="text" class="form-control" id="defMasVence" disabled style="opacity:.8"></div>
+        </div>
+        <div class="form-group"><label class="form-label">Facilitador</label>
+          <input type="text" class="form-control" id="defMasFacilitador" maxlength="150"></div>
+        <div class="form-group"><label class="form-label">Temas tratados</label>
+          <div id="defMasTemas" style="display:flex;flex-direction:column;gap:6px;max-height:150px;overflow:auto;border:1px solid var(--gris-700);border-radius:6px;padding:10px"></div>
+        </div>
+        <div class="form-group"><label class="form-label">Observaciones</label>
+          <textarea class="form-control" id="defMasObs" rows="2" style="resize:vertical"></textarea></div>
+
+        <div class="card"><div class="card-body" style="padding:12px 14px">
+          <div class="filter-bar" style="margin-bottom:8px">
+            <div class="form-group" style="flex:1"><label class="form-label">Buscar conductor</label>
+              <input type="text" class="form-control" id="defMasBuscar" placeholder="Nombre o DNI" oninput="renderDefMasLista()"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <label class="modulo-check" style="margin:0"><input type="checkbox" id="defMasTodos" onclick="defMasSelTodos(this.checked)"> <span>Seleccionar todos (visibles)</span></label>
+            <span class="muted" style="font-size:12px"><span id="defMasCount">0</span> seleccionados</span>
+          </div>
+          <div class="tbl-scroll" id="defMasLista" style="max-height:34vh;border:1px solid var(--gris-700);border-radius:6px">
+            <p class="muted" style="text-align:center;padding:18px">Cargando…</p>
+          </div>
+        </div></div>
+      </div>
+      <div class="modal-footer" style="display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--gris-700)">
+        <button class="btn btn-secondary" onclick="cerrarModal('modalDefMasivo')">Cancelar</button>
+        <button class="btn btn-primary" id="defMasBtn" onclick="guardarDefMasivo()"><i class="fas fa-save"></i> Registrar seleccionados</button>
       </div>
     </div>
   </div>
