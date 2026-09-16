@@ -101,6 +101,9 @@ function switchCapTab(tipo) {
   show('capBtnEscEvidencia', esEscuela);
   const defEdit = typeof USER_ROL !== 'undefined' && (USER_ROL === 'administrador' || USER_ROL === 'supervisor');
   show('capBtnDefMasivo', esDefensivo && defEdit);
+  // El buscador de las pestañas de conductores busca por trabajador (nombre/DNI).
+  const qInput = document.getElementById('capFiltroQ');
+  if (qInput) qInput.placeholder = esPadron ? 'Nombre o DNI del conductor…' : 'Título, responsable…';
   show('capBtnDefConfig', esDefensivo && typeof USER_ROL !== 'undefined' && USER_ROL === 'administrador');
   show('capVistaToggle', !esResumen && !esPadron && tipo === 'cronograma');
 
