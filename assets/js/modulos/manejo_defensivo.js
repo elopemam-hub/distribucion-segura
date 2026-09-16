@@ -45,32 +45,35 @@ function _diasDesde(fechaISO) {
   const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
   return Math.round((new Date(fechaISO + 'T00:00:00') - hoy) / 86400000);
 }
+function _defVence(fechaISO) {
+  const per = _defPeriodicidad || 0;
+  if (!fechaISO || per <= 0) return null;
+  const d = new Date(fechaISO + 'T00:00:00');
+  d.setMonth(d.getMonth() + per);
+  return d.toISOString().slice(0, 10);
+}
 function _defEstado(x) {
-  const per = _defPeriodicidad || 12;
   const cands = [];
   // (a) Capacitación de manejo defensivo.
-  if (x.n_reg && x.ult_fecha) cands.push({ origen: 'capacitación', venc: x.ult_venc || null });
-  // (b) Examen Defensiva aprobado.
+  if (x.n_reg && x.ult_fecha) cands.push({ origen: 'capacitación', fecha: x.ult_fecha, venc: x.ult_venc || null });
+  // (b) Examen Defensiva aprobado → su fecha cuenta como última capacitación.
   if (x.examen_fecha && x.examen_estado === 'aprobado') {
-    let ev = null;
-    if (per > 0) { const d = new Date(x.examen_fecha + 'T00:00:00'); d.setMonth(d.getMonth() + per); ev = d.toISOString().slice(0, 10); }
-    cands.push({ origen: 'examen defensiva', venc: ev });
+    cands.push({ origen: 'examen defensiva', fecha: x.examen_fecha, venc: _defVence(x.examen_fecha) });
   }
-  if (!cands.length) return { k: 'sin', label: 'Sin registro', badge: 'badge-secondary', origen: '' };
+  if (!cands.length) return { k: 'sin', label: 'Sin registro', badge: 'badge-secondary', origen: '', fecha: null, venc: null };
 
-  // Elige la mejor vigencia (mayor días para vencer); sin vencimiento = al día.
-  let best = null;   // { dias, origen }
-  let sinVenc = null;
+  // Elige el candidato con mejor vigencia (mayor días para vencer). Sin venc = al día.
+  let best = null;
   for (const c of cands) {
-    if (!c.venc) { sinVenc = c.origen; continue; }
-    const dias = _diasDesde(c.venc);
-    if (best === null || dias > best.dias) best = { dias: dias, origen: c.origen };
+    const dias = c.venc ? _diasDesde(c.venc) : Infinity;
+    if (best === null || dias > best.dias) best = { dias: dias, origen: c.origen, fecha: c.fecha, venc: c.venc };
   }
-  if (sinVenc && (best === null || best.dias < 0)) return { k: 'ok', label: 'Al día', badge: 'badge-success', origen: sinVenc };
+  const base = { origen: best.origen, fecha: best.fecha, venc: best.venc };
   const d = best.dias;
-  if (d < 0)  return { k: 'venc', label: 'Vencido', badge: 'badge-danger', origen: best.origen };
-  if (d <= 30) return { k: 'porv', label: 'Por vencer (' + d + 'd)', badge: 'badge-warning', origen: best.origen };
-  return { k: 'ok', label: 'Al día', badge: 'badge-success', origen: best.origen };
+  if (d === Infinity) return { k: 'ok', label: 'Al día', badge: 'badge-success', ...base };
+  if (d < 0)   return { k: 'venc', label: 'Vencido', badge: 'badge-danger', ...base };
+  if (d <= 30) return { k: 'porv', label: 'Por vencer (' + d + 'd)', badge: 'badge-warning', ...base };
+  return { k: 'ok', label: 'Al día', badge: 'badge-success', ...base };
 }
 
 function renderDefensivo() {
@@ -148,10 +151,12 @@ function renderDefensivo() {
       '<td style="font-weight:600;color:var(--gris-100)">' + escapeHtml(x.nombre || '') + '</td>' +
       '<td class="muted">' + escapeHtml(x.dni || '—') + '</td>' +
       '<td class="muted">' + escapeHtml(x.empresa_nombre || x.empresa || '—') + '</td>' +
-      '<td class="muted">' + (x.ult_fecha ? _capFecha(x.ult_fecha) : '—') + '</td>' +
-      '<td class="muted">' + (x.ult_venc ? _capFecha(x.ult_venc) : '—') + '</td>' +
+      '<td class="muted">' + (e.fecha ? _capFecha(e.fecha) : '—') + '</td>' +
+      '<td class="muted">' + (e.venc ? _capFecha(e.venc) : '—') + '</td>' +
       '<td style="text-align:center"><span class="badge ' + e.badge + '"' + (e.origen ? ' title="Según ' + e.origen + '"' : '') + '>' + e.label + '</span>' +
-        (e.origen === 'examen defensiva' ? '<div class="muted" style="font-size:9px">vía examen</div>' : '') + '</td>' +
+        (e.origen === 'examen defensiva' ? '<div class="muted" style="font-size:9px">vía examen</div>' : '') +
+        (x.examen_registro_pdf ? '<div style="margin-top:3px"><button class="btn btn-outline btn-sm" style="padding:2px 8px" onclick="verDocumento(\'' + _UP() + x.examen_registro_pdf + '\')" title="Registro de asistencia (PDF)"><i class="fas fa-file-pdf" style="color:var(--rojo)"></i></button></div>' : '') +
+      '</td>' +
       examCell +
       '<td style="text-align:right;white-space:nowrap">' + acciones + '</td>' +
     '</tr>';

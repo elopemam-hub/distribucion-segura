@@ -852,9 +852,16 @@ function setupManejoDefensivo(): void {
         // Configuración (fila única): periodicidad de recertificación en meses.
         db()->query("CREATE TABLE IF NOT EXISTS def_config (
             id                 TINYINT PRIMARY KEY,
-            periodicidad_meses INT NOT NULL DEFAULT 12
+            periodicidad_meses INT NOT NULL DEFAULT 6
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", []);
-        db()->query("INSERT IGNORE INTO def_config (id, periodicidad_meses) VALUES (1, 12)", []);
+        db()->query("INSERT IGNORE INTO def_config (id, periodicidad_meses) VALUES (1, 6)", []);
+        // Migración única: la política de manejo defensivo pasa a 6 meses. Solo si
+        // seguía en el default anterior (12); si el admin ya lo ajustó, no se toca.
+        $mkPer = sys_get_temp_dir() . '/dseg_def_per6_' . md5(__DIR__ . '|' . (defined('DB_NAME') ? DB_NAME : ''));
+        if (!@is_file($mkPer)) {
+            db()->query("UPDATE def_config SET periodicidad_meses = 6 WHERE id = 1 AND periodicidad_meses = 12", []);
+            @file_put_contents($mkPer, '1');
+        }
 
         // Temario configurable del programa (dinámico).
         db()->query("CREATE TABLE IF NOT EXISTS def_temas (
