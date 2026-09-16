@@ -173,6 +173,20 @@ function renderPersonalTabla() {
 }
 
 // Elimina un documento adjunto (columna a NULL + borra el archivo).
+// Actualiza el estado visual de una tarjeta de documento (Cargado/Falta + Ver/Quitar).
+function _persSetDocEstado(campo, tiene, url) {
+  const link = document.getElementById('personal_' + campo + '_link');
+  const del  = document.getElementById('personal_' + campo + '_del');
+  const est  = document.getElementById('personal_' + campo + '_estado');
+  const esAdmin = typeof USER_ROL !== 'undefined' && USER_ROL === 'administrador';
+  if (link) {
+    if (tiene && url) { link.href = url; link.style.display = ''; }
+    else { link.style.display = 'none'; link.removeAttribute('href'); }
+  }
+  if (del) del.style.display = (tiene && esAdmin) ? '' : 'none';
+  if (est) { est.textContent = tiene ? 'Cargado' : 'Falta'; est.className = 'pers-doc-estado ' + (tiene ? 'ok' : 'no'); }
+}
+
 async function eliminarDocPersonal(campo) {
   const id = document.getElementById('personal_id').value;
   if (!id) return;
@@ -185,10 +199,7 @@ async function eliminarDocPersonal(campo) {
     const j = await r.json();
     if (!j.success) { toast(j.message || 'Error', 'error'); return; }
     toast('Documento eliminado', 'success');
-    const link = document.getElementById('personal_' + campo + '_link');
-    const del  = document.getElementById('personal_' + campo + '_del');
-    if (link) { link.style.display = 'none'; link.removeAttribute('href'); }
-    if (del)  del.style.display = 'none';
+    _persSetDocEstado(campo, false);
     if (_personalActual) { _personalActual[campo] = null; _actualizarBtnExpediente(_personalActual); }
     cargarPersonal();
   } catch { toast('Error de conexión', 'error'); }
@@ -452,12 +463,7 @@ function abrirModalPersonal() {
   document.getElementById('formPersonal').reset();
   document.getElementById('personal_id').value='';
   document.getElementById('modalPersonalTitulo').textContent='Nuevo Personal';
-  PERSONAL_DOCS.forEach(c=>{
-    const link=document.getElementById('personal_'+c+'_link');
-    if (link) { link.style.display='none'; link.removeAttribute('href'); }
-    const del=document.getElementById('personal_'+c+'_del');
-    if (del) del.style.display='none';
-  });
+  PERSONAL_DOCS.forEach(c => _persSetDocEstado(c, false));
   _personalActual = null;
   _actualizarBtnExpediente(null);
   if (typeof cargarEmpresasSelect === 'function') cargarEmpresasSelect('personal_empresa_id', '');
@@ -485,18 +491,8 @@ async function editarPersonal(id) {
   document.getElementById('personal_observaciones').value=p.observaciones||'';
   document.getElementById('personal_activo').value=p.activo;
   document.getElementById('personal_tipo_contrato').value=p.tipo_contrato||'';
-  // Enlaces "ver actual" de los documentos ya cargados
-  PERSONAL_DOCS.forEach(c=>{
-    const link=document.getElementById('personal_'+c+'_link');
-    const del=document.getElementById('personal_'+c+'_del');
-    const tiene=!!p[c];
-    if (link) {
-      if (tiene) { link.href=UPLOAD_URL+p[c]; link.style.display='inline'; }
-      else { link.style.display='none'; link.removeAttribute('href'); }
-    }
-    // "Quitar documento" solo para administrador.
-    if (del) del.style.display = (tiene && typeof USER_ROL !== 'undefined' && USER_ROL === 'administrador') ? 'inline' : 'none';
-  });
+  // Estado de los documentos ya cargados (Cargado/Falta + Ver/Quitar).
+  PERSONAL_DOCS.forEach(c => _persSetDocEstado(c, !!p[c], p[c] ? UPLOAD_URL + p[c] : null));
   _personalActual = p;
   _actualizarBtnExpediente(p);
   document.getElementById('modalPersonalTitulo').textContent='Editar Personal';

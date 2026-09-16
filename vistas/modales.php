@@ -422,37 +422,45 @@
         </div>
 
         <p style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--gris-400);letter-spacing:.08em;margin:18px 0 10px">Documentos</p>
-        <div class="form-grid">
-          <div class="form-group">
-            <label class="form-label">DNI · anverso <a id="personal_doc_dni_link" href="#" onclick="verDocumento(this.href);return false;" style="display:none;font-weight:400;font-size:11px;color:var(--primary);margin-left:6px"><i class="fas fa-eye"></i> ver actual</a> <a id="personal_doc_dni_del" href="#" onclick="eliminarDocPersonal('doc_dni');return false;" style="display:none;font-weight:400;font-size:11px;color:var(--rojo);margin-left:8px"><i class="fas fa-trash"></i> quitar</a></label>
-            <input type="file" class="form-control" id="personal_doc_dni" accept="image/*,application/pdf">
+        <style>
+          .pers-docs-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:12px; }
+          .pers-doc-card { border:1px solid var(--gris-700); border-radius:10px; padding:11px 13px; background:var(--gris-800); display:flex; flex-direction:column; gap:9px; }
+          .pers-doc-head { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+          .pers-doc-title { font-weight:700; font-size:12px; color:var(--gris-100); flex:1; min-width:110px; }
+          .pers-doc-estado { font-size:10px; font-weight:700; padding:2px 9px; border-radius:999px; display:inline-flex; align-items:center; gap:5px; white-space:nowrap; }
+          .pers-doc-estado::before { content:''; width:7px; height:7px; border-radius:50%; background:currentColor; }
+          .pers-doc-estado.ok { background:rgba(40,167,69,.18); color:var(--verde); }
+          .pers-doc-estado.no { background:var(--gris-700); color:var(--gris-400); }
+          .pers-doc-card a.pers-doc-act { font-size:11px; font-weight:600; text-decoration:none; white-space:nowrap; }
+          .pers-doc-card a.pers-doc-act.ver { color:var(--primary); }
+          .pers-doc-card a.pers-doc-act.quitar { color:var(--rojo); }
+          .pers-doc-card input[type=file] { font-size:12px; }
+        </style>
+        <?php
+          $persDocs = [
+            ['doc_dni',              'DNI · anverso',               ''],
+            ['doc_dni_reverso',      'DNI · reverso',               ''],
+            ['doc_licencia',         'Licencia · anverso',          'personalDocLicenciaWrap'],
+            ['doc_licencia_reverso', 'Licencia · reverso',          'personalDocLicenciaRevWrap'],
+            ['doc_certijoven',       'CertiJoven',                  ''],
+            ['doc_sctr',             'SCTR',                        ''],
+            ['doc_verif_ref',        'Verificación de referencias', ''],
+          ];
+        ?>
+        <div class="pers-docs-grid">
+          <?php foreach ($persDocs as [$campo, $titulo, $wrapId]): ?>
+          <div class="pers-doc-card"<?= $wrapId ? ' id="' . $wrapId . '"' : '' ?>>
+            <div class="pers-doc-head">
+              <span class="pers-doc-title"><?= $titulo ?></span>
+              <span class="pers-doc-estado no" id="personal_<?= $campo ?>_estado">Falta</span>
+              <a class="pers-doc-act ver" id="personal_<?= $campo ?>_link" href="#" onclick="verDocumento(this.href);return false;" style="display:none"><i class="fas fa-eye"></i> Ver</a>
+              <a class="pers-doc-act quitar" id="personal_<?= $campo ?>_del" href="#" onclick="eliminarDocPersonal('<?= $campo ?>');return false;" style="display:none"><i class="fas fa-trash"></i> Quitar</a>
+            </div>
+            <input type="file" class="form-control" id="personal_<?= $campo ?>" accept="image/*,application/pdf">
           </div>
-          <div class="form-group">
-            <label class="form-label">DNI · reverso <a id="personal_doc_dni_reverso_link" href="#" onclick="verDocumento(this.href);return false;" style="display:none;font-weight:400;font-size:11px;color:var(--primary);margin-left:6px"><i class="fas fa-eye"></i> ver actual</a> <a id="personal_doc_dni_reverso_del" href="#" onclick="eliminarDocPersonal('doc_dni_reverso');return false;" style="display:none;font-weight:400;font-size:11px;color:var(--rojo);margin-left:8px"><i class="fas fa-trash"></i> quitar</a></label>
-            <input type="file" class="form-control" id="personal_doc_dni_reverso" accept="image/*,application/pdf">
-          </div>
-          <div class="form-group" id="personalDocLicenciaWrap">
-            <label class="form-label">Licencia · anverso <a id="personal_doc_licencia_link" href="#" onclick="verDocumento(this.href);return false;" style="display:none;font-weight:400;font-size:11px;color:var(--primary);margin-left:6px"><i class="fas fa-eye"></i> ver actual</a> <a id="personal_doc_licencia_del" href="#" onclick="eliminarDocPersonal('doc_licencia');return false;" style="display:none;font-weight:400;font-size:11px;color:var(--rojo);margin-left:8px"><i class="fas fa-trash"></i> quitar</a></label>
-            <input type="file" class="form-control" id="personal_doc_licencia" accept="image/*,application/pdf">
-          </div>
-          <div class="form-group" id="personalDocLicenciaRevWrap">
-            <label class="form-label">Licencia · reverso <a id="personal_doc_licencia_reverso_link" href="#" onclick="verDocumento(this.href);return false;" style="display:none;font-weight:400;font-size:11px;color:var(--primary);margin-left:6px"><i class="fas fa-eye"></i> ver actual</a> <a id="personal_doc_licencia_reverso_del" href="#" onclick="eliminarDocPersonal('doc_licencia_reverso');return false;" style="display:none;font-weight:400;font-size:11px;color:var(--rojo);margin-left:8px"><i class="fas fa-trash"></i> quitar</a></label>
-            <input type="file" class="form-control" id="personal_doc_licencia_reverso" accept="image/*,application/pdf">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Certijoven (archivo) <a id="personal_doc_certijoven_link" href="#" onclick="verDocumento(this.href);return false;" style="display:none;font-weight:400;font-size:11px;color:var(--primary);margin-left:6px"><i class="fas fa-eye"></i> ver actual</a> <a id="personal_doc_certijoven_del" href="#" onclick="eliminarDocPersonal('doc_certijoven');return false;" style="display:none;font-weight:400;font-size:11px;color:var(--rojo);margin-left:8px"><i class="fas fa-trash"></i> quitar</a></label>
-            <input type="file" class="form-control" id="personal_doc_certijoven" accept="image/*,application/pdf">
-          </div>
-          <div class="form-group">
-            <label class="form-label">SCTR (archivo) <a id="personal_doc_sctr_link" href="#" onclick="verDocumento(this.href);return false;" style="display:none;font-weight:400;font-size:11px;color:var(--primary);margin-left:6px"><i class="fas fa-eye"></i> ver actual</a> <a id="personal_doc_sctr_del" href="#" onclick="eliminarDocPersonal('doc_sctr');return false;" style="display:none;font-weight:400;font-size:11px;color:var(--rojo);margin-left:8px"><i class="fas fa-trash"></i> quitar</a></label>
-            <input type="file" class="form-control" id="personal_doc_sctr" accept="image/*,application/pdf">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Verificación de referencias <a id="personal_doc_verif_ref_link" href="#" onclick="verDocumento(this.href);return false;" style="display:none;font-weight:400;font-size:11px;color:var(--primary);margin-left:6px"><i class="fas fa-eye"></i> ver actual</a> <a id="personal_doc_verif_ref_del" href="#" onclick="eliminarDocPersonal('doc_verif_ref');return false;" style="display:none;font-weight:400;font-size:11px;color:var(--rojo);margin-left:8px"><i class="fas fa-trash"></i> quitar</a></label>
-            <input type="file" class="form-control" id="personal_doc_verif_ref" accept="image/*,application/pdf">
-          </div>
+          <?php endforeach; ?>
         </div>
-        <small style="color:var(--gris-400);display:block;margin-top:4px">Imagen o PDF · Máx 5MB por archivo</small>
+        <small style="color:var(--gris-400);display:block;margin-top:8px">Imagen o PDF · Máx 15MB por documento (las imágenes se optimizan al subir)</small>
         <div id="btnExpedienteWrap" style="display:none;margin-top:12px">
           <button type="button" class="btn btn-secondary btn-sm" id="btnExpedientePersonal" onclick="descargarExpedientePersonal()">
             <i class="fas fa-file-pdf"></i> Descargar expediente (PDF)
