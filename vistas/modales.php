@@ -411,11 +411,6 @@
         <p style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--gris-400);letter-spacing:.08em;margin:18px 0 10px">Otros</p>
         <div class="form-grid">
           <div class="form-group" style="grid-column:1/-1">
-            <label class="form-label">Foto perfil</label>
-            <input type="file" class="form-control" id="personal_foto" accept="image/*">
-            <small style="color:var(--gris-400)">JPG, PNG, WEBP · Máx 5MB</small>
-          </div>
-          <div class="form-group" style="grid-column:1/-1">
             <label class="form-label">Observaciones</label>
             <textarea class="form-control" id="personal_observaciones" rows="2"></textarea>
           </div>
@@ -448,6 +443,20 @@
           ];
         ?>
         <div class="pers-docs-grid">
+          <!-- Foto de perfil: primera tarjeta, con miniatura y vista previa -->
+          <div class="pers-doc-card" style="grid-column:1/-1;flex-direction:row;align-items:center;gap:14px">
+            <img id="personal_foto_thumb" src="" alt="Foto" style="display:none;width:64px;height:64px;border-radius:50%;object-fit:cover;border:1px solid var(--gris-600);flex:0 0 auto">
+            <span id="personal_foto_thumb_ph" style="width:64px;height:64px;border-radius:50%;background:var(--gris-700);display:inline-flex;align-items:center;justify-content:center;color:var(--gris-400);flex:0 0 auto"><i class="fas fa-user" style="font-size:22px"></i></span>
+            <div style="flex:1;min-width:150px;display:flex;flex-direction:column;gap:8px">
+              <div class="pers-doc-head">
+                <span class="pers-doc-title">Foto de perfil</span>
+                <span class="pers-doc-estado no" id="personal_foto_estado">Falta</span>
+                <a class="pers-doc-act ver" id="personal_foto_link" href="#" onclick="verDocumento(this.href);return false;" style="display:none"><i class="fas fa-eye"></i> Ver</a>
+              </div>
+              <input type="file" class="form-control" id="personal_foto" accept="image/*" onchange="_persPreviewFoto(this)">
+              <small style="color:var(--gris-400);font-size:11px">JPG, PNG, WEBP · Máx 5MB</small>
+            </div>
+          </div>
           <?php foreach ($persDocs as [$campo, $titulo, $wrapId]): ?>
           <div class="pers-doc-card"<?= $wrapId ? ' id="' . $wrapId . '"' : '' ?>>
             <div class="pers-doc-head">

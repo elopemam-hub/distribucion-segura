@@ -187,6 +187,31 @@ function _persSetDocEstado(campo, tiene, url) {
   if (est) { est.textContent = tiene ? 'Cargado' : 'Falta'; est.className = 'pers-doc-estado ' + (tiene ? 'ok' : 'no'); }
 }
 
+// Estado de la tarjeta de Foto de perfil (miniatura + Cargada/Falta + Ver).
+function _persSetFotoEstado(url) {
+  const link = document.getElementById('personal_foto_link');
+  const est  = document.getElementById('personal_foto_estado');
+  const thumb= document.getElementById('personal_foto_thumb');
+  const ph   = document.getElementById('personal_foto_thumb_ph');
+  const tiene = !!url;
+  if (link) { if (tiene) { link.href = url; link.style.display = ''; } else { link.style.display = 'none'; link.removeAttribute('href'); } }
+  if (est)  { est.textContent = tiene ? 'Cargada' : 'Falta'; est.className = 'pers-doc-estado ' + (tiene ? 'ok' : 'no'); }
+  if (thumb){ if (tiene) { thumb.src = url; thumb.style.display = ''; } else { thumb.style.display = 'none'; thumb.removeAttribute('src'); } }
+  if (ph)   ph.style.display = tiene ? 'none' : '';
+}
+// Vista previa al seleccionar una nueva foto.
+function _persPreviewFoto(input) {
+  const f = input && input.files && input.files[0];
+  if (!f) return;
+  const url = URL.createObjectURL(f);
+  const thumb = document.getElementById('personal_foto_thumb');
+  const ph = document.getElementById('personal_foto_thumb_ph');
+  const est = document.getElementById('personal_foto_estado');
+  if (thumb) { thumb.src = url; thumb.style.display = ''; }
+  if (ph) ph.style.display = 'none';
+  if (est) { est.textContent = 'Nueva'; est.className = 'pers-doc-estado ok'; }
+}
+
 async function eliminarDocPersonal(campo) {
   const id = document.getElementById('personal_id').value;
   if (!id) return;
@@ -464,6 +489,7 @@ function abrirModalPersonal() {
   document.getElementById('personal_id').value='';
   document.getElementById('modalPersonalTitulo').textContent='Nuevo Personal';
   PERSONAL_DOCS.forEach(c => _persSetDocEstado(c, false));
+  _persSetFotoEstado(null);
   _personalActual = null;
   _actualizarBtnExpediente(null);
   if (typeof cargarEmpresasSelect === 'function') cargarEmpresasSelect('personal_empresa_id', '');
@@ -493,6 +519,7 @@ async function editarPersonal(id) {
   document.getElementById('personal_tipo_contrato').value=p.tipo_contrato||'';
   // Estado de los documentos ya cargados (Cargado/Falta + Ver/Quitar).
   PERSONAL_DOCS.forEach(c => _persSetDocEstado(c, !!p[c], p[c] ? UPLOAD_URL + p[c] : null));
+  _persSetFotoEstado(p.foto ? UPLOAD_URL + p.foto : null);
   _personalActual = p;
   _actualizarBtnExpediente(p);
   document.getElementById('modalPersonalTitulo').textContent='Editar Personal';
