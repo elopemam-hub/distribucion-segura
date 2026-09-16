@@ -329,21 +329,34 @@ $fill = max(0, $minRows - count($rows));
   </div>
   <script>
     if (window.self !== window.top) { var tb = document.querySelector('.toolbar'); if (tb) tb.style.display = 'none'; }
-    // Auto-ajuste: escala el formato para que SIEMPRE quepa en UNA hoja A4.
-    // Se omite durante la captura a PDF (nofit=1), que ya ajusta por su cuenta.
+    // Auto-ajuste a UNA hoja A4: reparte el espacio libre entre las filas de
+    // asistentes (se estiran para llenar la hoja) y, como salvaguarda, reduce con
+    // zoom si aún se pasara. Se omite en la captura a PDF (nofit=1).
     (function () {
       if (location.search.indexOf('nofit=1') !== -1) return;
       var sheet = document.querySelector('.sheet');
       if (!sheet) return;
       var mmPx = 96 / 25.4;
       var pageH = (297 - 16) * mmPx;   // A4 alto - márgenes @page (8mm x2)
-      function fit() {
-        sheet.style.zoom = '1';
-        var h = sheet.getBoundingClientRect().height;
-        if (h > pageH) sheet.style.zoom = String(Math.max(0.5, (pageH / h) * 0.99));
+      function filasAsistentes() {
+        return Array.prototype.filter.call(
+          sheet.querySelectorAll('.asis tr'), function (tr) { return tr.querySelector('.cnum'); });
       }
-      setTimeout(fit, 300);            // espera logo/firmas
-      window.addEventListener('beforeprint', fit);
+      function ajustar() {
+        sheet.style.zoom = '1';
+        var filas = filasAsistentes();
+        filas.forEach(function (tr) { tr.style.height = ''; });      // reset
+        var h = sheet.getBoundingClientRect().height;
+        var libre = pageH - h;
+        if (filas.length && libre > 0) {                             // estirar para llenar
+          var add = libre / filas.length;
+          filas.forEach(function (tr) { tr.style.height = (tr.getBoundingClientRect().height + add) + 'px'; });
+        }
+        var after = sheet.getBoundingClientRect().height;           // salvaguarda
+        if (after > pageH) sheet.style.zoom = String(Math.max(0.5, (pageH / after) * 0.995));
+      }
+      setTimeout(ajustar, 300);         // espera logo/firmas
+      window.addEventListener('beforeprint', ajustar);
     })();
   </script>
 </body>
