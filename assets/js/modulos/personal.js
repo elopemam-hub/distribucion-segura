@@ -195,6 +195,39 @@ async function eliminarDocPersonal(campo) {
 }
 
 // Visor de documento en la misma pantalla (imagen o PDF), sin abrir otra página.
+// Comprime una imagen (jpg/png/webp) redimensionando a maxDim y exportando JPEG.
+// Los archivos que no son imagen (p. ej. PDF) se devuelven sin cambios. Si el
+// resultado no reduce el tamaño, se conserva el original.
+function _esImagenFilePersonal(file) {
+  return /^image\/(jpeg|png|webp)$/i.test(file.type) || /\.(jpe?g|png|webp)$/i.test(file.name);
+}
+function _comprimirImagenPersonal(file, maxDim, calidad) {
+  return new Promise((resolve) => {
+    if (!file || !_esImagenFilePersonal(file)) { resolve(file); return; }
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+      if (!w || !h) { resolve(file); return; }
+      const escala = Math.min(1, maxDim / Math.max(w, h));
+      const nw = Math.round(w * escala), nh = Math.round(h * escala);
+      const c = document.createElement('canvas');
+      c.width = nw; c.height = nh;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, nw, nh);   // fondo blanco (PNG con transparencia)
+      ctx.drawImage(img, 0, 0, nw, nh);
+      c.toBlob((blob) => {
+        if (!blob || blob.size >= file.size) { resolve(file); return; }   // no empeorar
+        const nombre = file.name.replace(/\.(png|webp|jpe?g)$/i, '') + '.jpg';
+        resolve(new File([blob], nombre, { type: 'image/jpeg', lastModified: Date.now() }));
+      }, 'image/jpeg', calidad);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+}
+
 function verDocumento(url) {
   const body = document.getElementById('visorDocBody');
   const abrir = document.getElementById('visorDocAbrir');
@@ -501,6 +534,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const f=document.getElementById('personal_'+c).files[0];
       if (f) adjuntos.push({ campo:c, file:f, label:c });
     });
+    // Comprime imágenes en el navegador (los PDF pasan igual) para evitar límites de tamaño.
+    for (const a of adjuntos) { a.file = await _comprimirImagenPersonal(a.file, 1600, 0.8); }
     const grandes = adjuntos.filter(a => a.file.size > MAX_ARCH).map(a => a.file.name);
     if (grandes.length) { toast('Estos archivos superan 5MB: ' + grandes.join(', ') + '. Redúcelos y reintenta.', 'error', 7000); return; }
     const total = adjuntos.reduce((s,a)=>s+a.file.size,0);
