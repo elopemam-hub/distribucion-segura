@@ -491,18 +491,38 @@ document.addEventListener('DOMContentLoaded', () => {
     fd.append('observaciones',        document.getElementById('personal_observaciones').value.trim());
     fd.append('activo',               document.getElementById('personal_activo').value);
     fd.append('tipo_contrato',        document.getElementById('personal_tipo_contrato').value);
+    // Recolecta archivos (foto + documentos) y valida tamaños antes de enviar.
+    const MAX_ARCH = 5 * 1024 * 1024;      // 5MB por archivo
+    const MAX_TOTAL = 55 * 1024 * 1024;    // margen bajo el post_max_size del servidor
+    const adjuntos = [];
     const foto=document.getElementById('personal_foto').files[0];
-    if (foto) fd.append('foto',foto);
+    if (foto) adjuntos.push({ campo:'foto', file:foto, label:'Foto de perfil' });
     PERSONAL_DOCS.forEach(c=>{
       const f=document.getElementById('personal_'+c).files[0];
-      if (f) fd.append(c,f);
+      if (f) adjuntos.push({ campo:c, file:f, label:c });
     });
+    const grandes = adjuntos.filter(a => a.file.size > MAX_ARCH).map(a => a.file.name);
+    if (grandes.length) { toast('Estos archivos superan 5MB: ' + grandes.join(', ') + '. Redúcelos y reintenta.', 'error', 7000); return; }
+    const total = adjuntos.reduce((s,a)=>s+a.file.size,0);
+    if (total > MAX_TOTAL) { toast('El total de archivos es muy grande (' + (total/1048576).toFixed(1) + 'MB). Sube menos documentos por vez o comprímelos.', 'error', 7000); return; }
+    adjuntos.forEach(a => fd.append(a.campo, a.file));
+
+    const btnG = document.getElementById('btnGuardarPersonal');
+    const btnTxt = btnG ? btnG.innerHTML : '';
+    if (btnG) { btnG.disabled = true; btnG.innerHTML = '<div class="spinner"></div> Guardando…'; }
     try {
       const r=await fetch('api/personal.php',{method:'POST',body:fd});
-      const data=await r.json();
-      if (data.success) { toast(data.message,'success'); cerrarModal('modalPersonal'); cargarPersonal(); }
-      else toast(data.message,'error');
+      let data=null;
+      const txt = await r.text();
+      try { data = JSON.parse(txt); } catch (e) { data = null; }
+      if (!data) {
+        // Respuesta no-JSON: casi siempre límite de tamaño del servidor rechazando el POST.
+        if (r.status === 413 || !r.ok) toast('El servidor rechazó la subida (archivos muy grandes). Sube menos documentos por vez.', 'error', 7000);
+        else toast('Respuesta inesperada del servidor. Reintenta.', 'error', 6000);
+      } else if (data.success) { toast(data.message,'success'); cerrarModal('modalPersonal'); cargarPersonal(); }
+      else toast(data.message||'No se pudo guardar','error');
     } catch { toast('Error de conexión','error'); }
+    finally { if (btnG) { btnG.disabled = false; btnG.innerHTML = btnTxt; } }
   });
 
   const fQ=document.getElementById('filtroPersonalQ');

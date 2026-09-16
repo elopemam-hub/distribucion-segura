@@ -462,7 +462,7 @@
 
         <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px">
           <button type="button" class="btn btn-secondary" onclick="cerrarModal('modalPersonal')">Cancelar</button>
-          <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar</button>
+          <button type="submit" class="btn btn-primary" id="btnGuardarPersonal"><i class="fas fa-save"></i> Guardar</button>
         </div>
       </form>
     </div>
