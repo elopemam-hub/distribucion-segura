@@ -89,7 +89,7 @@ function listar() {
                 DATEDIFF(p.vencimiento_brevete, CURDATE()) AS dias_vencer_brevete
          FROM personal p
          LEFT JOIN empresas e ON e.id = p.empresa_id
-         WHERE $whereSQL ORDER BY p.nombre ASC LIMIT $limit OFFSET $offset",
+         WHERE $whereSQL ORDER BY p.id DESC LIMIT $limit OFFSET $offset",
         $params
     );
 
