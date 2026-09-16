@@ -326,8 +326,9 @@ async function descargarExpedientePersonal() {
   if (!p) return;
 
   const orden = [
-    ['doc_dni','DNI'], ['doc_licencia','Licencia'], ['doc_certijoven','Certijoven'],
-    ['doc_sctr','SCTR'], ['doc_verif_ref','Verificación de referencias']
+    ['doc_dni','DNI (anverso)'], ['doc_dni_reverso','DNI (reverso)'],
+    ['doc_licencia','Licencia (anverso)'], ['doc_licencia_reverso','Licencia (reverso)'],
+    ['doc_certijoven','CertiJoven'], ['doc_sctr','SCTR'], ['doc_verif_ref','Verificación de referencias']
   ];
   const docs = orden.filter(([c]) => p[c]).map(([c,label]) => {
     const ruta = p[c];
@@ -502,6 +503,9 @@ async function editarPersonal(id) {
   const data=await r.json();
   if (!data.success) { toast(data.message,'error'); return; }
   const p=data.data;
+  // IMPORTANTE: limpiar los inputs de archivo para no arrastrar un archivo
+  // seleccionado (y no guardado) de otra persona editada antes.
+  ['personal_foto', ...PERSONAL_DOCS.map(c => 'personal_' + c)].forEach(fid => { const el = document.getElementById(fid); if (el) el.value = ''; });
   document.getElementById('personal_id').value=p.id;
   document.getElementById('personal_dni').value=p.dni;
   document.getElementById('personal_nombre').value=p.nombre;
