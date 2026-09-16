@@ -425,7 +425,7 @@
           .pers-doc-estado { font-size:10px; font-weight:700; padding:2px 9px; border-radius:999px; display:inline-flex; align-items:center; gap:5px; white-space:nowrap; }
           .pers-doc-estado::before { content:''; width:7px; height:7px; border-radius:50%; background:currentColor; }
           .pers-doc-estado.ok { background:rgba(40,167,69,.18); color:var(--verde); }
-          .pers-doc-estado.no { background:var(--gris-700); color:var(--gris-400); }
+          .pers-doc-estado.no { background:rgba(220,53,69,.16); color:var(--rojo); }
           .pers-doc-card a.pers-doc-act { font-size:11px; font-weight:600; text-decoration:none; white-space:nowrap; }
           .pers-doc-card a.pers-doc-act.ver { color:var(--primary); }
           .pers-doc-card a.pers-doc-act.quitar { color:var(--rojo); }
