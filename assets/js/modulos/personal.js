@@ -527,7 +527,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Recolecta archivos y valida tamaños (5MB por archivo). Se comprimen las
     // imágenes; la FOTO va en el guardado y cada DOCUMENTO se sube por separado
     // para no superar el límite del servidor al enviar todo junto.
-    const MAX_ARCH = 5 * 1024 * 1024;
+    const MAX_FOTO = 5 * 1024 * 1024;      // foto de perfil
+    const MAX_DOC = 15 * 1024 * 1024;      // documentos (PDF escaneados pesan)
     let foto = document.getElementById('personal_foto').files[0] || null;
     const docs = [];
     PERSONAL_DOCS.forEach(c => { const df = document.getElementById('personal_' + c).files[0]; if (df) docs.push({ campo: c, file: df }); });
@@ -535,9 +536,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (foto) foto = await _comprimirImagenPersonal(foto, 1600, 0.8);
     for (const d of docs) { d.file = await _comprimirImagenPersonal(d.file, 1600, 0.85); }
 
-    const grandes = [foto ? { campo: 'foto', file: foto } : null, ...docs]
-      .filter(a => a && a.file.size > MAX_ARCH).map(a => a.file.name);
-    if (grandes.length) { toast('Estos archivos superan 5MB (comprime o usa uno más liviano): ' + grandes.join(', '), 'error', 7000); return; }
+    if (foto && foto.size > MAX_FOTO) { toast('La foto supera 5MB. Usa una más liviana.', 'error', 6000); return; }
+    const grandes = docs.filter(d => d.file.size > MAX_DOC).map(d => d.file.name);
+    if (grandes.length) { toast('Estos documentos superan 15MB: ' + grandes.join(', ') + '. Reescanéalos más livianos.', 'error', 7000); return; }
 
     if (foto) fd.append('foto', foto);   // la foto va con el guardado (es pequeña)
 

@@ -336,8 +336,11 @@ function setupPersonalDocs(): void {
 
 // Sube un documento (imagen o PDF) a uploads/personal/. Devuelve ruta relativa o null.
 function guardarArchivo(array $file, string $dni, string $prefijo): ?string {
+    // Los documentos (PDF escaneados) pueden pesar más que la foto; cada uno se
+    // sube en su propia petición, así que se permite hasta 15MB por documento.
+    $DOC_MAX = 15 * 1024 * 1024;
     if ($file['error'] !== UPLOAD_ERR_OK) return null;
-    if ($file['size'] <= 0 || $file['size'] > MAX_FILE_SIZE) return null;
+    if ($file['size'] <= 0 || $file['size'] > $DOC_MAX) return null;
 
     $finfo = new finfo(FILEINFO_MIME_TYPE);
     $mime  = $finfo->file($file['tmp_name']);
