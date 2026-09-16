@@ -151,8 +151,8 @@ $fill = max(0, $minRows - count($rows));
 <style>
   @page { size: A4 portrait; margin: 8mm; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: Arial, 'Segoe UI', sans-serif; color: #000; font-size: 10px; background: #eceef1; }
-  .sheet { background: #fff; width: 194mm; margin: 0 auto; padding: 4mm; }
+  body { font-family: Arial, 'Segoe UI', sans-serif; color: #000; font-size: 9px; background: #eceef1; }
+  .sheet { background: #fff; width: 194mm; margin: 0 auto; padding: 3mm; }
   .toolbar { max-width: 194mm; margin: 10px auto; display: flex; gap: 8px; justify-content: flex-end; }
   .toolbar .hint { margin-right: auto; font-size: 12px; color: #555; }
   .toolbar button { font: inherit; font-size: 13px; padding: 8px 16px; border: 0; border-radius: 6px; cursor: pointer; }
@@ -160,17 +160,17 @@ $fill = max(0, $minRows - count($rows));
 
   /* Tamaño de letra UNIFORME (10px) en todo el formato. */
   table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-  td, th { border: 1px solid #000; padding: 2px 4px; vertical-align: middle; word-wrap: break-word; font-size: 10px; }
+  td, th { border: 1px solid #000; padding: 1px 3px; vertical-align: middle; word-wrap: break-word; font-size: 9px; }
   .band { background: #d9d9d9; font-weight: 700; text-transform: uppercase; text-align: center; }
   .lbl { background: #f2f2f2; text-align: center; font-weight: 700; }
   .val { color: #1f4e79; text-align: center; font-weight: 600; }
   .titulo { text-align: center; font-weight: 700; text-transform: uppercase; line-height: 1.2; }
-  .logo { text-align: center; } .logo img { max-height: 46px; max-width: 100%; }
-  .mk { text-align: center; font-weight: 700; height: 18px; }
+  .logo { text-align: center; } .logo img { max-height: 38px; max-width: 100%; }
+  .mk { text-align: center; font-weight: 700; height: 14px; }
   .hl { background: #ffff00; }
-  .tema { text-align: left; font-weight: 600; line-height: 1.35; }
+  .tema { text-align: left; font-weight: 600; line-height: 1.2; }
   .asis th { background: #f2f2f2; text-transform: uppercase; text-align: center; }
-  .asis td { height: 26px; vertical-align: top; padding-top: 3px; }
+  .asis td { height: 20px; vertical-align: top; padding-top: 2px; }
   .cnum { width: 3%; text-align: center; } .cdni { width: 8%; text-align: center; }
   .cap1 { width: 15%; } .cap2 { width: 15%; } .cnom { width: 16%; }
   .ccargo { width: 11%; text-transform: uppercase; } .carea { width: 7%; text-align: center; }
