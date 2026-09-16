@@ -271,8 +271,14 @@ function subirDoc() {
     if (!$p) jsonResponse(false, 'Trabajador no encontrado.', null, 404);
     if (!empresaEsPermitida($p['empresa_id'] ?? 0)) jsonResponse(false, 'Sin acceso a este trabajador.', null, 403);
     if (empty($_FILES['archivo']['tmp_name'])) jsonResponse(false, 'No se recibió el archivo.', null, 422);
-    $ruta = guardarArchivo($_FILES['archivo'], $p['dni'], $campo);
-    if (!$ruta) jsonResponse(false, 'No se pudo subir el archivo (tipo no permitido o muy grande).', null, 422);
+    $f = $_FILES['archivo'];
+    if (($f['error'] ?? 1) !== UPLOAD_ERR_OK) jsonResponse(false, 'Error de subida (código ' . (int)($f['error'] ?? -1) . ').', null, 422);
+    // Diagnóstico: tipo real y tamaño, para mensajes claros.
+    $mime = '';
+    try { $finfo = new finfo(FILEINFO_MIME_TYPE); $mime = (string)$finfo->file($f['tmp_name']); } catch (Throwable $e) {}
+    $kb = round(($f['size'] ?? 0) / 1024);
+    $ruta = guardarArchivo($f, $p['dni'], $campo);
+    if (!$ruta) jsonResponse(false, 'No se pudo guardar (tipo: ' . ($mime ?: 'desconocido') . ', ' . $kb . 'KB). Usa PDF o imagen JPG/PNG/WEBP.', null, 422);
     // $campo está en lista blanca (PERSONAL_DOC_COLS): interpolación segura.
     db()->query("UPDATE personal SET `$campo` = ? WHERE id = ?", [$ruta, $id]);
     jsonResponse(true, 'Documento subido.', ['campo' => $campo, 'ruta' => $ruta]);

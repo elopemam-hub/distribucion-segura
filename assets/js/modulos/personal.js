@@ -567,13 +567,15 @@ document.addEventListener('DOMContentLoaded', () => {
           fdd.append('id', pid); fdd.append('campo', d.campo); fdd.append('archivo', d.file);
           try {
             const rd = await fetch('api/personal.php', { method: 'POST', body: fdd });
-            const jd = await rd.json();
-            jd && jd.success ? okDocs++ : falloDocs.push(d.campo);
-          } catch (e) { falloDocs.push(d.campo); }
+            const tt = await rd.text();
+            let jd = null; try { jd = JSON.parse(tt); } catch (e) {}
+            if (jd && jd.success) okDocs++;
+            else falloDocs.push(d.campo + (jd && jd.message ? ' — ' + jd.message : (rd.status ? ' (HTTP ' + rd.status + ')' : '')));
+          } catch (e) { falloDocs.push(d.campo + ' (sin respuesta)'); }
         }
       }
 
-      if (falloDocs.length) toast('Guardado, pero no se subieron: ' + falloDocs.join(', ') + '. Reintenta esos documentos.', 'warning', 7000);
+      if (falloDocs.length) toast('Guardado, pero no se subió: ' + falloDocs.join(' · '), 'warning', 10000);
       else toast(data.message + (okDocs ? ' · ' + okDocs + ' documento(s) subido(s)' : ''), 'success');
       cerrarModal('modalPersonal'); cargarPersonal();
     } catch { toast('Error de conexión', 'error'); }
