@@ -889,7 +889,7 @@ async function evalCapturarRegistroPdf(id, opts) {
   return new Promise((resolve) => {
     const iframe = document.createElement('iframe');
     iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:820px;height:1400px;border:0;background:#fff';
-    iframe.src = 'api/evaluaciones_registro_pdf.php?ids=' + encodeURIComponent(id);
+    iframe.src = 'api/evaluaciones_registro_pdf.php?ids=' + encodeURIComponent(id) + '&nofit=1';
     let done = false;
     const finish = (ok) => { if (done) return; done = true; try { document.body.removeChild(iframe); } catch (e) {} resolve(ok); };
     iframe.onload = async () => {

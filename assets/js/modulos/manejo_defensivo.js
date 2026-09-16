@@ -155,7 +155,7 @@ function renderDefensivo() {
       '<td class="muted">' + (e.venc ? _capFecha(e.venc) : '—') + '</td>' +
       '<td style="text-align:center"><span class="badge ' + e.badge + '"' + (e.origen ? ' title="Según ' + e.origen + '"' : '') + '>' + e.label + '</span>' +
         (e.origen === 'examen defensiva' ? '<div class="muted" style="font-size:9px">vía examen</div>' : '') +
-        (x.examen_registro_pdf ? '<div style="margin-top:3px"><button class="btn btn-outline btn-sm" style="padding:2px 8px" onclick="verDocumento(\'' + _UP() + x.examen_registro_pdf + '\')" title="Registro de asistencia (PDF)"><i class="fas fa-file-pdf" style="color:var(--rojo)"></i></button></div>' : '') +
+        (x.examen_id ? '<div style="margin-top:3px"><button class="btn btn-outline btn-sm" style="padding:2px 8px" onclick="verRegistroDefensivo(' + x.examen_id + ')" title="Registro de asistencia (PDF, 1 hoja)"><i class="fas fa-file-pdf" style="color:var(--rojo)"></i></button></div>' : '') +
       '</td>' +
       examCell +
       '<td style="text-align:right;white-space:nowrap">' + acciones + '</td>' +
@@ -353,6 +353,14 @@ async function eliminarDefTema(id) {
   const d = await _defTemaPost({ action: 'tema_del', id: id });
   if (d && d.success) { toast('Tema eliminado', 'success'); cargarDefTemas(); }
   else toast((d && d.message) || 'Error', 'error');
+}
+
+// Abre el registro de asistencia EN VIVO del examen defensivo (siempre en formato
+// actual de una sola hoja) en el visor de la app; evita depender de PDFs guardados.
+function verRegistroDefensivo(examenId) {
+  const url = 'api/evaluaciones_registro_pdf.php?ids=' + examenId;
+  if (typeof evalVerRegistroPdf === 'function') evalVerRegistroPdf(url);
+  else window.open(url, '_blank');
 }
 
 // ── Registro / programación masiva ──

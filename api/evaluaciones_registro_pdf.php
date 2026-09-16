@@ -181,8 +181,7 @@ $fill = max(0, $minRows - count($rows));
   @media print {
     html, body { background: #fff; height: auto; }
     .toolbar { display: none; }
-    /* Ajuste de escala para garantizar UNA sola hoja al imprimir. */
-    .sheet { width: auto; padding: 0; margin: 0; zoom: 0.92; }
+    .sheet { width: auto; padding: 0; margin: 0; }
     [contenteditable] { background: transparent !important; }
     /* Evita que las tablas se partan entre hojas. */
     table, tr, td, th { page-break-inside: avoid; break-inside: avoid; }
@@ -330,6 +329,22 @@ $fill = max(0, $minRows - count($rows));
   </div>
   <script>
     if (window.self !== window.top) { var tb = document.querySelector('.toolbar'); if (tb) tb.style.display = 'none'; }
+    // Auto-ajuste: escala el formato para que SIEMPRE quepa en UNA hoja A4.
+    // Se omite durante la captura a PDF (nofit=1), que ya ajusta por su cuenta.
+    (function () {
+      if (location.search.indexOf('nofit=1') !== -1) return;
+      var sheet = document.querySelector('.sheet');
+      if (!sheet) return;
+      var mmPx = 96 / 25.4;
+      var pageH = (297 - 12) * mmPx;   // A4 alto - márgenes @page (6mm x2)
+      function fit() {
+        sheet.style.zoom = '1';
+        var h = sheet.getBoundingClientRect().height;
+        if (h > pageH) sheet.style.zoom = String(Math.max(0.5, (pageH / h) * 0.99));
+      }
+      setTimeout(fit, 300);            // espera logo/firmas
+      window.addEventListener('beforeprint', fit);
+    })();
   </script>
 </body>
 </html>

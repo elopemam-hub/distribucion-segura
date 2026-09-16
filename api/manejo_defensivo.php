@@ -77,7 +77,8 @@ function defList() {
     $selExam = '';
     if (_defEvalExiste()) {
         $selExam =
-            ", (SELECT ev.porcentaje FROM evaluaciones ev WHERE ev.dni = p.dni AND ev.tipo = 'examen_defensiva' ORDER BY ev.fecha DESC, ev.id DESC LIMIT 1) AS examen_pct
+            ", (SELECT ev.id        FROM evaluaciones ev WHERE ev.dni = p.dni AND ev.tipo = 'examen_defensiva' ORDER BY ev.fecha DESC, ev.id DESC LIMIT 1) AS examen_id
+               , (SELECT ev.porcentaje FROM evaluaciones ev WHERE ev.dni = p.dni AND ev.tipo = 'examen_defensiva' ORDER BY ev.fecha DESC, ev.id DESC LIMIT 1) AS examen_pct
                , (SELECT ev.puntaje   FROM evaluaciones ev WHERE ev.dni = p.dni AND ev.tipo = 'examen_defensiva' ORDER BY ev.fecha DESC, ev.id DESC LIMIT 1) AS examen_pts
                , (SELECT ev.fecha     FROM evaluaciones ev WHERE ev.dni = p.dni AND ev.tipo = 'examen_defensiva' ORDER BY ev.fecha DESC, ev.id DESC LIMIT 1) AS examen_fecha
                , (SELECT ev.estado    FROM evaluaciones ev WHERE ev.dni = p.dni AND ev.tipo = 'examen_defensiva' ORDER BY ev.fecha DESC, ev.id DESC LIMIT 1) AS examen_estado
