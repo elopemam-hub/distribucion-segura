@@ -139,7 +139,7 @@ foreach ($rows as $r) {
 $marcaCat = (count($catsSel) === 1) ? array_key_first($catsSel) : '';
 $mk = fn($cat) => ($marcaCat === $cat) ? 'X' : '&nbsp;';
 
-$minRows = 12;
+$minRows = 10;
 $fill = max(0, $minRows - count($rows));
 ?>
 <!DOCTYPE html>
@@ -149,7 +149,7 @@ $fill = max(0, $minRows - count($rows));
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Registro de evaluaciones</title>
 <style>
-  @page { size: A4 portrait; margin: 8mm; }
+  @page { size: A4 portrait; margin: 6mm; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: Arial, 'Segoe UI', sans-serif; color: #000; font-size: 9px; background: #eceef1; }
   .sheet { background: #fff; width: 194mm; margin: 0 auto; padding: 3mm; }
@@ -179,12 +179,13 @@ $fill = max(0, $minRows - count($rows));
   .foot { }
   [contenteditable]:empty { background: #fffef2; }
   @media print {
-    body { background: #fff; }
+    html, body { background: #fff; height: auto; }
     .toolbar { display: none; }
-    .sheet { width: auto; padding: 0; }
+    /* Ajuste de escala para garantizar UNA sola hoja al imprimir. */
+    .sheet { width: auto; padding: 0; margin: 0; zoom: 0.92; }
     [contenteditable] { background: transparent !important; }
-    /* Evita que el registro se parta en una segunda hoja. */
-    .sheet, table, tr, td, th { page-break-inside: avoid; break-inside: avoid; }
+    /* Evita que las tablas se partan entre hojas. */
+    table, tr, td, th { page-break-inside: avoid; break-inside: avoid; }
   }
 </style>
 </head>
