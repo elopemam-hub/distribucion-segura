@@ -62,6 +62,12 @@ function _amonSetupManual() {
             if (!$ex) db()->query("ALTER TABLE amonestaciones ADD COLUMN `$col` $ddl", []);
         } catch (Throwable $e) { error_log('[amon setup] ' . $e->getMessage()); }
     }
+    // personal_id debe permitir NULL para el personal no registrado (nombre libre).
+    try {
+        $pn = db()->fetchOne("SELECT IS_NULLABLE FROM information_schema.columns
+              WHERE table_schema = DATABASE() AND table_name = 'amonestaciones' AND column_name = 'personal_id'");
+        if ($pn && ($pn['IS_NULLABLE'] ?? 'YES') === 'NO') db()->query("ALTER TABLE amonestaciones MODIFY personal_id INT NULL", []);
+    } catch (Throwable $e) { error_log('[amon setup pid] ' . $e->getMessage()); }
 }
 
 function listar() {
