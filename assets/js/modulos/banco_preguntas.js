@@ -20,10 +20,34 @@ async function bpCargarFormularios() {
     bpFormulariosCache = data.data;
     bpFormulariosCache.forEach(f => { bpFormMap[f.formulario_id] = f; });
     bpRenderTabs();
+    bpCargarConfig();
   } catch (e) {
     document.getElementById('bp-tabs-bar').innerHTML =
       `<span style="color:var(--rojo)"><i class="fas fa-triangle-exclamation"></i> Error al cargar: ${e.message}</span>`;
   }
+}
+
+// ── Configuración: límite de respuestas por persona ──
+async function bpCargarConfig() {
+  try {
+    const r = await fetch('api/eval_config.php');
+    const d = await r.json();
+    const el = document.getElementById('bpMaxPorPersona');
+    if (el && d.success) el.value = d.data.max_por_persona || 2;
+  } catch (e) {}
+}
+async function bpGuardarConfig() {
+  const el = document.getElementById('bpMaxPorPersona');
+  const n = parseInt(el?.value, 10);
+  if (!n || n < 1 || n > 50) { toast('Ingresa un número entre 1 y 50', 'warning'); return; }
+  const fd = new FormData();
+  fd.append('action', 'save'); fd.append('csrf_token', CSRF_TOKEN); fd.append('max_por_persona', n);
+  try {
+    const r = await fetch('api/eval_config.php', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (d.success) toast('Límite guardado: ' + n + ' respuesta(s) por persona', 'success');
+    else toast(d.message || 'No se pudo guardar', 'error');
+  } catch (e) { toast('Error de conexión', 'error'); }
 }
 
 function bpRenderTabs() {

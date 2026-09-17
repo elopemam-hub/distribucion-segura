@@ -8,6 +8,19 @@
   </div>
 </div>
 
+<!-- Configuración: límite de respuestas por persona -->
+<div class="card" style="margin-bottom:18px"><div class="card-body" style="padding:14px 18px;display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap">
+  <div style="flex:1;min-width:220px">
+    <div style="font-size:13px;font-weight:700;color:var(--gris-100)"><i class="fas fa-shield-halved" style="color:var(--primary)"></i> Límite de respuestas por evaluación</div>
+    <div style="font-size:12px;color:var(--gris-400);margin-top:2px">Máximo de veces que un mismo trabajador (DNI) puede responder cada evaluación. Aplica al formulario interno y al público (QR/link).</div>
+  </div>
+  <div class="form-group" style="margin:0">
+    <label class="form-label">Máx. por persona</label>
+    <input type="number" class="form-control" id="bpMaxPorPersona" min="1" max="50" style="max-width:110px">
+  </div>
+  <button class="btn btn-primary btn-sm" onclick="bpGuardarConfig()"><i class="fas fa-save"></i> Guardar</button>
+</div></div>
+
 <!-- Tabs de formularios + botón agregar -->
 <div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:wrap">
   <div id="bp-tabs-bar" style="display:flex;gap:8px;flex-wrap:wrap;flex:1">

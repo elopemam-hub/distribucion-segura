@@ -37,6 +37,10 @@ if (empty($dni))                                         $errores[] = 'El DNI es
 if (!is_array($respuestas) || empty($respuestas))        $errores[] = 'No se recibieron respuestas.';
 if (!empty($errores)) jsonResponse(false, implode(' | ', $errores), null, 422);
 
+// Límite de respuestas por persona (DNI) por evaluación.
+[$puede, $usados, $maxResp] = evalPuedeResponder($tipo, $dni);
+if (!$puede) jsonResponse(false, "Este trabajador ya registró el máximo de $maxResp respuesta(s) permitida(s) para esta evaluación.", null, 409);
+
 // ── Calcular puntaje desde BD (helper compartido) ─────────────
 $score      = calcularPuntajeEvaluacion($tipo, $respuestas);
 $puntaje    = $score['puntaje'];

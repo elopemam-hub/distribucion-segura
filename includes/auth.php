@@ -236,6 +236,14 @@ function setupEvalFormularios(): void {
                   WHERE table_schema = DATABASE() AND table_name = 'evaluaciones' AND column_name = 'registro_pdf'");
             if (!$exRegPdf) db()->query("ALTER TABLE evaluaciones ADD COLUMN registro_pdf VARCHAR(255) NULL", []);
         }
+
+        // Configuración global de evaluaciones: máximo de respuestas por persona (DNI)
+        // por cada evaluación (tipo). Por defecto 2.
+        db()->query("CREATE TABLE IF NOT EXISTS eval_config (
+            id              TINYINT PRIMARY KEY,
+            max_por_persona INT NOT NULL DEFAULT 2
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", []);
+        db()->query("INSERT IGNORE INTO eval_config (id, max_por_persona) VALUES (1, 2)", []);
     } catch (Exception $e) {
         error_log('[setupEvalFormularios] ' . $e->getMessage());
     }
@@ -246,6 +254,28 @@ function setupEvalFormularios(): void {
     } catch (Exception $e) {
         // Ya es VARCHAR o la tabla no existe — ignorar
     }
+}
+
+// Máximo de respuestas por persona (DNI) por evaluación. Configurable en eval_config;
+// por defecto 2. Robusto: si la tabla no existe todavía, devuelve el default.
+function evalMaxRespuestasPorPersona(): int {
+    try {
+        $r = db()->fetchOne("SELECT max_por_persona FROM eval_config WHERE id = 1");
+        $n = (int)($r['max_por_persona'] ?? 2);
+        return ($n >= 1 && $n <= 50) ? $n : 2;
+    } catch (Throwable $e) { return 2; }
+}
+
+// ¿Puede esta persona (DNI) enviar otra respuesta de este tipo de evaluación?
+// Devuelve [bool ok, int usados, int max]. Sin DNI → permite (no se puede controlar).
+function evalPuedeResponder(string $tipo, string $dni): array {
+    $max = evalMaxRespuestasPorPersona();
+    $dni = trim($dni);
+    if ($dni === '') return [true, 0, $max];
+    try {
+        $c = (int)(db()->fetchOne("SELECT COUNT(*) n FROM evaluaciones WHERE tipo = ? AND dni = ?", [$tipo, $dni])['n'] ?? 0);
+    } catch (Throwable $e) { $c = 0; }
+    return [$c < $max, $c, $max];
 }
 
 // ============================================================

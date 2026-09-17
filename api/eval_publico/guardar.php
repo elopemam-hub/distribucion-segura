@@ -48,6 +48,10 @@ if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha)) {
     $fecha = date('Y-m-d');
 }
 
+// Límite de respuestas por persona (DNI) por evaluación (mismo tope que el interno).
+[$puede, $usados, $maxResp] = evalPuedeResponder($tipo, $dni);
+if (!$puede) jsonResponse(false, "Ya se registró el máximo de $maxResp respuesta(s) permitida(s) para esta evaluación con este DNI.", null, 409);
+
 // ── Puntaje en servidor ──────────────────────────────────────
 $score = calcularPuntajeEvaluacion($tipo, $respuestas);
 
