@@ -1077,6 +1077,7 @@ function renderTablaEval({ rows, total, page, limit, totalPages }) {
       </td>
       <td style="text-align:center">
         <span class="badge" style="${estadoInfo.color}">${estadoInfo.label}</span>
+        ${(r.estado !== 'pendiente_revision' && r.aprobador_nombre) ? `<div class="muted" style="font-size:10px;margin-top:3px">por ${r.aprobador_nombre}${r.aprobado_en ? ' · ' + String(r.aprobado_en).split(' ')[0] : ''}</div>` : ''}
       </td>
       <td style="text-align:center;white-space:nowrap">
         <button class="btn btn-outline btn-sm" onclick="verEvaluacion(${r.id})" title="Ver detalle">
