@@ -981,23 +981,70 @@ function renderTablaCumple() {
     '<div class="kpi-card verde"><div class="kpi-label">Cumpleaños hoy</div><div class="kpi-value verde">' + items.filter(esHoy).length + '</div><div class="kpi-sub">en el día</div><i class="fas fa-gift kpi-icon"></i></div>';
 
   if (!items.length) {
-    body.innerHTML = '<tr><td colspan="5" class="muted" style="text-align:center;padding:24px">Sin cumpleaños en ' + CUMPLE_MESES[mes - 1] + '. (¿Falta la fecha de nacimiento?)</td></tr>';
+    body.innerHTML = '<tr><td colspan="7" class="muted" style="text-align:center;padding:24px">Sin cumpleaños en ' + CUMPLE_MESES[mes - 1] + '. (¿Falta la fecha de nacimiento?)</td></tr>';
     return;
   }
+  const t0 = new Date(); t0.setHours(0, 0, 0, 0);
   body.innerHTML = items.map((x, i) => {
     const p = x.p, hc = esHoy(x);
     const foto = p.foto
       ? '<img src="' + _UPcumple() + p.foto + '" style="width:34px;height:34px;border-radius:50%;object-fit:cover;border:1px solid var(--gris-600)">'
       : '<span style="width:34px;height:34px;border-radius:50%;background:var(--gris-700);display:inline-flex;align-items:center;justify-content:center;font-size:15px">🎂</span>';
+    // Días que faltan (relativo a hoy) para la fecha del mes/año seleccionados.
+    const dias = Math.round((new Date(anio, mes - 1, x.dia) - t0) / 86400000);
+    const faltan = dias === 0 ? '<span class="badge badge-warning">HOY</span>'
+                 : dias > 0 ? '<span style="font-weight:700;color:var(--verde)">En ' + dias + ' d</span>'
+                 : '<span class="muted">Pasó</span>';
     const est = hc ? '<span class="badge badge-warning">🎂 HOY</span>' : '<span class="muted">Programado</span>';
     return '<tr' + (hc ? ' style="background:rgba(243,156,18,.08)"' : '') + '>' +
       '<td class="muted" style="text-align:center">' + (i + 1) + '</td>' +
       '<td><div style="display:flex;align-items:center;gap:10px">' + foto + '<span style="font-weight:600;color:var(--gris-100)">' + escapeHtml(p.nombre || '') + '</span></div></td>' +
       '<td class="muted">' + escapeHtml(p.cargo || '—') + '</td>' +
       '<td class="muted">' + String(x.dia).padStart(2, '0') + ' de ' + CUMPLE_MESES[mes - 1] + '</td>' +
+      '<td style="text-align:center;font-variant-numeric:tabular-nums">' + faltan + '</td>' +
       '<td style="text-align:center">' + est + '</td>' +
+      '<td style="text-align:center"><button class="btn btn-outline btn-sm" onclick="descargarTarjetaCumple(' + p.id + ')" title="Descargar tarjeta de saludo"><i class="fas fa-share-nodes"></i></button></td>' +
     '</tr>';
   }).join('');
+}
+
+// Genera y descarga una tarjeta individual de cumpleaños (para compartir por WhatsApp).
+async function descargarTarjetaCumple(pid) {
+  const p = (_resumenData || []).find(z => +z.id === +pid);
+  if (!p) return;
+  if (typeof html2canvas === 'undefined') { toast('No se pudo cargar el generador de imagen', 'error'); return; }
+  const partes = String(p.fecha_nacimiento || '').split('-');
+  const dia = +partes[2], mes = +partes[1];
+  const GOLD = '#E0A82E';
+  const saludo = (document.getElementById('cumpleSaludo')?.value || '').trim();
+  const foto = p.foto
+    ? '<img src="' + _UPcumple() + p.foto + '" style="width:150px;height:150px;border-radius:50%;object-fit:cover;border:4px solid ' + GOLD + ';box-shadow:0 0 0 6px rgba(224,168,46,.18)">'
+    : '<div style="width:150px;height:150px;border-radius:50%;background:#2a2010;display:flex;align-items:center;justify-content:center;font-size:64px;border:4px solid ' + GOLD + '">🎂</div>';
+  const fondo = _cumpleFondo
+    ? 'linear-gradient(rgba(18,12,5,.80),rgba(10,7,3,.90)), url(' + _UPcumple() + _cumpleFondo + ') center/cover'
+    : 'radial-gradient(circle at 30% 15%, rgba(224,168,46,.22), transparent 32%),linear-gradient(135deg,#1c1408,#120d06)';
+  const cont = document.createElement('div');
+  cont.style.cssText = 'position:fixed;left:-9999px;top:0';
+  cont.innerHTML =
+    '<div style="width:560px;background:' + fondo + ';padding:46px 36px;text-align:center;color:#f5ede0;border-radius:20px;font-family:Arial,sans-serif;border:1px solid rgba(224,168,46,.4)">' +
+      '<div style="font-size:13px;letter-spacing:.3em;color:' + GOLD + ';font-weight:700">&#10022;&nbsp; ¡FELIZ CUMPLEAÑOS! &nbsp;&#10022;</div>' +
+      '<div style="margin:28px 0 18px">' + foto + '</div>' +
+      '<div style="font-family:Georgia,serif;font-size:30px;font-weight:800;color:#fff;line-height:1.15">' + escapeHtml((p.nombre || '').toUpperCase()) + '</div>' +
+      '<div style="font-size:13px;color:' + GOLD + ';margin-top:6px;text-transform:uppercase;letter-spacing:.06em">' + escapeHtml(p.cargo || '') + '</div>' +
+      (dia && mes ? '<div style="margin-top:20px;display:inline-block;background:linear-gradient(135deg,#f0c05a,' + GOLD + ');color:#1c1408;font-weight:800;font-size:16px;padding:9px 24px;border-radius:999px">' + String(dia).padStart(2, '0') + ' de ' + CUMPLE_MESES[mes - 1] + '</div>' : '') +
+      (saludo ? '<div style="font-size:15px;font-style:italic;color:#e8dcc6;margin-top:24px;line-height:1.5;max-width:440px;margin-left:auto;margin-right:auto">“' + escapeHtml(saludo) + '”</div>' : '') +
+    '</div>';
+  document.body.appendChild(cont);
+  toast('Generando tarjeta…', 'info');
+  try {
+    const canvas = await html2canvas(cont.firstChild, { scale: 2, useCORS: true, backgroundColor: '#0d3c78' });
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL('image/png');
+    a.download = 'cumple_' + (p.dni || p.id) + '.png';
+    a.click();
+    toast('Tarjeta generada', 'success');
+  } catch (e) { toast('No se pudo generar la tarjeta', 'error'); }
+  finally { document.body.removeChild(cont); }
 }
 
 // Trabajadores cuyo cumpleaños cae en el mes indicado.

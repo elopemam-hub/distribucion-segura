@@ -190,8 +190,8 @@
       </div>
       <div class="card"><div class="card-body" style="padding:0"><div class="table-wrap tbl-scroll">
         <table class="data-table" style="min-width:640px">
-          <thead><tr><th style="width:6%">N°</th><th>Trabajador</th><th>Cargo</th><th>Cumpleaños</th><th style="text-align:center">Estado</th></tr></thead>
-          <tbody id="cumpleBody"><tr><td colspan="5" class="muted" style="text-align:center;padding:24px">Cargando…</td></tr></tbody>
+          <thead><tr><th style="width:5%">N°</th><th>Trabajador</th><th>Cargo</th><th>Cumpleaños</th><th style="text-align:center">Faltan</th><th style="text-align:center">Estado</th><th style="text-align:center">Tarjeta</th></tr></thead>
+          <tbody id="cumpleBody"><tr><td colspan="7" class="muted" style="text-align:center;padding:24px">Cargando…</td></tr></tbody>
         </table>
       </div></div></div>
     </div>
