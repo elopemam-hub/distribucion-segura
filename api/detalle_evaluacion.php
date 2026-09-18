@@ -9,7 +9,7 @@ if ($id <= 0) jsonResponse(false, 'ID inválido.', null, 400);
 $row = db()->fetchOne(
     "SELECT e.*,
             u.nombre AS evaluador_nombre,
-            a.nombre AS aprobador_nombre
+            a.usuario AS aprobador_nombre
      FROM evaluaciones e
      LEFT JOIN usuarios u ON u.id = e.evaluador_id
      LEFT JOIN usuarios a ON a.id = e.aprobado_por
