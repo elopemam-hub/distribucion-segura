@@ -290,9 +290,13 @@ function setupCumpleSaludos(): void {
         // Imagen de fondo del mural (global, reutilizable cada mes).
         db()->query("CREATE TABLE IF NOT EXISTS cumple_config (
             id    TINYINT PRIMARY KEY,
-            fondo VARCHAR(255) NULL
+            fondo VARCHAR(255) NULL,
+            logo  VARCHAR(255) NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", []);
         db()->query("INSERT IGNORE INTO cumple_config (id, fondo) VALUES (1, NULL)", []);
+        $exLogo = db()->fetchOne("SELECT 1 FROM information_schema.columns
+              WHERE table_schema = DATABASE() AND table_name = 'cumple_config' AND column_name = 'logo'");
+        if (!$exLogo) db()->query("ALTER TABLE cumple_config ADD COLUMN logo VARCHAR(255) NULL", []);
     } catch (Exception $e) { error_log('[setupCumpleSaludos] ' . $e->getMessage()); }
 }
 

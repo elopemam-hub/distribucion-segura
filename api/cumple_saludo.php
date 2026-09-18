@@ -11,16 +11,19 @@ header('Content-Type: application/json; charset=utf-8');
 
 $action = $_GET['action'] ?? $_POST['action'] ?? 'get';
 
-// Ruta actual del fondo del mural.
-function _cumpleFondo(): ?string {
-    try { $r = db()->fetchOne("SELECT fondo FROM cumple_config WHERE id = 1"); return $r['fondo'] ?? null; }
+// Rutas actuales de fondo/logo del mural.
+function _cumpleImg(string $col): ?string {
+    try { $r = db()->fetchOne("SELECT `$col` v FROM cumple_config WHERE id = 1"); return $r['v'] ?? null; }
     catch (Throwable $e) { return null; }
 }
-
-if ($action === 'fondo_set') {
-    requireCsrf();
+function _cumpleAdmin(): void {
     $u = getCurrentUser();
     if (!in_array($u['rol'] ?? '', ['administrador', 'supervisor'], true)) jsonResponse(false, 'Sin permisos.', null, 403);
+}
+// Guarda una imagen base64 en cumple_config.$col (fondo|logo). $col en lista blanca.
+function _cumpleGuardarImg(string $col, string $prefijo): void {
+    requireCsrf();
+    _cumpleAdmin();
     $b64 = $_POST['imagen_b64'] ?? '';
     if (strpos($b64, 'base64,') !== false) $b64 = substr($b64, strpos($b64, 'base64,') + 7);
     $bin = base64_decode($b64, true);
@@ -33,24 +36,27 @@ if ($action === 'fondo_set') {
     if (!$ext) jsonResponse(false, 'Usa una imagen JPG/PNG/WEBP.', null, 422);
     $dir = __DIR__ . '/../uploads/cumple/';
     if (!is_dir($dir)) mkdir($dir, 0755, true);
-    $filename = 'fondo_' . bin2hex(random_bytes(6)) . '.' . $ext;
+    $filename = $prefijo . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
     if (file_put_contents($dir . $filename, $bin) === false) jsonResponse(false, 'No se pudo guardar.', null, 500);
     @chmod($dir . $filename, 0644);
-    $prev = _cumpleFondo();
+    $prev = _cumpleImg($col);
     if ($prev && is_file(__DIR__ . '/../uploads/' . $prev)) @unlink(__DIR__ . '/../uploads/' . $prev);
-    db()->query("INSERT INTO cumple_config (id, fondo) VALUES (1, ?) ON DUPLICATE KEY UPDATE fondo = VALUES(fondo)", ['cumple/' . $filename]);
-    jsonResponse(true, 'Fondo actualizado.', ['fondo' => 'cumple/' . $filename]);
+    db()->query("INSERT INTO cumple_config (id, `$col`) VALUES (1, ?) ON DUPLICATE KEY UPDATE `$col` = VALUES(`$col`)", ['cumple/' . $filename]);
+    jsonResponse(true, 'Imagen actualizada.', [$col => 'cumple/' . $filename]);
+}
+function _cumpleQuitarImg(string $col): void {
+    requireCsrf();
+    _cumpleAdmin();
+    $prev = _cumpleImg($col);
+    if ($prev && is_file(__DIR__ . '/../uploads/' . $prev)) @unlink(__DIR__ . '/../uploads/' . $prev);
+    db()->query("UPDATE cumple_config SET `$col` = NULL WHERE id = 1", []);
+    jsonResponse(true, 'Imagen quitada.', [$col => null]);
 }
 
-if ($action === 'fondo_del') {
-    requireCsrf();
-    $u = getCurrentUser();
-    if (!in_array($u['rol'] ?? '', ['administrador', 'supervisor'], true)) jsonResponse(false, 'Sin permisos.', null, 403);
-    $prev = _cumpleFondo();
-    if ($prev && is_file(__DIR__ . '/../uploads/' . $prev)) @unlink(__DIR__ . '/../uploads/' . $prev);
-    db()->query("UPDATE cumple_config SET fondo = NULL WHERE id = 1", []);
-    jsonResponse(true, 'Fondo quitado.', ['fondo' => null]);
-}
+if ($action === 'fondo_set') _cumpleGuardarImg('fondo', 'fondo');
+if ($action === 'fondo_del') _cumpleQuitarImg('fondo');
+if ($action === 'logo_set')  _cumpleGuardarImg('logo', 'logo');
+if ($action === 'logo_del')  _cumpleQuitarImg('logo');
 
 if ($action === 'save') {
     requireCsrf();
@@ -70,4 +76,4 @@ if ($action === 'save') {
 $anio = (int)($_GET['anio'] ?? 0);
 $mes  = (int)($_GET['mes'] ?? 0);
 $r = db()->fetchOne("SELECT mensaje FROM cumple_saludos WHERE anio = ? AND mes = ?", [$anio, $mes]);
-jsonResponse(true, '', ['mensaje' => $r['mensaje'] ?? '', 'fondo' => _cumpleFondo()]);
+jsonResponse(true, '', ['mensaje' => $r['mensaje'] ?? '', 'fondo' => _cumpleImg('fondo'), 'logo' => _cumpleImg('logo')]);

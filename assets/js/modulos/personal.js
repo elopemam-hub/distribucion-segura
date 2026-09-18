@@ -1026,9 +1026,10 @@ async function descargarTarjetaCumple(pid) {
   const cont = document.createElement('div');
   cont.style.cssText = 'position:fixed;left:-9999px;top:0';
   cont.innerHTML =
-    '<div style="width:560px;background:' + fondo + ';padding:46px 36px;text-align:center;color:#f5ede0;border-radius:20px;font-family:Arial,sans-serif;border:1px solid rgba(224,168,46,.4)">' +
+    '<div style="width:600px;height:600px;box-sizing:border-box;background:' + fondo + ';padding:40px 40px;text-align:center;color:#f5ede0;border-radius:20px;font-family:Arial,sans-serif;border:1px solid rgba(224,168,46,.4);display:flex;flex-direction:column;align-items:center;justify-content:center">' +
+      (_cumpleLogo ? '<img src="' + _UPcumple() + _cumpleLogo + '" style="height:46px;max-width:200px;object-fit:contain;background:rgba(255,255,255,.92);border-radius:8px;padding:4px 9px;margin-bottom:14px">' : '') +
       '<div style="font-size:13px;letter-spacing:.3em;color:' + GOLD + ';font-weight:700">&#10022;&nbsp; ¡FELIZ CUMPLEAÑOS! &nbsp;&#10022;</div>' +
-      '<div style="margin:28px 0 18px">' + foto + '</div>' +
+      '<div style="margin:22px 0 16px">' + foto + '</div>' +
       '<div style="font-family:Georgia,serif;font-size:30px;font-weight:800;color:#fff;line-height:1.15">' + escapeHtml((p.nombre || '').toUpperCase()) + '</div>' +
       '<div style="font-size:13px;color:' + GOLD + ';margin-top:6px;text-transform:uppercase;letter-spacing:.06em">' + escapeHtml(p.cargo || '') + '</div>' +
       (dia && mes ? '<div style="margin-top:20px;display:inline-block;background:linear-gradient(135deg,#f0c05a,' + GOLD + ');color:#1c1408;font-weight:800;font-size:16px;padding:9px 24px;border-radius:999px">' + String(dia).padStart(2, '0') + ' de ' + CUMPLE_MESES[mes - 1] + '</div>' : '') +
@@ -1104,6 +1105,7 @@ function renderMuralCumple() {
 
   wrap.innerHTML =
     '<div id="cumpleMural" style="background:' + fondo + ';border:1px solid rgba(224,168,46,.35);border-radius:18px;padding:36px 30px;color:#f5ede0;box-shadow:inset 0 0 120px rgba(0,0,0,.55)">' +
+      (_cumpleLogo ? '<div style="text-align:center;margin-bottom:10px"><img src="' + _UPcumple() + _cumpleLogo + '" style="height:54px;max-width:220px;object-fit:contain;background:rgba(255,255,255,.92);border-radius:8px;padding:5px 10px"></div>' : '') +
       '<div style="text-align:center;margin-bottom:6px">' +
         '<div style="font-size:12px;letter-spacing:.35em;color:' + GOLD + ';font-weight:700">&#10022;&nbsp; CUMPLEAÑOS DEL MES &nbsp;&#10022;</div>' +
         '<div style="font-family:Georgia,\'Times New Roman\',serif;font-size:40px;font-weight:800;color:#fff;letter-spacing:.02em;margin-top:6px;text-shadow:0 2px 12px rgba(0,0,0,.5)">' + CUMPLE_MESES[mes - 1].toUpperCase() + ' <span style="color:' + GOLD + '">' + anio + '</span></div>' +
@@ -1117,6 +1119,7 @@ function renderMuralCumple() {
 
 // ── Saludo del mes (persistente por mes/año) ──
 let _cumpleFondo = null;   // ruta de la imagen de fondo del mural (uploads/...)
+let _cumpleLogo = null;    // ruta del logo de la empresa (uploads/...)
 async function cargarSaludoCumple() {
   const mes = document.getElementById('cumpleMes')?.value, anio = document.getElementById('cumpleAnio')?.value;
   const inp = document.getElementById('cumpleSaludo');
@@ -1126,8 +1129,45 @@ async function cargarSaludoCumple() {
     const d = await r.json();
     inp.value = (d && d.success && d.data.mensaje) ? d.data.mensaje : '';
     _cumpleFondo = (d && d.success) ? (d.data.fondo || null) : null;
+    _cumpleLogo  = (d && d.success) ? (d.data.logo || null) : null;
   } catch (e) { inp.value = ''; }
   const qb = document.getElementById('cumpleQuitarFondoBtn'); if (qb) qb.style.display = _cumpleFondo ? '' : 'none';
+  const ql = document.getElementById('cumpleQuitarLogoBtn'); if (ql) ql.style.display = _cumpleLogo ? '' : 'none';
+}
+
+// Subir/quitar el logo (mismo mecanismo base64 que el fondo).
+async function subirLogoCumple(input) {
+  let f = input && input.files && input.files[0];
+  if (!f) return;
+  if (typeof _comprimirImagenPersonal === 'function') f = await _comprimirImagenPersonal(f, 600, 0.9);
+  let b64 = '';
+  try { b64 = await _fileToDataURL(f); } catch (e) { toast('No se pudo leer la imagen', 'error'); return; }
+  const fd = new FormData();
+  fd.append('action', 'logo_set'); fd.append('csrf_token', CSRF_TOKEN); fd.append('imagen_b64', b64);
+  toast('Subiendo logo…', 'info');
+  try {
+    const r = await fetch('api/cumple_saludo.php', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (!d.success) { toast(d.message || 'No se pudo subir', 'error'); return; }
+    _cumpleLogo = d.data.logo;
+    const ql = document.getElementById('cumpleQuitarLogoBtn'); if (ql) ql.style.display = '';
+    input.value = '';
+    toast('Logo actualizado', 'success');
+    renderMuralCumple();
+  } catch (e) { toast('Error de conexión', 'error'); }
+}
+async function quitarLogoCumple() {
+  if (!confirm('¿Quitar el logo?')) return;
+  const fd = new FormData(); fd.append('action', 'logo_del'); fd.append('csrf_token', CSRF_TOKEN);
+  try {
+    const r = await fetch('api/cumple_saludo.php', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (!d.success) { toast(d.message || 'Error', 'error'); return; }
+    _cumpleLogo = null;
+    const ql = document.getElementById('cumpleQuitarLogoBtn'); if (ql) ql.style.display = 'none';
+    toast('Logo quitado', 'success');
+    renderMuralCumple();
+  } catch (e) { toast('Error de conexión', 'error'); }
 }
 
 // Subir/quitar la imagen de fondo del mural.

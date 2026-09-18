@@ -214,6 +214,11 @@
             <input type="file" id="cumpleFondo" accept="image/*" style="display:none" onchange="subirFondoCumple(this)">
           </label>
           <button class="btn btn-outline btn-sm" id="cumpleQuitarFondoBtn" style="display:none" onclick="quitarFondoCumple()" title="Quitar imagen de fondo"><i class="fas fa-eraser"></i></button>
+          <label class="btn btn-outline btn-sm" style="margin:0" title="Logo de la empresa (aparece en el mural y las tarjetas)">
+            <i class="fas fa-building"></i> Logo
+            <input type="file" id="cumpleLogo" accept="image/*" style="display:none" onchange="subirLogoCumple(this)">
+          </label>
+          <button class="btn btn-outline btn-sm" id="cumpleQuitarLogoBtn" style="display:none" onclick="quitarLogoCumple()" title="Quitar logo"><i class="fas fa-eraser"></i></button>
           <button class="btn btn-primary btn-sm" onclick="descargarMuralCumple('png')"><i class="fas fa-image"></i> Descargar PNG</button>
           <button class="btn btn-outline btn-sm" onclick="descargarMuralCumple('pdf')"><i class="fas fa-file-pdf"></i> PDF</button>
         </div>
