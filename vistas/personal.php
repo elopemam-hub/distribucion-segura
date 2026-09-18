@@ -182,19 +182,42 @@
               <select class="form-control" id="cumpleMes" onchange="cumpleCambioMes()"></select></div>
             <div class="form-group"><label class="form-label">Año</label>
               <select class="form-control" id="cumpleAnio" onchange="cumpleCambioMes()"></select></div>
-            <div class="form-group" style="flex:1;min-width:240px"><label class="form-label">Saludo del mes <span class="muted" style="font-weight:400;font-size:11px">(aparece en el mural)</span></label>
-              <input type="text" class="form-control" id="cumpleSaludo" maxlength="200" placeholder="¡Feliz cumpleaños a nuestro equipo! 🎉" oninput="renderMuralCumple()"></div>
-            <button class="btn btn-outline btn-sm" id="cumpleGuardarSaludoBtn" onclick="guardarSaludoCumple()"><i class="fas fa-save"></i> Guardar saludo</button>
-            <label class="btn btn-outline btn-sm" style="margin:0" title="Imagen de fondo del mural (JPG/PNG/WEBP)">
-              <i class="fas fa-panorama"></i> Fondo
-              <input type="file" id="cumpleFondo" accept="image/*" style="display:none" onchange="subirFondoCumple(this)">
-            </label>
-            <button class="btn btn-outline btn-sm" id="cumpleQuitarFondoBtn" style="display:none" onclick="quitarFondoCumple()" title="Quitar imagen de fondo"><i class="fas fa-eraser"></i></button>
-            <button class="btn btn-primary btn-sm" onclick="descargarMuralCumple('png')"><i class="fas fa-image"></i> Descargar PNG</button>
-            <button class="btn btn-outline btn-sm" onclick="descargarMuralCumple('pdf')"><i class="fas fa-file-pdf"></i> PDF</button>
+            <div class="form-group"><label class="form-label">Buscar</label>
+              <input type="text" class="form-control" id="cumpleBuscar" placeholder="Nombre" oninput="renderTablaCumple()"></div>
+            <button class="btn btn-primary" onclick="abrirMuralCumple()"><i class="fas fa-image"></i> Ver / descargar mural</button>
           </div>
         </div>
       </div>
-      <div id="cumpleMuralWrap" style="overflow:auto"></div>
+      <div class="card"><div class="card-body" style="padding:0"><div class="table-wrap tbl-scroll">
+        <table class="data-table" style="min-width:640px">
+          <thead><tr><th style="width:6%">N°</th><th>Trabajador</th><th>Cargo</th><th>Cumpleaños</th><th style="text-align:center">Estado</th></tr></thead>
+          <tbody id="cumpleBody"><tr><td colspan="5" class="muted" style="text-align:center;padding:24px">Cargando…</td></tr></tbody>
+        </table>
+      </div></div></div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: MURAL DE CUMPLEAÑOS ===== -->
+  <div class="modal-overlay" id="modalCumpleMural">
+    <div class="modal-box" style="max-width:1200px;width:98%">
+      <div class="modal-header">
+        <h3><i class="fas fa-cake-candles" style="color:var(--primary)"></i> Mural de cumpleaños</h3>
+        <button class="modal-close" onclick="cerrarModal('modalCumpleMural')"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="filter-bar" style="align-items:flex-end;margin-bottom:14px">
+          <div class="form-group" style="flex:1;min-width:240px"><label class="form-label">Saludo del mes <span class="muted" style="font-weight:400;font-size:11px">(aparece en el mural)</span></label>
+            <input type="text" class="form-control" id="cumpleSaludo" maxlength="200" placeholder="¡Feliz cumpleaños a nuestro equipo! 🎉" oninput="renderMuralCumple()"></div>
+          <button class="btn btn-outline btn-sm" onclick="guardarSaludoCumple()"><i class="fas fa-save"></i> Guardar saludo</button>
+          <label class="btn btn-outline btn-sm" style="margin:0" title="Imagen de fondo del mural (JPG/PNG/WEBP)">
+            <i class="fas fa-panorama"></i> Fondo
+            <input type="file" id="cumpleFondo" accept="image/*" style="display:none" onchange="subirFondoCumple(this)">
+          </label>
+          <button class="btn btn-outline btn-sm" id="cumpleQuitarFondoBtn" style="display:none" onclick="quitarFondoCumple()" title="Quitar imagen de fondo"><i class="fas fa-eraser"></i></button>
+          <button class="btn btn-primary btn-sm" onclick="descargarMuralCumple('png')"><i class="fas fa-image"></i> Descargar PNG</button>
+          <button class="btn btn-outline btn-sm" onclick="descargarMuralCumple('pdf')"><i class="fas fa-file-pdf"></i> PDF</button>
+        </div>
+        <div id="cumpleMuralWrap" style="overflow:auto"></div>
+      </div>
     </div>
   </div>

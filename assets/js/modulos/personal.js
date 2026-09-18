@@ -945,13 +945,60 @@ function _cumpleInitSelects() {
   aSel.value = String(y);
 }
 
-// Llamado por la pestaña (tras cargar datos): inicializa, carga saludo y pinta.
+// Llamado por la pestaña (tras cargar datos): inicializa, carga saludo y pinta la TABLA.
 async function renderCumpleanos() {
   _cumpleInitSelects();
   await cargarSaludoCumple();
+  renderTablaCumple();
+}
+async function cumpleCambioMes() {
+  await cargarSaludoCumple();
+  renderTablaCumple();
+  if (document.getElementById('modalCumpleMural')?.classList.contains('open')) renderMuralCumple();
+}
+
+// Abre el mural (poster) en un modal, listo para ver/descargar.
+function abrirMuralCumple() {
+  abrirModal('modalCumpleMural');
   renderMuralCumple();
 }
-async function cumpleCambioMes() { await cargarSaludoCumple(); renderMuralCumple(); }
+
+// Tabla de cumpleaños del mes (vista principal del sub-módulo) + KPIs.
+function renderTablaCumple() {
+  const body = document.getElementById('cumpleBody');
+  if (!body) return;
+  const mes  = parseInt(document.getElementById('cumpleMes')?.value, 10)  || (new Date().getMonth() + 1);
+  const anio = parseInt(document.getElementById('cumpleAnio')?.value, 10) || new Date().getFullYear();
+  const q = (document.getElementById('cumpleBuscar')?.value || '').trim().toLowerCase();
+  const hoy = new Date();
+  const esHoy = x => x.dia === hoy.getDate() && mes === (hoy.getMonth() + 1) && anio === hoy.getFullYear();
+  let items = _cumpleDelMes(mes);
+  if (q) items = items.filter(x => (x.p.nombre || '').toLowerCase().includes(q));
+
+  const kpis = document.getElementById('cumpleKpis');
+  if (kpis) kpis.innerHTML =
+    '<div class="kpi-card azul"><div class="kpi-label">Cumpleañeros de ' + CUMPLE_MESES[mes - 1] + '</div><div class="kpi-value azul">' + items.length + '</div><div class="kpi-sub">🎂</div><i class="fas fa-cake-candles kpi-icon"></i></div>' +
+    '<div class="kpi-card verde"><div class="kpi-label">Cumpleaños hoy</div><div class="kpi-value verde">' + items.filter(esHoy).length + '</div><div class="kpi-sub">en el día</div><i class="fas fa-gift kpi-icon"></i></div>';
+
+  if (!items.length) {
+    body.innerHTML = '<tr><td colspan="5" class="muted" style="text-align:center;padding:24px">Sin cumpleaños en ' + CUMPLE_MESES[mes - 1] + '. (¿Falta la fecha de nacimiento?)</td></tr>';
+    return;
+  }
+  body.innerHTML = items.map((x, i) => {
+    const p = x.p, hc = esHoy(x);
+    const foto = p.foto
+      ? '<img src="' + _UPcumple() + p.foto + '" style="width:34px;height:34px;border-radius:50%;object-fit:cover;border:1px solid var(--gris-600)">'
+      : '<span style="width:34px;height:34px;border-radius:50%;background:var(--gris-700);display:inline-flex;align-items:center;justify-content:center;font-size:15px">🎂</span>';
+    const est = hc ? '<span class="badge badge-warning">🎂 HOY</span>' : '<span class="muted">Programado</span>';
+    return '<tr' + (hc ? ' style="background:rgba(243,156,18,.08)"' : '') + '>' +
+      '<td class="muted" style="text-align:center">' + (i + 1) + '</td>' +
+      '<td><div style="display:flex;align-items:center;gap:10px">' + foto + '<span style="font-weight:600;color:var(--gris-100)">' + escapeHtml(p.nombre || '') + '</span></div></td>' +
+      '<td class="muted">' + escapeHtml(p.cargo || '—') + '</td>' +
+      '<td class="muted">' + String(x.dia).padStart(2, '0') + ' de ' + CUMPLE_MESES[mes - 1] + '</td>' +
+      '<td style="text-align:center">' + est + '</td>' +
+    '</tr>';
+  }).join('');
+}
 
 // Trabajadores cuyo cumpleaños cae en el mes indicado.
 function _cumpleDelMes(mes) {
