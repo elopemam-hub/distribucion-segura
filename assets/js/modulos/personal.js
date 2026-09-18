@@ -1465,3 +1465,18 @@ async function actualizarBadgeFotoPend() {
   } catch (e) {}
 }
 document.addEventListener('DOMContentLoaded', () => { setTimeout(actualizarBadgeFotoPend, 800); });
+
+// Regenera el token del enlace público de foto (invalida el QR/link anterior).
+async function regenerarLinkFoto() {
+  if (!confirm('¿Regenerar el enlace? El QR y el link anteriores dejarán de funcionar.')) return;
+  const fd = new FormData(); fd.append('action', 'foto_link_regenerar'); fd.append('csrf_token', CSRF_TOKEN);
+  try {
+    const r = await fetch('api/personal.php', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (!d.success) { toast(d.message || 'Error', 'error'); return; }
+    toast('Enlace regenerado', 'success');
+    const box = document.getElementById('qrFotoCanvas'); if (box) box.innerHTML = '';
+    document.getElementById('qrFotoLink').value = d.data.link;
+    if (window.QRCode && d.data.link && box) new QRCode(box, { text: d.data.link, width: 200, height: 200, correctLevel: QRCode.CorrectLevel.M });
+  } catch (e) { toast('Error de conexión', 'error'); }
+}

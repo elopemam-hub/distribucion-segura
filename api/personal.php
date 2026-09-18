@@ -24,7 +24,7 @@ setupFotoPublica();       // foto por QR/link (foto_pendiente + token)
 $action = $_GET['action'] ?? $_POST['action'] ?? 'list';
 
 // Acciones que modifican datos requieren CSRF
-$mutaciones = ['save', 'delete', 'importar_excel', 'eliminar_doc', 'subir_doc', 'foto_aprobar', 'foto_rechazar'];
+$mutaciones = ['save', 'delete', 'importar_excel', 'eliminar_doc', 'subir_doc', 'foto_aprobar', 'foto_rechazar', 'foto_link_regenerar'];
 if (in_array($action, $mutaciones, true)) {
     requireCsrf();
     // Solo admin/supervisor pueden mutar
@@ -52,6 +52,7 @@ try {
         case 'foto_rechazar':  fotoRechazar(); break;
         case 'fotos_pendientes': fotosPendientes(); break;
         case 'foto_link':      fotoLink(); break;
+        case 'foto_link_regenerar': fotoLinkRegenerar(); break;
         default:
             jsonResponse(false, 'Acción no válida.', null, 400);
     }
@@ -376,6 +377,13 @@ function fotoLink() {
         $base = $sch . '://' . ($_SERVER['HTTP_HOST'] ?? '') . rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/api');
     }
     jsonResponse(true, '', ['link' => $base . '/foto_publico.php?t=' . fotoPublicaToken()]);
+}
+// Rota el token: invalida el enlace/QR anterior. Solo administrador.
+function fotoLinkRegenerar() {
+    $u = getCurrentUser();
+    if (($u['rol'] ?? '') !== 'administrador') jsonResponse(false, 'Solo un administrador puede regenerar el enlace.', null, 403);
+    db()->query("UPDATE foto_pub_config SET token = ? WHERE id = 1", [bin2hex(random_bytes(16))]);
+    fotoLink();
 }
 
 // ------------------------------------------------------------

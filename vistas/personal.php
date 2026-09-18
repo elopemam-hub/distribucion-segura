@@ -249,7 +249,10 @@
           <input type="text" class="form-control" id="qrFotoLink" readonly style="font-size:11px;font-family:monospace;background:var(--gris-700);color:var(--gris-300)">
           <button class="btn btn-primary btn-sm" onclick="copiarLinkFoto()" title="Copiar link"><i class="fas fa-copy"></i></button>
         </div>
-        <button class="btn btn-outline btn-sm" onclick="descargarQrFoto()"><i class="fas fa-download"></i> Descargar QR</button>
+        <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+          <button class="btn btn-outline btn-sm" onclick="descargarQrFoto()"><i class="fas fa-download"></i> Descargar QR</button>
+          <button class="btn btn-outline btn-sm" onclick="regenerarLinkFoto()" title="Invalida el enlace/QR anterior y crea uno nuevo"><i class="fas fa-rotate"></i> Regenerar enlace</button>
+        </div>
       </div>
     </div>
   </div>
