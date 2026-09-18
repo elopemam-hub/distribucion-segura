@@ -1014,17 +1014,27 @@ function renderTablaCumple() {
 // Comparte una imagen (canvas) por WhatsApp/apps con el compartir nativo; si no está
 // disponible (escritorio), descarga la imagen y abre WhatsApp con el texto.
 async function _compartirCanvas(canvas, filename, texto) {
-  const dataUrl = canvas.toDataURL('image/png');
-  const blob = await (await fetch(dataUrl)).blob();
+  const blob = await new Promise(res => { try { canvas.toBlob(res, 'image/png'); } catch (e) { res(null); } });
+  if (!blob) { toast('No se pudo generar la imagen', 'error'); return; }
+  const esMovil = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
   const file = new File([blob], filename, { type: 'image/png' });
-  if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    try { await navigator.share({ files: [file], text: texto || '' }); return; }
-    catch (e) { if (e && e.name === 'AbortError') return; }   // cancelado por el usuario
+
+  // En MÓVIL: compartir nativo con la imagen adjunta (elige WhatsApp/estado).
+  if (esMovil && navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
+    try { await navigator.share({ files: [file], text: texto || '' }); toast('Compartido', 'success'); return; }
+    catch (e) { if (e && e.name === 'AbortError') return; }   // usuario canceló
+    // si falla, continúa al respaldo
   }
-  // Respaldo: descargar la imagen y abrir WhatsApp con el texto (se adjunta manual).
-  const a = document.createElement('a'); a.href = dataUrl; a.download = filename; a.click();
+
+  // RESPALDO (PC o sin compartir nativo): descargar la imagen y abrir WhatsApp con el texto.
+  try {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  } catch (e) {}
   window.open('https://wa.me/?text=' + encodeURIComponent(texto || ''), '_blank');
-  toast('Imagen descargada. Adjúntala en WhatsApp (se abrió el chat).', 'info', 7000);
+  toast('Imagen descargada. Adjúntala en el chat de WhatsApp que se abrió.', 'info', 8000);
 }
 
 // Genera el canvas de la tarjeta individual de cumpleaños. Devuelve {canvas, p} o null.
