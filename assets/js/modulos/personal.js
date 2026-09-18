@@ -1003,16 +1003,35 @@ function renderTablaCumple() {
       '<td class="muted">' + String(x.dia).padStart(2, '0') + ' de ' + CUMPLE_MESES[mes - 1] + '</td>' +
       '<td style="text-align:center;font-variant-numeric:tabular-nums">' + faltan + '</td>' +
       '<td style="text-align:center">' + est + '</td>' +
-      '<td style="text-align:center"><button class="btn btn-outline btn-sm" onclick="descargarTarjetaCumple(' + p.id + ')" title="Descargar tarjeta de saludo"><i class="fas fa-share-nodes"></i></button></td>' +
+      '<td style="text-align:center;white-space:nowrap">' +
+        '<button class="btn btn-outline btn-sm" onclick="descargarTarjetaCumple(' + p.id + ')" title="Descargar tarjeta"><i class="fas fa-download"></i></button> ' +
+        '<button class="btn btn-outline btn-sm" onclick="compartirTarjetaCumple(' + p.id + ')" title="Compartir por WhatsApp"><i class="fab fa-whatsapp" style="color:#25D366"></i></button>' +
+      '</td>' +
     '</tr>';
   }).join('');
 }
 
-// Genera y descarga una tarjeta individual de cumpleaños (para compartir por WhatsApp).
-async function descargarTarjetaCumple(pid) {
+// Comparte una imagen (canvas) por WhatsApp/apps con el compartir nativo; si no está
+// disponible (escritorio), descarga la imagen y abre WhatsApp con el texto.
+async function _compartirCanvas(canvas, filename, texto) {
+  const dataUrl = canvas.toDataURL('image/png');
+  const blob = await (await fetch(dataUrl)).blob();
+  const file = new File([blob], filename, { type: 'image/png' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], text: texto || '' }); return; }
+    catch (e) { if (e && e.name === 'AbortError') return; }   // cancelado por el usuario
+  }
+  // Respaldo: descargar la imagen y abrir WhatsApp con el texto (se adjunta manual).
+  const a = document.createElement('a'); a.href = dataUrl; a.download = filename; a.click();
+  window.open('https://wa.me/?text=' + encodeURIComponent(texto || ''), '_blank');
+  toast('Imagen descargada. Adjúntala en WhatsApp (se abrió el chat).', 'info', 7000);
+}
+
+// Genera el canvas de la tarjeta individual de cumpleaños. Devuelve {canvas, p} o null.
+async function _tarjetaCumpleCanvas(pid) {
   const p = (_resumenData || []).find(z => +z.id === +pid);
-  if (!p) return;
-  if (typeof html2canvas === 'undefined') { toast('No se pudo cargar el generador de imagen', 'error'); return; }
+  if (!p) return null;
+  if (typeof html2canvas === 'undefined') { toast('No se pudo cargar el generador de imagen', 'error'); return null; }
   const partes = String(p.fecha_nacimiento || '').split('-');
   const dia = +partes[2], mes = +partes[1];
   const GOLD = '#E0A82E';
@@ -1036,16 +1055,33 @@ async function descargarTarjetaCumple(pid) {
       (saludo ? '<div style="font-size:15px;font-style:italic;color:#e8dcc6;margin-top:24px;line-height:1.5;max-width:440px;margin-left:auto;margin-right:auto">“' + escapeHtml(saludo) + '”</div>' : '') +
     '</div>';
   document.body.appendChild(cont);
-  toast('Generando tarjeta…', 'info');
   try {
     const canvas = await html2canvas(cont.firstChild, { scale: 2, useCORS: true, backgroundColor: '#0d3c78' });
-    const a = document.createElement('a');
-    a.href = canvas.toDataURL('image/png');
-    a.download = 'cumple_' + (p.dni || p.id) + '.png';
-    a.click();
-    toast('Tarjeta generada', 'success');
-  } catch (e) { toast('No se pudo generar la tarjeta', 'error'); }
+    return { canvas, p };
+  } catch (e) { toast('No se pudo generar la tarjeta', 'error'); return null; }
   finally { document.body.removeChild(cont); }
+}
+
+// Descargar la tarjeta individual (PNG).
+async function descargarTarjetaCumple(pid) {
+  toast('Generando tarjeta…', 'info');
+  const res = await _tarjetaCumpleCanvas(pid);
+  if (!res) return;
+  const a = document.createElement('a');
+  a.href = res.canvas.toDataURL('image/png');
+  a.download = 'cumple_' + (res.p.dni || res.p.id) + '.png';
+  a.click();
+  toast('Tarjeta generada', 'success');
+}
+
+// Compartir la tarjeta individual por WhatsApp (imagen + saludo).
+async function compartirTarjetaCumple(pid) {
+  toast('Preparando para compartir…', 'info');
+  const res = await _tarjetaCumpleCanvas(pid);
+  if (!res) return;
+  const saludo = (document.getElementById('cumpleSaludo')?.value || '').trim();
+  const texto = '🎉 ¡Feliz cumpleaños ' + (res.p.nombre || '') + '! ' + saludo;
+  await _compartirCanvas(res.canvas, 'cumple_' + (res.p.dni || res.p.id) + '.png', texto);
 }
 
 // Trabajadores cuyo cumpleaños cae en el mes indicado.
@@ -1243,5 +1279,20 @@ async function descargarMuralCumple(fmt) {
       a.click();
     }
     toast('Mural generado', 'success');
+  } catch (e) { toast('No se pudo generar el mural', 'error'); }
+}
+
+// Compartir el mural completo por WhatsApp (imagen + saludo).
+async function compartirMuralCumple() {
+  const el = document.getElementById('cumpleMural');
+  if (!el) { toast('No hay cumpleaños para publicar este mes', 'warning'); return; }
+  if (typeof html2canvas === 'undefined') { toast('No se pudo cargar el generador de imagen', 'error'); return; }
+  const mes = String(parseInt(document.getElementById('cumpleMes').value, 10)).padStart(2, '0');
+  const anio = document.getElementById('cumpleAnio').value;
+  toast('Preparando para compartir…', 'info');
+  try {
+    const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#0d3c78' });
+    const saludo = (document.getElementById('cumpleSaludo')?.value || '').trim();
+    await _compartirCanvas(canvas, 'cumpleanos_' + anio + '_' + mes + '.png', '🎂 Cumpleaños del mes' + (saludo ? ' · ' + saludo : ''));
   } catch (e) { toast('No se pudo generar el mural', 'error'); }
 }

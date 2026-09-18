@@ -221,6 +221,7 @@
           <button class="btn btn-outline btn-sm" id="cumpleQuitarLogoBtn" style="display:none" onclick="quitarLogoCumple()" title="Quitar logo"><i class="fas fa-eraser"></i></button>
           <button class="btn btn-primary btn-sm" onclick="descargarMuralCumple('png')"><i class="fas fa-image"></i> Descargar PNG</button>
           <button class="btn btn-outline btn-sm" onclick="descargarMuralCumple('pdf')"><i class="fas fa-file-pdf"></i> PDF</button>
+          <button class="btn btn-success btn-sm" onclick="compartirMuralCumple()"><i class="fab fa-whatsapp"></i> Compartir</button>
         </div>
         <div id="cumpleMuralWrap" style="overflow:auto"></div>
       </div>
