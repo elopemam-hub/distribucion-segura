@@ -1547,3 +1547,52 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(tryOpen, 400);
   }
 });
+
+// ── Exportar el listado de evaluaciones a Excel (con filtros actuales) ──
+async function exportarExcelEval() {
+  if (typeof XLSX === 'undefined') { toast('Librería Excel no disponible', 'error'); return; }
+  const base = {
+    tipo:   document.getElementById('filtroEvalTipo')?.value   || '',
+    estado: document.getElementById('filtroEvalEstado')?.value || '',
+    desde:  document.getElementById('filtroEvalDesde')?.value  || '',
+    hasta:  document.getElementById('filtroEvalHasta')?.value  || '',
+    q:      document.getElementById('filtroEvalQ')?.value      || '',
+  };
+  toast('Generando Excel…', 'info');
+  let rows = [], page = 1, totalPages = 1;
+  try {
+    do {
+      const params = new URLSearchParams({ ...base, page: page, limit: 50 });
+      const r = await fetch('api/listar_evaluaciones.php?' + params);
+      const d = await r.json();
+      if (!d.success) { toast(d.message || 'Error al exportar', 'error'); return; }
+      rows = rows.concat(d.data.rows || []);
+      totalPages = d.data.totalPages || 1;
+      page++;
+    } while (page <= totalPages && page < 200);
+  } catch (e) { toast('Error de conexión', 'error'); return; }
+  if (!rows.length) { toast('No hay evaluaciones para exportar', 'warning'); return; }
+
+  const cab = ['Fecha', 'Tipo', 'Nombre', 'DNI', 'Empresa', 'Puntaje', 'Puntaje Máx', '%', 'Estado', 'Aprobado por', 'Fecha aprobación', 'Origen'];
+  const est = { pendiente_revision: 'Pendiente revisión', aprobado: 'Aprobado', desaprobado: 'Desaprobado' };
+  const datos = rows.map(r => [
+    r.fecha || '',
+    r.tipo_label || r.tipo || '',
+    r.nombre || '',
+    r.dni || '',
+    r.empresa || '',
+    r.puntaje != null ? Number(r.puntaje) : '',
+    r.puntaje_maximo != null ? Number(r.puntaje_maximo) : '',
+    r.porcentaje != null ? Number(r.porcentaje) : '',
+    est[r.estado] || r.estado || '',
+    r.aprobador_nombre || '',
+    r.aprobado_en ? String(r.aprobado_en).split(' ')[0] : '',
+    r.origen === 'publico' ? 'QR/Link' : 'Interno',
+  ]);
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet([cab, ...datos]);
+  ws['!cols'] = cab.map((h, i) => ({ wch: Math.min(Math.max(h.length, ...datos.map(d => String(d[i] ?? '').length)) + 2, 40) }));
+  XLSX.utils.book_append_sheet(wb, ws, 'Evaluaciones');
+  XLSX.writeFile(wb, 'Evaluaciones_' + new Date().toISOString().slice(0, 10) + '.xlsx');
+  toast('Excel generado (' + rows.length + ' filas)', 'success');
+}
