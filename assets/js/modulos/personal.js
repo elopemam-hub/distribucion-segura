@@ -999,12 +999,14 @@ function renderMuralCumple() {
     '</div>';
   }).join('');
 
-  const fondo =
-    'radial-gradient(circle at 12% 18%, rgba(224,168,46,.20), transparent 26%),' +
-    'radial-gradient(circle at 88% 12%, rgba(224,168,46,.16), transparent 22%),' +
-    'radial-gradient(circle at 78% 82%, rgba(224,168,46,.12), transparent 26%),' +
-    'radial-gradient(circle at 25% 88%, rgba(224,168,46,.10), transparent 24%),' +
-    'linear-gradient(135deg,#1c1408 0%,#241a0c 45%,#120d06 100%)';
+  // Fondo: imagen subida (con capa oscura para legibilidad) o degradado con bokeh dorado.
+  const fondo = _cumpleFondo
+    ? 'linear-gradient(rgba(18,12,5,.74),rgba(10,7,3,.86)), url(' + _UPcumple() + _cumpleFondo + ') center/cover no-repeat'
+    : 'radial-gradient(circle at 12% 18%, rgba(224,168,46,.20), transparent 26%),' +
+      'radial-gradient(circle at 88% 12%, rgba(224,168,46,.16), transparent 22%),' +
+      'radial-gradient(circle at 78% 82%, rgba(224,168,46,.12), transparent 26%),' +
+      'radial-gradient(circle at 25% 88%, rgba(224,168,46,.10), transparent 24%),' +
+      'linear-gradient(135deg,#1c1408 0%,#241a0c 45%,#120d06 100%)';
 
   wrap.innerHTML =
     '<div id="cumpleMural" style="background:' + fondo + ';border:1px solid rgba(224,168,46,.35);border-radius:18px;padding:36px 30px;color:#f5ede0;box-shadow:inset 0 0 120px rgba(0,0,0,.55)">' +
@@ -1020,6 +1022,7 @@ function renderMuralCumple() {
 }
 
 // ── Saludo del mes (persistente por mes/año) ──
+let _cumpleFondo = null;   // ruta de la imagen de fondo del mural (uploads/...)
 async function cargarSaludoCumple() {
   const mes = document.getElementById('cumpleMes')?.value, anio = document.getElementById('cumpleAnio')?.value;
   const inp = document.getElementById('cumpleSaludo');
@@ -1028,7 +1031,44 @@ async function cargarSaludoCumple() {
     const r = await fetch('api/cumple_saludo.php?anio=' + anio + '&mes=' + mes);
     const d = await r.json();
     inp.value = (d && d.success && d.data.mensaje) ? d.data.mensaje : '';
+    _cumpleFondo = (d && d.success) ? (d.data.fondo || null) : null;
   } catch (e) { inp.value = ''; }
+  const qb = document.getElementById('cumpleQuitarFondoBtn'); if (qb) qb.style.display = _cumpleFondo ? '' : 'none';
+}
+
+// Subir/quitar la imagen de fondo del mural.
+async function subirFondoCumple(input) {
+  let f = input && input.files && input.files[0];
+  if (!f) return;
+  if (typeof _comprimirImagenPersonal === 'function') f = await _comprimirImagenPersonal(f, 1920, 0.85);
+  let b64 = '';
+  try { b64 = await _fileToDataURL(f); } catch (e) { toast('No se pudo leer la imagen', 'error'); return; }
+  const fd = new FormData();
+  fd.append('action', 'fondo_set'); fd.append('csrf_token', CSRF_TOKEN); fd.append('imagen_b64', b64);
+  toast('Subiendo fondo…', 'info');
+  try {
+    const r = await fetch('api/cumple_saludo.php', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (!d.success) { toast(d.message || 'No se pudo subir', 'error'); return; }
+    _cumpleFondo = d.data.fondo;
+    const qb = document.getElementById('cumpleQuitarFondoBtn'); if (qb) qb.style.display = '';
+    input.value = '';
+    toast('Fondo actualizado', 'success');
+    renderMuralCumple();
+  } catch (e) { toast('Error de conexión', 'error'); }
+}
+async function quitarFondoCumple() {
+  if (!confirm('¿Quitar la imagen de fondo del mural?')) return;
+  const fd = new FormData(); fd.append('action', 'fondo_del'); fd.append('csrf_token', CSRF_TOKEN);
+  try {
+    const r = await fetch('api/cumple_saludo.php', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (!d.success) { toast(d.message || 'Error', 'error'); return; }
+    _cumpleFondo = null;
+    const qb = document.getElementById('cumpleQuitarFondoBtn'); if (qb) qb.style.display = 'none';
+    toast('Fondo quitado', 'success');
+    renderMuralCumple();
+  } catch (e) { toast('Error de conexión', 'error'); }
 }
 async function guardarSaludoCumple() {
   const mes = document.getElementById('cumpleMes').value, anio = document.getElementById('cumpleAnio').value;

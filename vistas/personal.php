@@ -185,6 +185,11 @@
             <div class="form-group" style="flex:1;min-width:240px"><label class="form-label">Saludo del mes <span class="muted" style="font-weight:400;font-size:11px">(aparece en el mural)</span></label>
               <input type="text" class="form-control" id="cumpleSaludo" maxlength="200" placeholder="¡Feliz cumpleaños a nuestro equipo! 🎉" oninput="renderMuralCumple()"></div>
             <button class="btn btn-outline btn-sm" id="cumpleGuardarSaludoBtn" onclick="guardarSaludoCumple()"><i class="fas fa-save"></i> Guardar saludo</button>
+            <label class="btn btn-outline btn-sm" style="margin:0" title="Imagen de fondo del mural (JPG/PNG/WEBP)">
+              <i class="fas fa-panorama"></i> Fondo
+              <input type="file" id="cumpleFondo" accept="image/*" style="display:none" onchange="subirFondoCumple(this)">
+            </label>
+            <button class="btn btn-outline btn-sm" id="cumpleQuitarFondoBtn" style="display:none" onclick="quitarFondoCumple()" title="Quitar imagen de fondo"><i class="fas fa-eraser"></i></button>
             <button class="btn btn-primary btn-sm" onclick="descargarMuralCumple('png')"><i class="fas fa-image"></i> Descargar PNG</button>
             <button class="btn btn-outline btn-sm" onclick="descargarMuralCumple('pdf')"><i class="fas fa-file-pdf"></i> PDF</button>
           </div>
