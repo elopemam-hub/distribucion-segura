@@ -1117,7 +1117,7 @@ async function _tarjetaCumpleCanvas(pid) {
       '<div style="position:absolute;top:22px;left:26px;font-size:20px;opacity:.7">🎉</div>' +
       '<div style="position:absolute;top:22px;right:26px;font-size:20px;opacity:.7">🎈</div>' +
       '<div style="position:relative;z-index:1;height:100%;box-sizing:border-box;padding:40px 46px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#f5ede0">' +
-        (_cumpleLogo ? '<img src="' + _UPcumple() + _cumpleLogo + '" style="height:52px;max-width:210px;object-fit:contain;background:rgba(255,255,255,.94);border-radius:9px;padding:5px 11px;margin-bottom:16px;box-shadow:0 3px 10px rgba(0,0,0,.35)">' : '') +
+        (_cumpleLogo ? '<img src="' + _UPcumple() + _cumpleLogo + '" style="height:76px;max-width:240px;object-fit:contain;margin-bottom:14px">' : '') +
         '<div style="font-size:14px;letter-spacing:.34em;color:' + GOLD + ';font-weight:700;text-shadow:0 1px 6px rgba(0,0,0,.5)">&#10022;&nbsp; ¡FELIZ CUMPLEAÑOS! &nbsp;&#10022;</div>' +
         '<div style="margin:20px 0 18px">' + foto + '</div>' +
         '<div style="font-family:Georgia,\'Times New Roman\',serif;font-size:32px;font-weight:800;color:#fff;line-height:1.12;letter-spacing:.01em;text-shadow:0 2px 10px rgba(0,0,0,.5)">' + escapeHtml((p.nombre || '').toUpperCase()) + '</div>' +
@@ -1214,7 +1214,7 @@ function renderMuralCumple() {
 
   wrap.innerHTML =
     '<div id="cumpleMural" style="background:' + fondo + ';border:1px solid rgba(224,168,46,.35);border-radius:18px;padding:36px 30px;color:#f5ede0;box-shadow:inset 0 0 120px rgba(0,0,0,.55)">' +
-      (_cumpleLogo ? '<div style="text-align:center;margin-bottom:10px"><img src="' + _UPcumple() + _cumpleLogo + '" style="height:54px;max-width:220px;object-fit:contain;background:rgba(255,255,255,.92);border-radius:8px;padding:5px 10px"></div>' : '') +
+      (_cumpleLogo ? '<div style="text-align:center;margin-bottom:12px"><img src="' + _UPcumple() + _cumpleLogo + '" style="height:78px;max-width:260px;object-fit:contain"></div>' : '') +
       '<div style="text-align:center;margin-bottom:6px">' +
         '<div style="font-size:12px;letter-spacing:.35em;color:' + GOLD + ';font-weight:700">&#10022;&nbsp; CUMPLEAÑOS DEL MES &nbsp;&#10022;</div>' +
         '<div style="font-family:Georgia,\'Times New Roman\',serif;font-size:40px;font-weight:800;color:#fff;letter-spacing:.02em;margin-top:6px;text-shadow:0 2px 12px rgba(0,0,0,.5)">' + CUMPLE_MESES[mes - 1].toUpperCase() + ' <span style="color:' + GOLD + '">' + anio + '</span></div>' +
