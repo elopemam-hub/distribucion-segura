@@ -19,11 +19,12 @@ setupPersonalDocs();
 // Auto-provisión multi-empresa (crea empresas + personal.empresa_id y migra textos).
 setupEmpresas();
 setupUsuarioEmpresas();   // restricción de empresas por usuario (Fase 3)
+setupFotoPublica();       // foto por QR/link (foto_pendiente + token)
 
 $action = $_GET['action'] ?? $_POST['action'] ?? 'list';
 
 // Acciones que modifican datos requieren CSRF
-$mutaciones = ['save', 'delete', 'importar_excel', 'eliminar_doc', 'subir_doc'];
+$mutaciones = ['save', 'delete', 'importar_excel', 'eliminar_doc', 'subir_doc', 'foto_aprobar', 'foto_rechazar'];
 if (in_array($action, $mutaciones, true)) {
     requireCsrf();
     // Solo admin/supervisor pueden mutar
@@ -47,6 +48,10 @@ try {
         case 'importar_excel': importarExcel(); break;
         case 'eliminar_doc':   eliminarDoc(); break;
         case 'subir_doc':      subirDoc(); break;
+        case 'foto_aprobar':   fotoAprobar(); break;
+        case 'foto_rechazar':  fotoRechazar(); break;
+        case 'fotos_pendientes': fotosPendientes(); break;
+        case 'foto_link':      fotoLink(); break;
         default:
             jsonResponse(false, 'Acción no válida.', null, 400);
     }
@@ -361,6 +366,50 @@ function setupPersonalDocs(): void {
             error_log('[setupPersonalDocs] ' . $e->getMessage());
         }
     }
+}
+
+// Link público para el QR de envío de foto.
+function fotoLink() {
+    $base = defined('BASE_URL') ? rtrim(BASE_URL, '/') : '';
+    if ($base === '') {
+        $sch = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $base = $sch . '://' . ($_SERVER['HTTP_HOST'] ?? '') . rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/api');
+    }
+    jsonResponse(true, '', ['link' => $base . '/foto_publico.php?t=' . fotoPublicaToken()]);
+}
+
+// ------------------------------------------------------------
+// FOTO POR QR/LINK: revisión de fotos enviadas por los trabajadores.
+function fotosPendientes() {
+    [$empRestr, $empRestrP] = empresaWhere('p.empresa_id');
+    $rows = db()->fetchAll(
+        "SELECT p.id, p.dni, p.nombre, p.foto, p.foto_pendiente, p.foto_pendiente_en
+           FROM personal p
+          WHERE p.foto_pendiente IS NOT NULL AND p.foto_pendiente <> '' $empRestr
+          ORDER BY p.foto_pendiente_en DESC", $empRestrP);
+    jsonResponse(true, '', ['pendientes' => $rows, 'total' => count($rows)]);
+}
+function fotoAprobar() {
+    $id = (int)($_POST['id'] ?? 0);
+    if ($id <= 0) jsonResponse(false, 'ID inválido.', null, 400);
+    $p = db()->fetchOne("SELECT id, empresa_id, foto, foto_pendiente FROM personal WHERE id = ?", [$id]);
+    if (!$p) jsonResponse(false, 'No encontrado.', null, 404);
+    if (!empresaEsPermitida($p['empresa_id'] ?? 0)) jsonResponse(false, 'Sin acceso.', null, 403);
+    if (empty($p['foto_pendiente'])) jsonResponse(false, 'No hay foto pendiente.', null, 409);
+    // La pendiente pasa a ser la foto oficial; se borra la anterior.
+    if (!empty($p['foto']) && $p['foto'] !== $p['foto_pendiente'] && is_file(__DIR__ . '/../uploads/' . $p['foto'])) @unlink(__DIR__ . '/../uploads/' . $p['foto']);
+    db()->query("UPDATE personal SET foto = foto_pendiente, foto_pendiente = NULL, foto_pendiente_en = NULL WHERE id = ?", [$id]);
+    jsonResponse(true, 'Foto aprobada.', ['foto' => $p['foto_pendiente']]);
+}
+function fotoRechazar() {
+    $id = (int)($_POST['id'] ?? 0);
+    if ($id <= 0) jsonResponse(false, 'ID inválido.', null, 400);
+    $p = db()->fetchOne("SELECT id, empresa_id, foto_pendiente FROM personal WHERE id = ?", [$id]);
+    if (!$p) jsonResponse(false, 'No encontrado.', null, 404);
+    if (!empresaEsPermitida($p['empresa_id'] ?? 0)) jsonResponse(false, 'Sin acceso.', null, 403);
+    if (!empty($p['foto_pendiente']) && is_file(__DIR__ . '/../uploads/' . $p['foto_pendiente'])) @unlink(__DIR__ . '/../uploads/' . $p['foto_pendiente']);
+    db()->query("UPDATE personal SET foto_pendiente = NULL, foto_pendiente_en = NULL WHERE id = ?", [$id]);
+    jsonResponse(true, 'Foto rechazada.');
 }
 
 // Sube un documento (imagen o PDF) a uploads/personal/. Devuelve ruta relativa o null.

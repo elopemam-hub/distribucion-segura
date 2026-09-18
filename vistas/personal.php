@@ -17,6 +17,12 @@
         <button class="btn btn-outline btn-sm" onclick="exportarExcelPersonal()">
           <i class="fas fa-file-excel"></i> Exportar
         </button>
+        <button class="btn btn-outline btn-sm" onclick="abrirQrFoto()" title="Link y QR para que los trabajadores envíen su foto">
+          <i class="fas fa-qrcode"></i> QR Foto
+        </button>
+        <button class="btn btn-outline btn-sm" onclick="abrirFotosPendientes()" title="Fotos enviadas por los trabajadores, pendientes de aprobar">
+          <i class="fas fa-images"></i> Fotos pendientes <span id="fotoPendBadge" class="badge badge-warning" style="display:none"></span>
+        </button>
         <button class="btn btn-primary btn-sm" onclick="abrirModalPersonal()">
           <i class="fas fa-plus"></i> Nuevo
         </button>
@@ -225,6 +231,38 @@
           <button class="btn btn-success btn-sm" onclick="compartirMuralCumple()"><i class="fab fa-whatsapp"></i> Compartir</button>
         </div>
         <div id="cumpleMuralWrap" style="overflow:auto"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: QR / LINK PARA FOTO DE PERFIL ===== -->
+  <div class="modal-overlay" id="modalQrFoto">
+    <div class="modal-box" style="max-width:420px">
+      <div class="modal-header">
+        <h3><i class="fas fa-qrcode" style="color:var(--primary)"></i> Enviar foto de perfil</h3>
+        <button class="modal-close" onclick="cerrarModal('modalQrFoto')"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body" style="text-align:center">
+        <p style="font-size:13px;color:var(--gris-400);margin-bottom:16px">Comparte este QR o link con los trabajadores. Ingresan su DNI y suben su foto; quedará <strong>pendiente de tu aprobación</strong>.</p>
+        <div id="qrFotoCanvas" style="display:flex;justify-content:center;min-height:200px;align-items:center;margin-bottom:16px"></div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
+          <input type="text" class="form-control" id="qrFotoLink" readonly style="font-size:11px;font-family:monospace;background:var(--gris-700);color:var(--gris-300)">
+          <button class="btn btn-primary btn-sm" onclick="copiarLinkFoto()" title="Copiar link"><i class="fas fa-copy"></i></button>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="descargarQrFoto()"><i class="fas fa-download"></i> Descargar QR</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: FOTOS PENDIENTES DE APROBAR ===== -->
+  <div class="modal-overlay" id="modalFotosPend">
+    <div class="modal-box" style="max-width:760px;width:97%">
+      <div class="modal-header">
+        <h3><i class="fas fa-images" style="color:var(--primary)"></i> Fotos pendientes de aprobar</h3>
+        <button class="modal-close" onclick="cerrarModal('modalFotosPend')"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <div id="fotosPendBody"><p class="muted" style="text-align:center;padding:24px">Cargando…</p></div>
       </div>
     </div>
   </div>

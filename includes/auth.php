@@ -278,6 +278,38 @@ function evalPuedeResponder(string $tipo, string $dni): array {
     return [$c < $max, $c, $max];
 }
 
+// Provisión para el envío público de foto de perfil (QR/link): columnas de foto
+// pendiente en `personal` + token del enlace público. Idempotente.
+function setupFotoPublica(): void {
+    static $done = false; if ($done) return; $done = true;
+    try {
+        foreach (['foto_pendiente' => 'VARCHAR(255) NULL', 'foto_pendiente_en' => 'DATETIME NULL'] as $col => $ddl) {
+            $ex = db()->fetchOne("SELECT 1 FROM information_schema.columns
+                  WHERE table_schema = DATABASE() AND table_name = 'personal' AND column_name = ?", [$col]);
+            if (!$ex) db()->query("ALTER TABLE personal ADD COLUMN `$col` $ddl", []);
+        }
+        db()->query("CREATE TABLE IF NOT EXISTS foto_pub_config (
+            id TINYINT PRIMARY KEY, token VARCHAR(64) NOT NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", []);
+        if (!db()->fetchOne("SELECT 1 FROM foto_pub_config WHERE id = 1")) {
+            db()->query("INSERT INTO foto_pub_config (id, token) VALUES (1, ?)", [bin2hex(random_bytes(16))]);
+        }
+    } catch (Throwable $e) { error_log('[setupFotoPublica] ' . $e->getMessage()); }
+}
+function fotoPublicaToken(): string {
+    try { $r = db()->fetchOne("SELECT token FROM foto_pub_config WHERE id = 1"); return $r['token'] ?? ''; }
+    catch (Throwable $e) { return ''; }
+}
+// Enmascara el nombre para confirmar identidad sin revelar el nombre completo:
+// primer nombre visible + iniciales del resto. Ej: "JUAN P. G.".
+function fotoPublicaNombreMask(string $nombre): string {
+    $ws = array_values(array_filter(preg_split('/\s+/', trim($nombre))));
+    if (!$ws) return '';
+    $out = [mb_strtoupper($ws[0], 'UTF-8')];
+    for ($i = 1; $i < count($ws); $i++) $out[] = mb_strtoupper(mb_substr($ws[$i], 0, 1, 'UTF-8'), 'UTF-8') . '.';
+    return implode(' ', $out);
+}
+
 // Saludo mensual de cumpleaños (uno por año/mes) para el mural publicable. Idempotente.
 function setupCumpleSaludos(): void {
     try {

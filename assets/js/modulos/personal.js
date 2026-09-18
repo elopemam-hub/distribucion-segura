@@ -1379,3 +1379,89 @@ async function compartirMuralCumple() {
     await _compartirCanvas(canvas, 'cumpleanos_' + anio + '_' + mes + '.png', '🎂 Cumpleaños del mes' + (saludo ? ' · ' + saludo : ''));
   } catch (e) { toast('No se pudo generar el mural', 'error'); }
 }
+
+// ============================================================
+// FOTO POR QR/LINK: generar QR y revisar fotos enviadas
+// ============================================================
+let _qrFotoInstance = null;
+let _fotosPend = [];
+const _UPfoto = () => (typeof UPLOAD_URL !== 'undefined' ? UPLOAD_URL : 'uploads/');
+
+async function abrirQrFoto() {
+  abrirModal('modalQrFoto');
+  const box = document.getElementById('qrFotoCanvas'); if (box) box.innerHTML = '';
+  document.getElementById('qrFotoLink').value = 'Generando…';
+  try {
+    const r = await fetch('api/personal.php?action=foto_link');
+    const d = await r.json();
+    const link = (d && d.success && d.data.link) ? d.data.link : '';
+    document.getElementById('qrFotoLink').value = link;
+    if (window.QRCode && link && box) { _qrFotoInstance = new QRCode(box, { text: link, width: 200, height: 200, correctLevel: QRCode.CorrectLevel.M }); }
+  } catch (e) { if (box) box.innerHTML = '<span class="muted">No se pudo generar</span>'; }
+}
+function copiarLinkFoto() {
+  const i = document.getElementById('qrFotoLink'); if (!i) return;
+  i.select(); i.setSelectionRange(0, 99999);
+  try { document.execCommand('copy'); toast('Link copiado', 'success'); } catch (e) {}
+}
+function descargarQrFoto() {
+  const c = document.querySelector('#qrFotoCanvas canvas') || document.querySelector('#qrFotoCanvas img');
+  if (!c) { toast('QR no generado aún', 'error'); return; }
+  const url = c.tagName === 'CANVAS' ? c.toDataURL('image/png') : c.src;
+  const a = document.createElement('a'); a.href = url; a.download = 'qr_foto_perfil.png'; a.click();
+}
+
+async function abrirFotosPendientes() {
+  abrirModal('modalFotosPend');
+  const body = document.getElementById('fotosPendBody');
+  if (body) body.innerHTML = '<p class="muted" style="text-align:center;padding:24px">Cargando…</p>';
+  try {
+    const r = await fetch('api/personal.php?action=fotos_pendientes');
+    const d = await r.json();
+    _fotosPend = (d && d.success) ? (d.data.pendientes || []) : [];
+  } catch (e) { _fotosPend = []; }
+  renderFotosPendientes();
+}
+function renderFotosPendientes() {
+  const body = document.getElementById('fotosPendBody');
+  if (!body) return;
+  if (!_fotosPend.length) { body.innerHTML = '<p class="muted" style="text-align:center;padding:24px">No hay fotos pendientes por aprobar.</p>'; return; }
+  body.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px">' +
+    _fotosPend.map(p =>
+      '<div style="border:1px solid var(--gris-700);border-radius:12px;padding:14px;text-align:center;background:var(--gris-800)">' +
+        '<img src="' + _UPfoto() + p.foto_pendiente + '" onclick="verDocumento(\'' + _UPfoto() + p.foto_pendiente + '\')" style="width:128px;height:128px;border-radius:50%;object-fit:cover;border:3px solid var(--primary);cursor:pointer">' +
+        '<div style="font-weight:700;color:var(--gris-100);margin-top:10px">' + escapeHtml(p.nombre || '') + '</div>' +
+        '<div class="muted" style="font-size:11px">DNI ' + escapeHtml(p.dni || '') + '</div>' +
+        '<div style="display:flex;gap:8px;justify-content:center;margin-top:12px">' +
+          '<button class="btn btn-success btn-sm" onclick="aprobarFotoPersonal(' + p.id + ')"><i class="fas fa-check"></i> Aprobar</button>' +
+          '<button class="btn btn-danger btn-sm" onclick="rechazarFotoPersonal(' + p.id + ')" title="Rechazar"><i class="fas fa-times"></i></button>' +
+        '</div>' +
+      '</div>'
+    ).join('') + '</div>';
+}
+async function _fotoAccionPersonal(action, id, okMsg) {
+  const fd = new FormData(); fd.append('action', action); fd.append('csrf_token', CSRF_TOKEN); fd.append('id', id);
+  try {
+    const r = await fetch('api/personal.php', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (!d.success) { toast(d.message || 'Error', 'error'); return; }
+    toast(okMsg, 'success');
+    _fotosPend = _fotosPend.filter(x => +x.id !== +id);
+    renderFotosPendientes();
+    actualizarBadgeFotoPend();
+    if (typeof cargarPersonal === 'function') cargarPersonal();
+  } catch (e) { toast('Error de conexión', 'error'); }
+}
+async function aprobarFotoPersonal(id) { await _fotoAccionPersonal('foto_aprobar', id, 'Foto aprobada'); }
+async function rechazarFotoPersonal(id) { if (!confirm('¿Rechazar esta foto?')) return; await _fotoAccionPersonal('foto_rechazar', id, 'Foto rechazada'); }
+
+async function actualizarBadgeFotoPend() {
+  const b = document.getElementById('fotoPendBadge'); if (!b) return;
+  try {
+    const r = await fetch('api/personal.php?action=fotos_pendientes');
+    const d = await r.json();
+    const n = (d && d.success) ? (d.data.total || 0) : 0;
+    b.textContent = n; b.style.display = n ? '' : 'none';
+  } catch (e) {}
+}
+document.addEventListener('DOMContentLoaded', () => { setTimeout(actualizarBadgeFotoPend, 800); });
