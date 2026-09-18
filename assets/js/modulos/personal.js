@@ -996,7 +996,6 @@ function renderMuralCumple() {
       '<div style="font-weight:800;font-size:14px;color:#fff;margin-top:12px;line-height:1.2;letter-spacing:.02em">' + escapeHtml((p.nombre || '').toUpperCase()) + '</div>' +
       '<div style="font-size:11px;color:' + GOLD + ';margin-top:3px;opacity:.85;text-transform:uppercase;letter-spacing:.05em">' + escapeHtml(p.cargo || '') + '</div>' +
       '<div style="margin-top:11px;display:inline-block;background:linear-gradient(135deg,#f0c05a,' + GOLD + ');color:#1c1408;font-weight:800;font-size:13px;padding:5px 14px;border-radius:999px;box-shadow:0 3px 8px rgba(224,168,46,.3)">' + String(x.dia).padStart(2, '0') + ' de ' + CUMPLE_MESES[mes - 1] + '</div>' +
-      (edad > 0 && edad < 120 ? '<div style="font-size:11px;color:#b8a888;margin-top:7px">Cumple ' + edad + ' años</div>' : '') +
     '</div>';
   }).join('');
 
