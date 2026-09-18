@@ -46,7 +46,7 @@ $rows = db()->fetchAll(
             e.puntaje, e.puntaje_maximo, e.porcentaje, e.estado,
             e.origen, e.created_at, e.registro_pdf,
             u.nombre AS evaluador_nombre,
-            a.nombre AS aprobador_nombre,
+            a.usuario AS aprobador_nombre,
             e.aprobado_en
      FROM evaluaciones e
      LEFT JOIN usuarios u ON u.id = e.evaluador_id
