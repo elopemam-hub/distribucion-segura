@@ -984,30 +984,39 @@ function renderMuralCumple() {
     return;
   }
 
+  const GOLD = '#E0A82E';
   const cards = items.map(x => {
     const p = x.p, edad = anio - x.anioNac, hc = esHoy(x);
     const foto = p.foto
-      ? '<img src="' + _UPcumple() + p.foto + '" style="width:84px;height:84px;border-radius:50%;object-fit:cover;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.2)">'
-      : '<div style="width:84px;height:84px;border-radius:50%;background:#e9ecef;display:flex;align-items:center;justify-content:center;font-size:34px;border:3px solid #fff">🎂</div>';
-    return '<div style="width:180px;background:#fff;border-radius:14px;padding:16px 12px;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.10);position:relative">' +
-      (hc ? '<div style="position:absolute;top:8px;right:8px;background:#F39C12;color:#fff;font-size:10px;font-weight:800;padding:2px 8px;border-radius:999px">HOY</div>' : '') +
+      ? '<img src="' + _UPcumple() + p.foto + '" style="width:92px;height:92px;border-radius:50%;object-fit:cover;border:3px solid ' + GOLD + ';box-shadow:0 0 0 4px rgba(224,168,46,.18),0 6px 16px rgba(0,0,0,.5)">'
+      : '<div style="width:92px;height:92px;border-radius:50%;background:#2a2010;display:flex;align-items:center;justify-content:center;font-size:38px;border:3px solid ' + GOLD + ';box-shadow:0 0 0 4px rgba(224,168,46,.18)">🎂</div>';
+    return '<div style="width:190px;background:linear-gradient(160deg,rgba(62,46,22,.92),rgba(28,20,10,.94));border:1px solid rgba(224,168,46,.38);border-radius:16px;padding:20px 14px 18px;text-align:center;box-shadow:0 10px 26px rgba(0,0,0,.45);position:relative">' +
+      (hc ? '<div style="position:absolute;top:10px;right:10px;background:' + GOLD + ';color:#1c1408;font-size:10px;font-weight:800;padding:3px 9px;border-radius:999px;letter-spacing:.05em">HOY 🎉</div>' : '') +
       foto +
-      '<div style="font-weight:800;font-size:14px;color:#1a2332;margin-top:10px;line-height:1.2">' + escapeHtml((p.nombre || '').toUpperCase()) + '</div>' +
-      '<div style="font-size:11px;color:#6c757d;margin-top:2px">' + escapeHtml(p.cargo || '') + '</div>' +
-      '<div style="margin-top:8px;display:inline-block;background:#1565C0;color:#fff;font-weight:800;font-size:13px;padding:4px 12px;border-radius:999px">' + String(x.dia).padStart(2, '0') + ' de ' + CUMPLE_MESES[mes - 1] + '</div>' +
-      (edad > 0 && edad < 120 ? '<div style="font-size:11px;color:#adb5bd;margin-top:5px">Cumple ' + edad + ' años</div>' : '') +
+      '<div style="font-weight:800;font-size:14px;color:#fff;margin-top:12px;line-height:1.2;letter-spacing:.02em">' + escapeHtml((p.nombre || '').toUpperCase()) + '</div>' +
+      '<div style="font-size:11px;color:' + GOLD + ';margin-top:3px;opacity:.85;text-transform:uppercase;letter-spacing:.05em">' + escapeHtml(p.cargo || '') + '</div>' +
+      '<div style="margin-top:11px;display:inline-block;background:linear-gradient(135deg,#f0c05a,' + GOLD + ');color:#1c1408;font-weight:800;font-size:13px;padding:5px 14px;border-radius:999px;box-shadow:0 3px 8px rgba(224,168,46,.3)">' + String(x.dia).padStart(2, '0') + ' de ' + CUMPLE_MESES[mes - 1] + '</div>' +
+      (edad > 0 && edad < 120 ? '<div style="font-size:11px;color:#b8a888;margin-top:7px">Cumple ' + edad + ' años</div>' : '') +
     '</div>';
   }).join('');
 
+  const fondo =
+    'radial-gradient(circle at 12% 18%, rgba(224,168,46,.20), transparent 26%),' +
+    'radial-gradient(circle at 88% 12%, rgba(224,168,46,.16), transparent 22%),' +
+    'radial-gradient(circle at 78% 82%, rgba(224,168,46,.12), transparent 26%),' +
+    'radial-gradient(circle at 25% 88%, rgba(224,168,46,.10), transparent 24%),' +
+    'linear-gradient(135deg,#1c1408 0%,#241a0c 45%,#120d06 100%)';
+
   wrap.innerHTML =
-    '<div id="cumpleMural" style="background:linear-gradient(135deg,#1565C0,#0d3c78);border-radius:16px;padding:26px 24px;color:#fff">' +
+    '<div id="cumpleMural" style="background:' + fondo + ';border:1px solid rgba(224,168,46,.35);border-radius:18px;padding:36px 30px;color:#f5ede0;box-shadow:inset 0 0 120px rgba(0,0,0,.55)">' +
       '<div style="text-align:center;margin-bottom:6px">' +
-        '<div style="font-size:13px;letter-spacing:.12em;opacity:.85;font-weight:700">CUMPLEAÑOS DEL MES</div>' +
-        '<div style="font-family:Arial,sans-serif;font-size:30px;font-weight:900;line-height:1.05">' + CUMPLE_MESES[mes - 1].toUpperCase() + ' ' + anio + ' 🎉</div>' +
+        '<div style="font-size:12px;letter-spacing:.35em;color:' + GOLD + ';font-weight:700">&#10022;&nbsp; CUMPLEAÑOS DEL MES &nbsp;&#10022;</div>' +
+        '<div style="font-family:Georgia,\'Times New Roman\',serif;font-size:40px;font-weight:800;color:#fff;letter-spacing:.02em;margin-top:6px;text-shadow:0 2px 12px rgba(0,0,0,.5)">' + CUMPLE_MESES[mes - 1].toUpperCase() + ' <span style="color:' + GOLD + '">' + anio + '</span></div>' +
+        '<div style="width:90px;height:3px;background:linear-gradient(90deg,transparent,' + GOLD + ',transparent);margin:12px auto 0"></div>' +
       '</div>' +
-      (saludo ? '<div style="text-align:center;font-size:15px;font-weight:600;margin:10px auto 18px;max-width:680px;opacity:.95">' + escapeHtml(saludo) + '</div>' : '<div style="height:14px"></div>') +
-      '<div style="display:flex;flex-wrap:wrap;gap:16px;justify-content:center">' + cards + '</div>' +
-      '<div style="text-align:center;font-size:11px;opacity:.7;margin-top:20px">Generado el ' + new Date().toLocaleDateString('es-PE') + '</div>' +
+      (saludo ? '<div style="text-align:center;font-size:15px;font-style:italic;color:#e8dcc6;max-width:680px;margin:16px auto 24px;line-height:1.5">“' + escapeHtml(saludo) + '”</div>' : '<div style="height:18px"></div>') +
+      '<div style="display:flex;flex-wrap:wrap;gap:18px;justify-content:center">' + cards + '</div>' +
+      '<div style="text-align:center;font-size:11px;color:#a9987a;margin-top:26px;letter-spacing:.06em">Generado el ' + new Date().toLocaleDateString('es-PE') + '</div>' +
     '</div>';
 }
 
