@@ -58,6 +58,15 @@ if ($action === 'fondo_del') _cumpleQuitarImg('fondo');
 if ($action === 'logo_set')  _cumpleGuardarImg('logo', 'logo');
 if ($action === 'logo_del')  _cumpleQuitarImg('logo');
 
+if ($action === 'marcar_enviado') {
+    requireCsrf();
+    _cumpleAdmin();
+    $pid = (int)($_POST['personal_id'] ?? 0);
+    if ($pid <= 0) jsonResponse(false, 'ID inválido.', null, 422);
+    db()->query("INSERT IGNORE INTO cumple_enviados (personal_id, fecha) VALUES (?, CURDATE())", [$pid]);
+    jsonResponse(true, 'Marcado como enviado.');
+}
+
 if ($action === 'save') {
     requireCsrf();
     $u = getCurrentUser();
@@ -76,4 +85,7 @@ if ($action === 'save') {
 $anio = (int)($_GET['anio'] ?? 0);
 $mes  = (int)($_GET['mes'] ?? 0);
 $r = db()->fetchOne("SELECT mensaje FROM cumple_saludos WHERE anio = ? AND mes = ?", [$anio, $mes]);
-jsonResponse(true, '', ['mensaje' => $r['mensaje'] ?? '', 'fondo' => _cumpleImg('fondo'), 'logo' => _cumpleImg('logo')]);
+$env = [];
+try { foreach (db()->fetchAll("SELECT personal_id FROM cumple_enviados WHERE fecha = CURDATE()") as $e) $env[] = (int)$e['personal_id']; }
+catch (Throwable $e) {}
+jsonResponse(true, '', ['mensaje' => $r['mensaje'] ?? '', 'fondo' => _cumpleImg('fondo'), 'logo' => _cumpleImg('logo'), 'enviados' => $env]);

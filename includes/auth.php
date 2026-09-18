@@ -297,6 +297,12 @@ function setupCumpleSaludos(): void {
         $exLogo = db()->fetchOne("SELECT 1 FROM information_schema.columns
               WHERE table_schema = DATABASE() AND table_name = 'cumple_config' AND column_name = 'logo'");
         if (!$exLogo) db()->query("ALTER TABLE cumple_config ADD COLUMN logo VARCHAR(255) NULL", []);
+        // Registro de saludos enviados (para no duplicar y mostrar estado).
+        db()->query("CREATE TABLE IF NOT EXISTS cumple_enviados (
+            personal_id INT NOT NULL,
+            fecha       DATE NOT NULL,
+            PRIMARY KEY (personal_id, fecha)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", []);
     } catch (Exception $e) { error_log('[setupCumpleSaludos] ' . $e->getMessage()); }
 }
 

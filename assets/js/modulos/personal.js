@@ -964,9 +964,65 @@ function abrirMuralCumple() {
 }
 
 // Tabla de cumpleaños del mes (vista principal del sub-módulo) + KPIs.
+// Banner "Cumpleaños de HOY" (independiente del mes elegido) con envío por WhatsApp.
+function _renderCumpleHoyBanner() {
+  const cont = document.getElementById('cumpleHoyBanner');
+  if (!cont) return;
+  const hoy = new Date();
+  const hoyList = (_resumenData || []).filter(p => {
+    const pr = String(p.fecha_nacimiento || '').split('-');
+    return pr.length === 3 && +pr[1] === (hoy.getMonth() + 1) && +pr[2] === hoy.getDate();
+  });
+  if (!hoyList.length) { cont.innerHTML = ''; return; }
+  const filas = hoyList.map(p => {
+    const enviado = _cumpleEnviados.has(+p.id);
+    const num = _waNumero(p.telefono);
+    const foto = p.foto
+      ? '<img src="' + _UPcumple() + p.foto + '" style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:1px solid var(--gris-600)">'
+      : '<span style="width:38px;height:38px;border-radius:50%;background:var(--gris-700);display:inline-flex;align-items:center;justify-content:center;font-size:16px">🎂</span>';
+    const btn = enviado
+      ? '<span class="badge badge-success"><i class="fas fa-check"></i> Enviado</span>'
+      : '<button class="btn btn-success btn-sm" onclick="enviarWhatsappCumple(' + p.id + ')"><i class="fab fa-whatsapp"></i> Enviar saludo</button>';
+    return '<div style="display:flex;align-items:center;gap:12px;background:var(--gris-800);border:1px solid var(--gris-700);border-radius:10px;padding:10px 14px">' +
+      foto +
+      '<div style="flex:1;min-width:140px"><div style="font-weight:700;color:var(--gris-100)">' + escapeHtml(p.nombre || '') + '</div>' +
+      '<div class="muted" style="font-size:11px">' + escapeHtml(p.cargo || '') + (num ? ' · 📱 ' + escapeHtml(p.telefono || '') : ' · <span style="color:var(--rojo)">sin celular</span>') + '</div></div>' +
+      '<button class="btn btn-outline btn-sm" onclick="descargarTarjetaCumple(' + p.id + ')" title="Descargar tarjeta"><i class="fas fa-download"></i></button> ' + btn +
+    '</div>';
+  }).join('');
+  cont.innerHTML =
+    '<div class="card" style="margin-bottom:16px;border-left:4px solid var(--primary)"><div class="card-body" style="padding:14px 18px">' +
+      '<div style="font-weight:800;color:var(--gris-100);margin-bottom:10px"><i class="fas fa-cake-candles" style="color:var(--primary)"></i> ¡Hoy cumple ' + hoyList.length + ' persona(s)! Envíales el saludo:</div>' +
+      '<div style="display:flex;flex-direction:column;gap:8px">' + filas + '</div>' +
+    '</div></div>';
+}
+
+// Abre WhatsApp al número del trabajador con el saludo y descarga su tarjeta para adjuntar.
+async function enviarWhatsappCumple(pid) {
+  const p = (_resumenData || []).find(z => +z.id === +pid);
+  if (!p) return;
+  const num = _waNumero(p.telefono);
+  const saludo = (document.getElementById('cumpleSaludo')?.value || '').trim();
+  const texto = '🎉 ¡Feliz cumpleaños ' + (p.nombre || '') + '! ' + saludo;
+  toast('Generando tarjeta…', 'info');
+  const res = await _tarjetaCumpleCanvas(pid);
+  if (res) { const a = document.createElement('a'); a.href = res.canvas.toDataURL('image/png'); a.download = 'cumple_' + (p.dni || p.id) + '.png'; document.body.appendChild(a); a.click(); a.remove(); }
+  // Abre el chat de WhatsApp con esa persona (o selector si no hay número).
+  window.open('https://wa.me/' + num + '?text=' + encodeURIComponent(texto), '_blank');
+  // Marca como enviado (para el estado del banner).
+  try {
+    const fd = new FormData(); fd.append('action', 'marcar_enviado'); fd.append('csrf_token', CSRF_TOKEN); fd.append('personal_id', pid);
+    const r = await fetch('api/cumple_saludo.php', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (d.success) { _cumpleEnviados.add(+pid); _renderCumpleHoyBanner(); renderTablaCumple(); }
+  } catch (e) {}
+  toast('Se abrió WhatsApp. Adjunta la tarjeta descargada y envía.', 'info', 8000);
+}
+
 function renderTablaCumple() {
   const body = document.getElementById('cumpleBody');
   if (!body) return;
+  _renderCumpleHoyBanner();
   const mes  = parseInt(document.getElementById('cumpleMes')?.value, 10)  || (new Date().getMonth() + 1);
   const anio = parseInt(document.getElementById('cumpleAnio')?.value, 10) || new Date().getFullYear();
   const q = (document.getElementById('cumpleBuscar')?.value || '').trim().toLowerCase();
@@ -1005,7 +1061,7 @@ function renderTablaCumple() {
       '<td style="text-align:center">' + est + '</td>' +
       '<td style="text-align:center;white-space:nowrap">' +
         '<button class="btn btn-outline btn-sm" onclick="descargarTarjetaCumple(' + p.id + ')" title="Descargar tarjeta"><i class="fas fa-download"></i></button> ' +
-        '<button class="btn btn-outline btn-sm" onclick="compartirTarjetaCumple(' + p.id + ')" title="Compartir por WhatsApp"><i class="fab fa-whatsapp" style="color:#25D366"></i></button>' +
+        '<button class="btn btn-outline btn-sm" onclick="enviarWhatsappCumple(' + p.id + ')" title="Enviar saludo a su WhatsApp"><i class="fab fa-whatsapp" style="color:#25D366"></i></button>' +
       '</td>' +
     '</tr>';
   }).join('');
@@ -1173,6 +1229,15 @@ function renderMuralCumple() {
 // ── Saludo del mes (persistente por mes/año) ──
 let _cumpleFondo = null;   // ruta de la imagen de fondo del mural (uploads/...)
 let _cumpleLogo = null;    // ruta del logo de la empresa (uploads/...)
+let _cumpleEnviados = new Set();   // personal_id con saludo enviado HOY
+
+// Normaliza un teléfono a formato internacional para wa.me (Perú +51).
+function _waNumero(tel) {
+  let d = String(tel || '').replace(/\D/g, '');
+  if (!d) return '';
+  if (d.length === 9 && d[0] === '9') d = '51' + d;   // celular peruano
+  return d;
+}
 async function cargarSaludoCumple() {
   const mes = document.getElementById('cumpleMes')?.value, anio = document.getElementById('cumpleAnio')?.value;
   const inp = document.getElementById('cumpleSaludo');
@@ -1183,6 +1248,7 @@ async function cargarSaludoCumple() {
     inp.value = (d && d.success && d.data.mensaje) ? d.data.mensaje : '';
     _cumpleFondo = (d && d.success) ? (d.data.fondo || null) : null;
     _cumpleLogo  = (d && d.success) ? (d.data.logo || null) : null;
+    _cumpleEnviados = new Set((d && d.success ? (d.data.enviados || []) : []).map(Number));
   } catch (e) { inp.value = ''; }
   const qb = document.getElementById('cumpleQuitarFondoBtn'); if (qb) qb.style.display = _cumpleFondo ? '' : 'none';
   const ql = document.getElementById('cumpleQuitarLogoBtn'); if (ql) ql.style.display = _cumpleLogo ? '' : 'none';
