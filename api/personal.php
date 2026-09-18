@@ -378,10 +378,10 @@ function fotoLink() {
     }
     jsonResponse(true, '', ['link' => $base . '/foto_publico.php?t=' . fotoPublicaToken(), 'token' => fotoPublicaToken()]);
 }
-// Rota el token: invalida el enlace/QR anterior. Solo administrador.
+// Rota el token: invalida el enlace/QR anterior. Admin o supervisor.
 function fotoLinkRegenerar() {
     $u = getCurrentUser();
-    if (($u['rol'] ?? '') !== 'administrador') jsonResponse(false, 'Solo un administrador puede regenerar el enlace.', null, 403);
+    if (!in_array($u['rol'] ?? '', ['administrador', 'supervisor'], true)) jsonResponse(false, 'Sin permisos para regenerar el enlace.', null, 403);
     db()->query("UPDATE foto_pub_config SET token = ? WHERE id = 1", [bin2hex(random_bytes(16))]);
     fotoLink();
 }
