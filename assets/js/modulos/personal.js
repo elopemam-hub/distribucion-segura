@@ -1047,22 +1047,29 @@ async function _tarjetaCumpleCanvas(pid) {
   const GOLD = '#E0A82E';
   const saludo = (document.getElementById('cumpleSaludo')?.value || '').trim();
   const foto = p.foto
-    ? '<img src="' + _UPcumple() + p.foto + '" style="width:150px;height:150px;border-radius:50%;object-fit:cover;border:4px solid ' + GOLD + ';box-shadow:0 0 0 6px rgba(224,168,46,.18)">'
-    : '<div style="width:150px;height:150px;border-radius:50%;background:#2a2010;display:flex;align-items:center;justify-content:center;font-size:64px;border:4px solid ' + GOLD + '">🎂</div>';
+    ? '<img src="' + _UPcumple() + p.foto + '" style="width:164px;height:164px;border-radius:50%;object-fit:cover;border:4px solid ' + GOLD + ';box-shadow:0 0 0 7px rgba(224,168,46,.14),0 0 42px rgba(224,168,46,.35)">'
+    : '<div style="width:164px;height:164px;border-radius:50%;background:#2a2010;display:flex;align-items:center;justify-content:center;font-size:68px;border:4px solid ' + GOLD + ';box-shadow:0 0 42px rgba(224,168,46,.35)">🎂</div>';
   const fondo = _cumpleFondo
-    ? 'linear-gradient(rgba(18,12,5,.80),rgba(10,7,3,.90)), url(' + _UPcumple() + _cumpleFondo + ') center/cover'
-    : 'radial-gradient(circle at 30% 15%, rgba(224,168,46,.22), transparent 32%),linear-gradient(135deg,#1c1408,#120d06)';
+    ? 'linear-gradient(rgba(16,11,4,.82),rgba(8,5,2,.92)), url(' + _UPcumple() + _cumpleFondo + ') center/cover'
+    : 'radial-gradient(circle at 30% 12%, rgba(224,168,46,.24), transparent 34%),radial-gradient(circle at 80% 88%, rgba(224,168,46,.16), transparent 32%),linear-gradient(135deg,#1c1408,#0f0a05)';
   const cont = document.createElement('div');
   cont.style.cssText = 'position:fixed;left:-9999px;top:0';
   cont.innerHTML =
-    '<div style="width:600px;height:600px;box-sizing:border-box;background:' + fondo + ';padding:40px 40px;text-align:center;color:#f5ede0;border-radius:20px;font-family:Arial,sans-serif;border:1px solid rgba(224,168,46,.4);display:flex;flex-direction:column;align-items:center;justify-content:center">' +
-      (_cumpleLogo ? '<img src="' + _UPcumple() + _cumpleLogo + '" style="height:46px;max-width:200px;object-fit:contain;background:rgba(255,255,255,.92);border-radius:8px;padding:4px 9px;margin-bottom:14px">' : '') +
-      '<div style="font-size:13px;letter-spacing:.3em;color:' + GOLD + ';font-weight:700">&#10022;&nbsp; ¡FELIZ CUMPLEAÑOS! &nbsp;&#10022;</div>' +
-      '<div style="margin:22px 0 16px">' + foto + '</div>' +
-      '<div style="font-family:Georgia,serif;font-size:30px;font-weight:800;color:#fff;line-height:1.15">' + escapeHtml((p.nombre || '').toUpperCase()) + '</div>' +
-      '<div style="font-size:13px;color:' + GOLD + ';margin-top:6px;text-transform:uppercase;letter-spacing:.06em">' + escapeHtml(p.cargo || '') + '</div>' +
-      (dia && mes ? '<div style="margin-top:20px;display:inline-block;background:linear-gradient(135deg,#f0c05a,' + GOLD + ');color:#1c1408;font-weight:800;font-size:16px;padding:9px 24px;border-radius:999px">' + String(dia).padStart(2, '0') + ' de ' + CUMPLE_MESES[mes - 1] + '</div>' : '') +
-      (saludo ? '<div style="font-size:15px;font-style:italic;color:#e8dcc6;margin-top:24px;line-height:1.5;max-width:440px;margin-left:auto;margin-right:auto">“' + escapeHtml(saludo) + '”</div>' : '') +
+    '<div style="width:600px;height:600px;box-sizing:border-box;background:' + fondo + ';border-radius:22px;font-family:Arial,sans-serif;position:relative;overflow:hidden">' +
+      // Marco dorado interior + esquinas decorativas
+      '<div style="position:absolute;top:15px;left:15px;right:15px;bottom:15px;border:1.5px solid rgba(224,168,46,.55);border-radius:16px;pointer-events:none"></div>' +
+      '<div style="position:absolute;top:22px;left:26px;font-size:20px;opacity:.7">🎉</div>' +
+      '<div style="position:absolute;top:22px;right:26px;font-size:20px;opacity:.7">🎈</div>' +
+      '<div style="position:relative;z-index:1;height:100%;box-sizing:border-box;padding:40px 46px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#f5ede0">' +
+        (_cumpleLogo ? '<img src="' + _UPcumple() + _cumpleLogo + '" style="height:52px;max-width:210px;object-fit:contain;background:rgba(255,255,255,.94);border-radius:9px;padding:5px 11px;margin-bottom:16px;box-shadow:0 3px 10px rgba(0,0,0,.35)">' : '') +
+        '<div style="font-size:14px;letter-spacing:.34em;color:' + GOLD + ';font-weight:700;text-shadow:0 1px 6px rgba(0,0,0,.5)">&#10022;&nbsp; ¡FELIZ CUMPLEAÑOS! &nbsp;&#10022;</div>' +
+        '<div style="margin:20px 0 18px">' + foto + '</div>' +
+        '<div style="font-family:Georgia,\'Times New Roman\',serif;font-size:32px;font-weight:800;color:#fff;line-height:1.12;letter-spacing:.01em;text-shadow:0 2px 10px rgba(0,0,0,.5)">' + escapeHtml((p.nombre || '').toUpperCase()) + '</div>' +
+        '<div style="font-size:13px;color:' + GOLD + ';margin-top:8px;text-transform:uppercase;letter-spacing:.14em;font-weight:600">' + escapeHtml(p.cargo || '') + '</div>' +
+        (dia && mes ? '<div style="margin-top:20px;display:inline-block;background:linear-gradient(135deg,#f6cd6b,' + GOLD + ');color:#1c1408;font-weight:800;font-size:17px;padding:10px 26px;border-radius:999px;box-shadow:0 4px 14px rgba(224,168,46,.4)">🎂&nbsp; ' + String(dia).padStart(2, '0') + ' de ' + CUMPLE_MESES[mes - 1] + '</div>' : '') +
+        (saludo ? '<div style="width:120px;height:2px;background:linear-gradient(90deg,transparent,' + GOLD + ',transparent);margin:22px auto 0"></div>' +
+                  '<div style="font-size:15px;font-style:italic;color:#e9ddc6;margin-top:14px;line-height:1.55;max-width:430px">“' + escapeHtml(saludo) + '”</div>' : '') +
+      '</div>' +
     '</div>';
   document.body.appendChild(cont);
   try {
