@@ -278,6 +278,18 @@ function evalPuedeResponder(string $tipo, string $dni): array {
     return [$c < $max, $c, $max];
 }
 
+// Saludo mensual de cumpleaños (uno por año/mes) para el mural publicable. Idempotente.
+function setupCumpleSaludos(): void {
+    try {
+        db()->query("CREATE TABLE IF NOT EXISTS cumple_saludos (
+            anio    INT NOT NULL,
+            mes     INT NOT NULL,
+            mensaje VARCHAR(255) NULL,
+            PRIMARY KEY (anio, mes)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", []);
+    } catch (Exception $e) { error_log('[setupCumpleSaludos] ' . $e->getMessage()); }
+}
+
 // ============================================================
 // MÓDULO EPP — Auto-provisión idempotente de tablas + seed.
 // Se invoca al inicio de cada endpoint api/epp/* y al cargar la vista.

@@ -929,55 +929,137 @@ function _proxCumple(fechaNac) {
   return { dias: dias, edad: prox.getFullYear() - anio, dia: dia, mes: mes };
 }
 
-function renderCumpleanos() {
-  const body = document.getElementById('cumpleBody');
-  if (!body) return;
-  const rango = document.getElementById('cumpleRango')?.value || '30';
-  const q = (document.getElementById('cumpleBuscar')?.value || '').trim().toLowerCase();
-  const mesActual = new Date().getMonth() + 1;
+// ── Cumpleaños: MURAL del mes (publicable como imagen/PDF con saludo) ──
+const CUMPLE_MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const _UPcumple = () => (typeof UPLOAD_URL !== 'undefined' ? UPLOAD_URL : 'uploads/');
 
-  let items = _resumenData.map(p => ({ p: p, c: _proxCumple(p.fecha_nacimiento) })).filter(x => x.c);
-  if (q) items = items.filter(x => (x.p.nombre || '').toLowerCase().includes(q));
-  let filtrados = items;
-  if (rango === '30')      filtrados = items.filter(x => x.c.dias <= 30);
-  else if (rango === 'mes') filtrados = items.filter(x => x.c.mes === mesActual);
-  filtrados.sort((a, b) => a.c.dias - b.c.dias);
+function _cumpleInitSelects() {
+  const mSel = document.getElementById('cumpleMes');
+  const aSel = document.getElementById('cumpleAnio');
+  if (!mSel || mSel.options.length) return;
+  const now = new Date();
+  mSel.innerHTML = CUMPLE_MESES.map((m, i) => `<option value="${i + 1}">${m}</option>`).join('');
+  mSel.value = String(now.getMonth() + 1);
+  const y = now.getFullYear();
+  aSel.innerHTML = [y - 1, y, y + 1].map(a => `<option value="${a}">${a}</option>`).join('');
+  aSel.value = String(y);
+}
 
-  const hoyN = items.filter(x => x.c.dias === 0).length;
-  const mesN = items.filter(x => x.c.mes === mesActual).length;
-  const p30 = items.filter(x => x.c.dias <= 30).length;
+// Llamado por la pestaña (tras cargar datos): inicializa, carga saludo y pinta.
+async function renderCumpleanos() {
+  _cumpleInitSelects();
+  await cargarSaludoCumple();
+  renderMuralCumple();
+}
+async function cumpleCambioMes() { await cargarSaludoCumple(); renderMuralCumple(); }
+
+// Trabajadores cuyo cumpleaños cae en el mes indicado.
+function _cumpleDelMes(mes) {
+  return (_resumenData || []).map(p => {
+    const partes = String(p.fecha_nacimiento || '').split('-');
+    if (partes.length < 3) return null;
+    const bMes = +partes[1], bDia = +partes[2], bAnio = +partes[0];
+    if (bMes !== mes || !bDia) return null;
+    return { p, dia: bDia, anioNac: bAnio };
+  }).filter(Boolean).sort((a, b) => a.dia - b.dia);
+}
+
+function renderMuralCumple() {
+  const wrap = document.getElementById('cumpleMuralWrap');
+  if (!wrap) return;
+  const mes  = parseInt(document.getElementById('cumpleMes')?.value, 10)  || (new Date().getMonth() + 1);
+  const anio = parseInt(document.getElementById('cumpleAnio')?.value, 10) || new Date().getFullYear();
+  const saludo = (document.getElementById('cumpleSaludo')?.value || '').trim();
+  const hoy = new Date();
+  const items = _cumpleDelMes(mes);
+  const esHoy = x => x.dia === hoy.getDate() && mes === (hoy.getMonth() + 1) && anio === hoy.getFullYear();
+
   const kpis = document.getElementById('cumpleKpis');
   if (kpis) kpis.innerHTML =
-    '<div class="kpi-card ' + (hoyN ? 'amarillo' : 'verde') + '"><div class="kpi-label">Cumpleaños hoy</div><div class="kpi-value ' + (hoyN ? 'amarillo' : 'verde') + '">' + hoyN + '</div><div class="kpi-sub">🎂</div><i class="fas fa-cake-candles kpi-icon"></i></div>' +
-    '<div class="kpi-card azul"><div class="kpi-label">Este mes</div><div class="kpi-value azul">' + mesN + '</div><div class="kpi-sub">cumpleañeros</div><i class="fas fa-calendar-day kpi-icon"></i></div>' +
-    '<div class="kpi-card verde"><div class="kpi-label">Próximos 30 días</div><div class="kpi-value verde">' + p30 + '</div><div class="kpi-sub">por celebrar</div><i class="fas fa-gift kpi-icon"></i></div>';
+    '<div class="kpi-card azul"><div class="kpi-label">Cumpleañeros de ' + CUMPLE_MESES[mes - 1] + '</div><div class="kpi-value azul">' + items.length + '</div><div class="kpi-sub">🎂</div><i class="fas fa-cake-candles kpi-icon"></i></div>' +
+    '<div class="kpi-card verde"><div class="kpi-label">Cumpleaños hoy</div><div class="kpi-value verde">' + items.filter(esHoy).length + '</div><div class="kpi-sub">en el día</div><i class="fas fa-gift kpi-icon"></i></div>';
 
-  const pagWrap = document.getElementById('cumplePagWrap');
-  if (!filtrados.length) {
-    body.innerHTML = '<tr><td colspan="6" class="muted" style="text-align:center;padding:28px">Sin cumpleaños en el rango. (¿Falta la fecha de nacimiento?)</td></tr>';
-    if (pagWrap) pagWrap.innerHTML = '';
+  if (!items.length) {
+    wrap.innerHTML = '<div class="card"><div class="card-body"><p class="muted" style="text-align:center;padding:30px">No hay cumpleaños registrados en ' + CUMPLE_MESES[mes - 1] + '. (¿Falta la fecha de nacimiento en las fichas?)</p></div></div>';
     return;
   }
-  // Paginación (15 por página).
-  const totalPags = Math.max(1, Math.ceil(filtrados.length / RESUMEN_PAGE_SIZE));
-  if (_cumplePag > totalPags) _cumplePag = totalPags;
-  if (_cumplePag < 1) _cumplePag = 1;
-  const pageRows = filtrados.slice((_cumplePag - 1) * RESUMEN_PAGE_SIZE, _cumplePag * RESUMEN_PAGE_SIZE);
-  if (pagWrap) pagWrap.innerHTML = _pagBar(filtrados.length, _cumplePag, RESUMEN_PAGE_SIZE, 'irCumplePagina');
 
-  const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-  body.innerHTML = pageRows.map(o => {
-    const p = o.p, c = o.c;
-    const est = c.dias === 0 ? '<span class="badge badge-warning">🎂 HOY</span>'
-              : c.dias <= 7 ? '<span class="badge badge-info">En ' + c.dias + ' d</span>'
-              : '<span class="muted">En ' + c.dias + ' d</span>';
-    return '<tr style="' + (c.dias === 0 ? 'background:rgba(243,156,18,.08)' : '') + '">' +
-      '<td style="font-weight:600;color:var(--gris-100)">' + escapeHtml(p.nombre) + '</td>' +
-      '<td class="muted">' + escapeHtml(p.cargo) + '</td>' +
-      '<td class="muted">' + String(c.dia).padStart(2, '0') + ' ' + meses[c.mes - 1] + '</td>' +
-      '<td style="text-align:right;font-variant-numeric:tabular-nums">' + c.edad + ' años</td>' +
-      '<td style="text-align:right;font-variant-numeric:tabular-nums">' + (c.dias === 0 ? '—' : c.dias) + '</td>' +
-      '<td>' + est + '</td>' +
-    '</tr>';
+  const cards = items.map(x => {
+    const p = x.p, edad = anio - x.anioNac, hc = esHoy(x);
+    const foto = p.foto
+      ? '<img src="' + _UPcumple() + p.foto + '" style="width:84px;height:84px;border-radius:50%;object-fit:cover;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.2)">'
+      : '<div style="width:84px;height:84px;border-radius:50%;background:#e9ecef;display:flex;align-items:center;justify-content:center;font-size:34px;border:3px solid #fff">🎂</div>';
+    return '<div style="width:180px;background:#fff;border-radius:14px;padding:16px 12px;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.10);position:relative">' +
+      (hc ? '<div style="position:absolute;top:8px;right:8px;background:#F39C12;color:#fff;font-size:10px;font-weight:800;padding:2px 8px;border-radius:999px">HOY</div>' : '') +
+      foto +
+      '<div style="font-weight:800;font-size:14px;color:#1a2332;margin-top:10px;line-height:1.2">' + escapeHtml((p.nombre || '').toUpperCase()) + '</div>' +
+      '<div style="font-size:11px;color:#6c757d;margin-top:2px">' + escapeHtml(p.cargo || '') + '</div>' +
+      '<div style="margin-top:8px;display:inline-block;background:#1565C0;color:#fff;font-weight:800;font-size:13px;padding:4px 12px;border-radius:999px">' + String(x.dia).padStart(2, '0') + ' de ' + CUMPLE_MESES[mes - 1] + '</div>' +
+      (edad > 0 && edad < 120 ? '<div style="font-size:11px;color:#adb5bd;margin-top:5px">Cumple ' + edad + ' años</div>' : '') +
+    '</div>';
   }).join('');
+
+  wrap.innerHTML =
+    '<div id="cumpleMural" style="background:linear-gradient(135deg,#1565C0,#0d3c78);border-radius:16px;padding:26px 24px;color:#fff">' +
+      '<div style="text-align:center;margin-bottom:6px">' +
+        '<div style="font-size:13px;letter-spacing:.12em;opacity:.85;font-weight:700">CUMPLEAÑOS DEL MES</div>' +
+        '<div style="font-family:Arial,sans-serif;font-size:30px;font-weight:900;line-height:1.05">' + CUMPLE_MESES[mes - 1].toUpperCase() + ' ' + anio + ' 🎉</div>' +
+      '</div>' +
+      (saludo ? '<div style="text-align:center;font-size:15px;font-weight:600;margin:10px auto 18px;max-width:680px;opacity:.95">' + escapeHtml(saludo) + '</div>' : '<div style="height:14px"></div>') +
+      '<div style="display:flex;flex-wrap:wrap;gap:16px;justify-content:center">' + cards + '</div>' +
+      '<div style="text-align:center;font-size:11px;opacity:.7;margin-top:20px">Generado el ' + new Date().toLocaleDateString('es-PE') + '</div>' +
+    '</div>';
+}
+
+// ── Saludo del mes (persistente por mes/año) ──
+async function cargarSaludoCumple() {
+  const mes = document.getElementById('cumpleMes')?.value, anio = document.getElementById('cumpleAnio')?.value;
+  const inp = document.getElementById('cumpleSaludo');
+  if (!inp || !mes || !anio) return;
+  try {
+    const r = await fetch('api/cumple_saludo.php?anio=' + anio + '&mes=' + mes);
+    const d = await r.json();
+    inp.value = (d && d.success && d.data.mensaje) ? d.data.mensaje : '';
+  } catch (e) { inp.value = ''; }
+}
+async function guardarSaludoCumple() {
+  const mes = document.getElementById('cumpleMes').value, anio = document.getElementById('cumpleAnio').value;
+  const fd = new FormData();
+  fd.append('action', 'save'); fd.append('csrf_token', CSRF_TOKEN);
+  fd.append('anio', anio); fd.append('mes', mes);
+  fd.append('mensaje', document.getElementById('cumpleSaludo').value.trim());
+  try {
+    const r = await fetch('api/cumple_saludo.php', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (d.success) toast('Saludo guardado', 'success'); else toast(d.message || 'No se pudo guardar', 'error');
+  } catch (e) { toast('Error de conexión', 'error'); }
+}
+
+// ── Descargar el mural (PNG o PDF) para publicar ──
+async function descargarMuralCumple(fmt) {
+  const el = document.getElementById('cumpleMural');
+  if (!el) { toast('No hay cumpleaños para publicar este mes', 'warning'); return; }
+  if (typeof html2canvas === 'undefined') { toast('No se pudo cargar el generador de imagen', 'error'); return; }
+  const mes = String(parseInt(document.getElementById('cumpleMes').value, 10)).padStart(2, '0');
+  const anio = document.getElementById('cumpleAnio').value;
+  toast('Generando mural…', 'info');
+  try {
+    const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#0d3c78' });
+    if (fmt === 'pdf' && window.jspdf && window.jspdf.jsPDF) {
+      const { jsPDF } = window.jspdf;
+      const horiz = canvas.width >= canvas.height;
+      const pdf = new jsPDF(horiz ? 'l' : 'p', 'mm', 'a4');
+      const pw = pdf.internal.pageSize.getWidth(), ph = pdf.internal.pageSize.getHeight();
+      const ratio = Math.min(pw / canvas.width, ph / canvas.height);
+      const w = canvas.width * ratio, h = canvas.height * ratio;
+      pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', (pw - w) / 2, 8, w, h);
+      pdf.save('cumpleanos_' + anio + '_' + mes + '.pdf');
+    } else {
+      const a = document.createElement('a');
+      a.href = canvas.toDataURL('image/png');
+      a.download = 'cumpleanos_' + anio + '_' + mes + '.png';
+      a.click();
+    }
+    toast('Mural generado', 'success');
+  } catch (e) { toast('No se pudo generar el mural', 'error'); }
 }

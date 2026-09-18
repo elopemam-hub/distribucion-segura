@@ -174,27 +174,22 @@
     </div>
 
     <div class="tab-panel personal-tab-panel" id="personal-panel-cumpleanos">
-      <div class="kpi-grid" id="cumpleKpis" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin-bottom:18px"></div>
-      <div class="card" style="margin-bottom:18px">
+      <div class="kpi-grid" id="cumpleKpis" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin-bottom:16px"></div>
+      <div class="card" style="margin-bottom:16px">
         <div class="card-body" style="padding:14px 20px">
-          <div class="filter-bar">
-            <div class="form-group"><label class="form-label">Rango</label>
-              <select class="form-control" id="cumpleRango" onchange="_cumplePag=1;renderCumpleanos()">
-                <option value="30">Próximos 30 días</option>
-                <option value="mes">Este mes</option>
-                <option value="todos">Todo el año</option>
-              </select></div>
-            <div class="form-group"><label class="form-label">Buscar</label>
-              <input type="text" class="form-control" id="cumpleBuscar" placeholder="Nombre" oninput="_cumplePag=1;renderCumpleanos()"></div>
+          <div class="filter-bar" style="align-items:flex-end">
+            <div class="form-group"><label class="form-label">Mes</label>
+              <select class="form-control" id="cumpleMes" onchange="cumpleCambioMes()"></select></div>
+            <div class="form-group"><label class="form-label">Año</label>
+              <select class="form-control" id="cumpleAnio" onchange="cumpleCambioMes()"></select></div>
+            <div class="form-group" style="flex:1;min-width:240px"><label class="form-label">Saludo del mes <span class="muted" style="font-weight:400;font-size:11px">(aparece en el mural)</span></label>
+              <input type="text" class="form-control" id="cumpleSaludo" maxlength="200" placeholder="¡Feliz cumpleaños a nuestro equipo! 🎉" oninput="renderMuralCumple()"></div>
+            <button class="btn btn-outline btn-sm" id="cumpleGuardarSaludoBtn" onclick="guardarSaludoCumple()"><i class="fas fa-save"></i> Guardar saludo</button>
+            <button class="btn btn-primary btn-sm" onclick="descargarMuralCumple('png')"><i class="fas fa-image"></i> Descargar PNG</button>
+            <button class="btn btn-outline btn-sm" onclick="descargarMuralCumple('pdf')"><i class="fas fa-file-pdf"></i> PDF</button>
           </div>
         </div>
       </div>
-      <div class="card"><div class="card-body" style="padding:0"><div class="table-wrap tbl-scroll">
-        <table class="data-table">
-          <thead><tr><th>Trabajador</th><th>Cargo</th><th>Fecha</th><th style="text-align:right">Cumple</th>
-              <th style="text-align:right">Faltan</th><th>Estado</th></tr></thead>
-          <tbody id="cumpleBody"><tr><td colspan="6" class="muted" style="text-align:center;padding:28px">Cargando…</td></tr></tbody>
-        </table>
-      </div><div id="cumplePagWrap"></div></div></div>
+      <div id="cumpleMuralWrap" style="overflow:auto"></div>
     </div>
   </div>
