@@ -58,8 +58,17 @@ $t = (string)($_GET['t'] ?? '');
       </div>
       <img id="preview" alt="Vista previa">
       <label style="margin-top:16px">Tu foto</label>
-      <input type="file" id="foto" accept="image/*" style="width:100%;color:#cdd4de;font-size:14px">
-      <div style="font-size:11px;color:#6b7688;margin-top:6px">Puedes tomarte la foto o elegir una de tu galería · Máx 8MB</div>
+      <div style="display:flex;gap:10px;margin-top:6px">
+        <label class="btn btn-sec" style="flex:1;margin:0;text-align:center;cursor:pointer;font-size:14px">
+          <i class="fas fa-camera"></i> Tomar foto
+          <input type="file" id="fotoCam" accept="image/*" capture="user" style="display:none">
+        </label>
+        <label class="btn btn-sec" style="flex:1;margin:0;text-align:center;cursor:pointer;font-size:14px">
+          <i class="fas fa-images"></i> Galería
+          <input type="file" id="fotoGal" accept="image/*" style="display:none">
+        </label>
+      </div>
+      <div style="font-size:11px;color:#6b7688;margin-top:8px">Tómate la foto o elige una de tu galería · Máx 8MB</div>
       <button class="btn btn-primary" id="btnEnviar" disabled>Enviar foto</button>
       <div class="msg" id="msg2"></div>
     </div>
@@ -113,13 +122,15 @@ $t = (string)($_GET['t'] ?? '');
   }
 
   var fotoData=null;
-  $('foto').onchange = async function(){
-    var f=this.files&&this.files[0]; if(!f){ return; }
+  async function procesarFoto(f){
+    if(!f){ return; }
     if(f.size > 8*1024*1024){ msg($('msg2'),'La imagen supera 8MB.',false); return; }
     $('msg2').className='msg';
     fotoData = await comprimir(f);
     if(fotoData){ $('preview').src=fotoData; $('preview').style.display='block'; $('btnEnviar').disabled=false; }
-  };
+  }
+  $('fotoCam').onchange = function(){ procesarFoto(this.files&&this.files[0]); };
+  $('fotoGal').onchange = function(){ procesarFoto(this.files&&this.files[0]); };
 
   $('btnEnviar').onclick = async function(){
     if(!fotoData){ msg($('msg2'),'Elige tu foto primero.',false); return; }
