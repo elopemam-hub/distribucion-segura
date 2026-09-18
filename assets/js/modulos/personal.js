@@ -1387,6 +1387,22 @@ let _qrFotoInstance = null;
 let _fotosPend = [];
 const _UPfoto = () => (typeof UPLOAD_URL !== 'undefined' ? UPLOAD_URL : 'uploads/');
 
+// Arma el link público con el origen actual (hereda http/https del navegador).
+function _fotoLinkDesdeToken(token) {
+  const dir = window.location.pathname.replace(/[^/]*$/, '');   // .../distribucion-segura/
+  return window.location.origin + dir + 'foto_publico.php?t=' + encodeURIComponent(token || '');
+}
+function _pintarQrFoto(link) {
+  const box = document.getElementById('qrFotoCanvas'); if (!box) return;
+  box.innerHTML = '';
+  document.getElementById('qrFotoLink').value = link;
+  if (window.QRCode && link) {
+    const marco = document.createElement('div');
+    marco.style.cssText = 'background:#fff;padding:14px;border-radius:12px;display:inline-block;line-height:0;box-shadow:0 4px 14px rgba(0,0,0,.25)';
+    box.appendChild(marco);
+    _qrFotoInstance = new QRCode(marco, { text: link, width: 200, height: 200, colorDark: '#000000', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+  }
+}
 async function abrirQrFoto() {
   abrirModal('modalQrFoto');
   const box = document.getElementById('qrFotoCanvas'); if (box) box.innerHTML = '';
@@ -1394,9 +1410,8 @@ async function abrirQrFoto() {
   try {
     const r = await fetch('api/personal.php?action=foto_link');
     const d = await r.json();
-    const link = (d && d.success && d.data.link) ? d.data.link : '';
-    document.getElementById('qrFotoLink').value = link;
-    if (window.QRCode && link && box) { _qrFotoInstance = new QRCode(box, { text: link, width: 200, height: 200, correctLevel: QRCode.CorrectLevel.M }); }
+    const token = (d && d.success) ? (d.data.token || '') : '';
+    _pintarQrFoto(_fotoLinkDesdeToken(token));
   } catch (e) { if (box) box.innerHTML = '<span class="muted">No se pudo generar</span>'; }
 }
 function copiarLinkFoto() {
@@ -1475,8 +1490,6 @@ async function regenerarLinkFoto() {
     const d = await r.json();
     if (!d.success) { toast(d.message || 'Error', 'error'); return; }
     toast('Enlace regenerado', 'success');
-    const box = document.getElementById('qrFotoCanvas'); if (box) box.innerHTML = '';
-    document.getElementById('qrFotoLink').value = d.data.link;
-    if (window.QRCode && d.data.link && box) new QRCode(box, { text: d.data.link, width: 200, height: 200, correctLevel: QRCode.CorrectLevel.M });
+    _pintarQrFoto(_fotoLinkDesdeToken(d.data.token || ''));
   } catch (e) { toast('Error de conexión', 'error'); }
 }

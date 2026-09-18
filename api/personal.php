@@ -376,7 +376,7 @@ function fotoLink() {
         $sch = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
         $base = $sch . '://' . ($_SERVER['HTTP_HOST'] ?? '') . rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/api');
     }
-    jsonResponse(true, '', ['link' => $base . '/foto_publico.php?t=' . fotoPublicaToken()]);
+    jsonResponse(true, '', ['link' => $base . '/foto_publico.php?t=' . fotoPublicaToken(), 'token' => fotoPublicaToken()]);
 }
 // Rota el token: invalida el enlace/QR anterior. Solo administrador.
 function fotoLinkRegenerar() {
